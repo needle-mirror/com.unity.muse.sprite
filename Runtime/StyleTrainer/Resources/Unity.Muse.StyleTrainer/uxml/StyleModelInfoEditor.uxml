@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ui:UXML
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:ui="UnityEngine.UIElements"
+        xmlns:appui="Unity.AppUI.UI"
+        xmlns:styleTrainer="Unity.Muse.StyleTrainer"
+        xsi:noNamespaceSchemaLocation="../../../../../../../UIElementsSchema/UIElements.xsd"
+>
+    <Style src="../uss/StyleModelInfoEditor.uss"/>
+    <ui:Template src="StyleModelInfo.uxml" name="StyleModelInfo"/>
+    <styleTrainer:StyleModelInfoEditor class="styletrainer-stylemodelinfoeditor" name="StyleModelInfoEditor">
+        <ui:VisualElement name="styletrainer-stylemodelinfoeditor__context-menu-anchor"
+                          class="styletrainer-stylemodelinfoeditor__context-menu-anchor" picking-mode="Ignore"/>
+        <!--
+        <ui:VisualElement class="styletrainer-stylemodelinfoeditor__titlebar">
+            <appui:Text class="styletrainer-stylemodelinfoeditor__title" text="Info" primary="true" />
+        </ui:VisualElement>
+        -->
+        <ui:VisualElement name="StyleModelEditorSplashScreen" class="styletrainer-stylemodelinfoeditor-splashscreen">
+            <appui:Text name="HintText" class="styletrainer-stylemodelinfoeditor__hinttext"
+                        text="Create a new style or select an existing style to begin."/>
+        </ui:VisualElement>
+        <ui:VisualElement name="StyleModelEditorStyleLoadingScreen"
+                          class="styletrainer-stylemodelinfoeditor-styleloadingscreen">
+            <appui:CircularProgress name="StyleLoading"
+                                    class="styletrainer-stylemodelinfoeditor__styleloading__progress" quiet="true"/>
+            <appui:Text name="StyleLoadingText" class="styletrainer-stylemodelinfoeditor__styleloadingtext"
+                        text="Loading Style..."/>
+        </ui:VisualElement>
+        <ui:VisualElement name="StyleModelEditorContainer" class="styletrainer-stylemodelinfoeditor-container">
+            <ui:VisualElement class="styletrainer-stylemodelinfoeditor__splitview" name="StyleModelInfoEditorContent">
+                <ui:Instance template="StyleModelInfo" name="StyleModelInfo"/>
+                <ui:VisualElement name="StyleTabContainer" class="styletrainer-stylemodelinfoeditor__tabcontainer">
+                    <appui:Tabs name="DataTabs" class="styletrainer-stylemodelinfoeditor__tabs"/>
+                    <ui:VisualElement name="TabContent" class="styletrainer-stylemodelinfoeditor__tabcontent"/>
+                </ui:VisualElement>
+                >
+            </ui:VisualElement>
+
+            <ui:VisualElement class="styletrainer-stylemodelinfoeditor__footer">
+                <appui:SliderFloat name="ThumbnailSizeSlider"
+                                   class="styletrainer-stylemodelinfoeditor__thumbnail-slider" low-value="0.25"
+                                   high-value="1" value="1" inline-value="End"/>
+            </ui:VisualElement>
+            <ui:VisualElement name="styletrainer-stylemodelinfoeditor__dragbar"
+                              class="styletrainer-stylemodelinfoeditor__dragbar cursor--ew-resize">
+                <ui:VisualElement classt="styletrainer-stylemodelinfoeditor__dragbar-content" picking-mode="Ignore"/>
+            </ui:VisualElement>
+            <appui:ActionButton name="AddButton" class="styletrainer-stylemodelinfoeditor__add-button" icon="plus"/>
+        </ui:VisualElement>
+    </styleTrainer:StyleModelInfoEditor>
+</ui:UXML>

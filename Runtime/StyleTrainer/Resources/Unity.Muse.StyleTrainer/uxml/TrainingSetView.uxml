@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ui:UXML
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:ui="UnityEngine.UIElements"
+        xmlns:appui="Unity.AppUI.UI"
+        xmlns:styleTrainer="Unity.Muse.StyleTrainer"
+        xsi:noNamespaceSchemaLocation="../../../../../../../UIElementsSchema/UIElements.xsd"
+>
+    <Style src="../uss/TrainingSetView.uss"/>
+    <styleTrainer:TrainingSetView class="styletrainer-trainingsetview" name="TrainingSetView">
+        <appui:ExVisualElement name="DataContent" class="styletrainer-trainingsetview__content">
+            <appui:ExVisualElement name="ToolTipContainer" class="styletrainer-trainingsetview__tooltip_container">
+                <appui:Icon name="ToolTipIcon" class="styletrainer-trainingsetview__tooltip_icon"/>
+                <appui:Text name="ToolTipText" class="styletrainer-trainingsetview__tooltip_text"
+                            text="Training set requires at least 5 samples."/>
+            </appui:ExVisualElement>
+
+            <appui:ExVisualElement name="GridViewContainer" class="styletrainer-trainingsetview__gridview_container">
+                <appui:Text name="HintText" class="styletrainer-trainingsetview__hinttext"
+                            text="Drag and Drop training images here."/>
+                <styleTrainer:GridView name="TrainingSetViewGridView" class="styletrainer-trainingsetview-gridview"/>
+                <ui:VisualElement name="DragAndDropContainer"
+                                  class="styletrainer-trainingsetview__draganddropcontainer"/>
+            </appui:ExVisualElement>
+        </appui:ExVisualElement>
+        <appui:ExVisualElement name="LoadingScreen" class="styletrainer-trainingsetview__loadingscreen">
+            <appui:CircularProgress name="LoadingIcon" class="styletrainer-trainingsetview__loadingicon" quiet="true"/>
+            <appui:Text name="LoadingText" class="styletrainer-trainingsetview__loadingtext"
+                        text="Loading Training Set..."/>
+        </appui:ExVisualElement>
+    </styleTrainer:TrainingSetView>
+</ui:UXML>

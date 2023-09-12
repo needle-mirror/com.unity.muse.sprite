@@ -1,0 +1,107 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b7087514a53549f2825f7471c483cfa5, type: 3}
+  m_Name: StyleTrainerConfig
+  m_EditorClassIdentifier: 
+  minTrainingSetSize: 5
+  maxTrainingSetSize: 15
+  minSampleSetSize: 3
+  maxSampleSetSize: 5
+  minTrainingImageSize: {x: 128, y: 128}
+  maxTrainingImageSize: {x: 512, y: 512}
+  debugLog: 0
+  logToFile: 0
+  trainingStepRange: {x: 100, y: 1000}
+  trainingStepsIncrement: 50
+  defaultStyleVersion: 2023090802
+  defaultStyles:
+  - m_Guid: c4a37424-aff2-4190-89ab-6b8f307bdaf4
+    m_State: 1
+    m_Thumbnail:
+      rid: -2
+    m_Visible: 0
+    selectedCheckPointGUID: ab0d69da-7f0e-41b9-ab4f-0dbe2bf9614a
+    m_FavoriteCheckPointGUID: ab0d69da-7f0e-41b9-ab4f-0dbe2bf9614a
+    parentID: 00000000-0000-0000-0000-000000000000
+    m_ProjectID: de075932-fbb5-499c-b129-ba06b1c7b0df
+    m_CheckPoints:
+    - m_Guid: ab0d69da-7f0e-41b9-ab4f-0dbe2bf9614a
+      m_State: 1
+      m_ProjectID: de075932-fbb5-499c-b129-ba06b1c7b0df
+      name: Default Style (Animals)
+      description: Style specialized on generating animals based on Happy Harvest
+        style.
+      parent_id: 00000000-0000-0000-0000-000000000000
+      dropDownLabelName: Default Style (Animals)
+      trainingSetData:
+        m_Guid: 
+        m_State: 0
+        m_TrainingSet: []
+        m_ProjectID: 
+      validationImagesData: []
+      m_TrainingSteps: 0
+  - m_Guid: cb1bb903-4e91-4682-bff2-4671555e8f5d
+    m_State: 1
+    m_Thumbnail:
+      rid: -2
+    m_Visible: 0
+    selectedCheckPointGUID: 9070f7e6-5f75-4809-b11e-6b27c0aa1139
+    m_FavoriteCheckPointGUID: 9070f7e6-5f75-4809-b11e-6b27c0aa1139
+    parentID: 00000000-0000-0000-0000-000000000000
+    m_ProjectID: de075932-fbb5-499c-b129-ba06b1c7b0df
+    m_CheckPoints:
+    - m_Guid: 9070f7e6-5f75-4809-b11e-6b27c0aa1139
+      m_State: 1
+      m_ProjectID: de075932-fbb5-499c-b129-ba06b1c7b0df
+      name: Default Style (Vegetation)
+      description: Style specialized on generating vegetation based on Happy Harvest
+        style.
+      parent_id: 00000000-0000-0000-0000-000000000000
+      dropDownLabelName: Default Style (Vegetation)
+      trainingSetData:
+        m_Guid: 
+        m_State: 0
+        m_TrainingSet: []
+        m_ProjectID: 
+      validationImagesData: []
+      m_TrainingSteps: 0
+  - m_Guid: b2ff9ced-9904-443a-9826-0e12146f16e2
+    m_State: 1
+    m_Thumbnail:
+      rid: -2
+    m_Visible: 0
+    selectedCheckPointGUID: da6e2c60-1038-450f-b56f-c105032fce12
+    m_FavoriteCheckPointGUID: da6e2c60-1038-450f-b56f-c105032fce12
+    parentID: 00000000-0000-0000-0000-000000000000
+    m_ProjectID: de075932-fbb5-499c-b129-ba06b1c7b0df
+    m_CheckPoints:
+    - m_Guid: da6e2c60-1038-450f-b56f-c105032fce12
+      m_State: 1
+      m_ProjectID: de075932-fbb5-499c-b129-ba06b1c7b0df
+      name: Default Style (Buildings)
+      description: Style specialized on generating buildings based on Happy Harvest
+        style.
+      parent_id: 00000000-0000-0000-0000-000000000000
+      dropDownLabelName: Default Style (Buildings)
+      trainingSetData:
+        m_Guid: 
+        m_State: 0
+        m_TrainingSet: []
+        m_ProjectID: 
+      validationImagesData: []
+      m_TrainingSteps: 0
+  m_UseMockData: 0
+  references:
+    version: 2
+    RefIds:
+    - rid: -2
+      type: {class: , ns: , asm: }

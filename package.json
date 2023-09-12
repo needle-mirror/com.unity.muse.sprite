@@ -1,0 +1,34 @@
+{
+  "name": "com.unity.muse.sprite",
+  "displayName": "Muse Sprite Tool",
+  "version": "0.1.2",
+  "unity": "2022.3",
+  "description": "Muse Sprite Tool is a package that provides a set of tools to help create AI-generated 2D asset content from text input in Unity",
+  "dependencies": {
+    "com.unity.modules.uielements": "1.0.0",
+    "com.unity.muse.common": "0.1.2"
+  },
+  "samples": [
+    {
+      "displayName": "Sample 1",
+      "description": "Sample 1 description",
+      "path": "Samples~/Sample1"
+    }
+  ],
+  "relatedPackages": {
+    "com.unity.muse.sprite.tests": "0.1.2",
+    "com.unity.muse.common.tests": "0.1.2"
+  },
+  "_upm": {
+    "changelog": ""
+  },
+  "upmCi": {
+    "footprint": "691187aa453d90ec727fe387863c7f36fae0d368"
+  },
+  "documentationUrl": "https://docs.unity3d.com/Packages/com.unity.muse.sprite@0.1/manual/index.html",
+  "repository": {
+    "url": "https://github.cds.internal.unity3d.com/unity/UnityMuseAITools.git",
+    "type": "git",
+    "revision": "7055fd5bc179fc86b6880b8188edb53fde64667f"
+  }
+}

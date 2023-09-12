@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ui:UXML
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:ui="UnityEngine.UIElements"
+        xmlns:appui="Unity.AppUI.UI"
+        xmlns:styleTrainer="Unity.Muse.StyleTrainer"
+        xsi:noNamespaceSchemaLocation="../../../../../../../UIElementsSchema/UIElements.xsd"
+>
+    <Style src="../uss/StyleModelInfo.uss"/>
+    <styleTrainer:StyleModelInfo class="styletrainer-stylemodelinfo" name="StyleModelInfo">
+        <appui:ExVisualElement name="StyleModelInfoContent" class="styletrainer-stylemodelinfo__content">
+            <!--
+            <styleTrainer:PreviewImage name="StyleModelInfoThumbnail" class="styletrainer-stylemodelinfo__thumbnail">
+                <appui:Checkbox name="FavouriteToggle" class="styletrainer-stylemodelinfo__favouritetoggle" quiet="true"/>
+            </styleTrainer:PreviewImage>
+            /-->
+            <appui:ExVisualElement class="styletrainer-stylemodelinfo__details__field_spacing"/>
+            <appui:ExVisualElement name="StyleModelInfoDetails" class="styletrainer-stylemodelinfo__details">
+                <appui:ExVisualElement name="StyleModelInfoDetailsNameAndCheckpoint"
+                                       class="styletrainer-stylemodelinfo__details__nameandcheckpoint">
+                    <appui:ExVisualElement
+                            class="styletrainer-stylemodelinfo__details__field styletrainer-stylemodelinfo__details__nameandcheckpoint__name">
+                        <appui:ExVisualElement class="styletrainer-stylemodelinfo__icon_nametextfield">
+                            <appui:Text text="Name"
+                                        class="styletrainer-stylemodelinfo__details__field__label styletrainer__elipsis-no-wrap"
+                                        size="S"/>
+                            <appui:ExVisualElement
+                                    class="styletrainer-stylemodelinfo__icon_nametextfield__icon__container">
+                                <appui:Checkbox name="FavouriteToggle"
+                                                class="styletrainer-stylemodelinfo__favouritetoggle" quiet="true"/>
+                                <appui:ExVisualElement
+                                        class="styletrainer-stylemodelinfo__icon_nametextfield__icon__status__container">
+                                    <!--appui:Icon name="ProhibitIcon" class="styletrainer-stylemodelinfo__prohibiticon" icon-name="prohibit" quiet="true"/-->
+                                    <appui:Icon name="ErrorIcon" class="styletrainer-stylemodelinfo__erroricon"
+                                                icon-name="warning" quiet="true"/>
+                                    <appui:Text name="StatusLabel" class="styletrainer-stylemodelinfo__statuslabel"
+                                                text="(Version is not trained)" size="S"/>
+                                    <appui:CircularProgress name="TrainingIcon"
+                                                            class="styletrainer-stylemodelinfo__progress" quiet="true"/>
+                                </appui:ExVisualElement>
+                            </appui:ExVisualElement>
+                        </appui:ExVisualElement>
+                        <appui:TextField name="StyleModelInfoDetailsName"
+                                         class="styletrainer-stylemodelinfo__details__nameandcheckpoint__name_textfield"
+                                         size="S"/>
+                    </appui:ExVisualElement>
+                    <appui:ExVisualElement class="styletrainer-stylemodelinfo__details__field_spacing"/>
+                    <appui:ExVisualElement
+                            class="styletrainer-stylemodelinfo__details__field styletrainer-stylemodelinfo__details__nameandcheckpoint__checkpoint styletrainer__elipsis-no-wrap">
+                        <appui:Text text="Version" class="styletrainer-stylemodelinfo__details__field__label" size="S"/>
+                        <appui:Dropdown name="StyleModelInfoDetailsCheckpoint"
+                                        class="styletrainer-stylemodelinfo__details__nameandcheckpoint__checkpoint__dropdown"
+                                        size="S"/>
+                    </appui:ExVisualElement>
+                </appui:ExVisualElement>
+                <appui:ExVisualElement
+                        class="styletrainer-stylemodelinfo__details__field styletrainer-stylemodelinfo__details__description">
+                    <appui:Text text="Description" class="styletrainer-stylemodelinfo__details__field__label" size="S"/>
+                    <appui:TextArea name="StyleModelInfoDetailsDescription"
+                                    class="styletrainer-stylemodelinfo__details__description_textarea" size="S"/>
+                    <appui:Text name="DescriptionTextCount" text="0/256" class="styletrainer-stylemodelinfo__text_count"
+                                size="S"/>
+                </appui:ExVisualElement>
+
+                <appui:ExVisualElement name="StyleModelInfoDetailsButtonContainer"
+                                       class="styletrainer-stylemodelinfo__details__buttoncontainer styletrainer__elipsis-no-wrap">
+                    <appui:TouchSliderInt name="TrainingStepSlider"
+                                          class="styletrainer-stylemodelinfo__trainingsteps__slider"
+                                          label="Training Steps" min="100" max="1000" value="100" size="M"/>
+                    <appui:ActionButton label="Duplicate Style" icon="link" name="StyleModelInfoDetailsDuplicateStyle"
+                                        class="styletrainer-stylemodelinfo__details__buttoncontainer__duplicatestyle"
+                                        size="S"/>
+                    <appui:ExVisualElement class="styletrainer-stylemodelinfo__details__field_spacing"/>
+                    <appui:ActionButton label="Generate Style" icon="play" name="StyleModelInfoDetailsGenerateStyle"
+                                        class="styletrainer-stylemodelinfo__details__buttoncontainer__generatestyle"
+                                        size="S"/>
+                </appui:ExVisualElement>
+            </appui:ExVisualElement>
+        </appui:ExVisualElement>
+    </styleTrainer:StyleModelInfo>
+</ui:UXML>

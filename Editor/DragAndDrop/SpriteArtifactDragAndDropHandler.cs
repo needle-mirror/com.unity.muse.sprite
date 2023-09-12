@@ -1,0 +1,73 @@
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using Unity.Muse.Common;
+using Unity.Muse.Common.Editor;
+using Unity.Muse.Sprite.Artifacts;
+using Unity.Muse.Sprite.Editor.Analytics;
+using UnityEditor;
+using UnityEngine;
+
+namespace Unity.Muse.Sprite.Editor.DragAndDrop
+{
+    sealed class SpriteArtifactDragAndDropHandler : IArtifactDragAndDropHandler
+    {
+        SpriteMuseArtifact m_Artifact;
+
+        public static void Register()
+        {
+            DragAndDropFactory.SetHandlerForArtifact("Sprite", typeof(SpriteArtifactDragAndDropHandler));
+        }
+
+        public SpriteArtifactDragAndDropHandler(IList<Artifact> artifact)
+        {
+            m_Artifact = (SpriteMuseArtifact)artifact.FirstOrDefault();
+        }
+
+        public bool CanDropSceneView(GameObject dropUpon, Vector3 worldPosition) => true;
+
+        public void HandleDropSceneView(GameObject dropUpon, Vector3 worldPosition)
+        {
+            Model.SendAnalytics(new SaveSpriteData {drag_destination = SpriteSaveDestination.SceneView, is_drag = true, material_hash = ""});
+            CreateNewSprite(worldPosition);
+        }
+
+        public bool CanDropHierarchy(GameObject dropUpon) => true;
+
+        public void HandleDropHierarchy(GameObject dropUpon)
+        {
+            Model.SendAnalytics(new SaveSpriteData {drag_destination = SpriteSaveDestination.HierarchyWindow, is_drag = true, material_hash = ""});
+            CreateNewSprite(Vector3.zero);
+        }
+
+        public bool CanDropProject(string path) => true;
+
+        public void HandleDropProject(string path)
+        {
+            if(File.Exists(path))
+                path = Path.GetDirectoryName(path);
+            if (string.IsNullOrWhiteSpace(path))
+                path = ExporterHelpers.assetsRoot;
+
+            Model.SendAnalytics(new SaveSpriteData {drag_destination = SpriteSaveDestination.ProjectWindow, is_drag = true, material_hash = ""});
+            m_Artifact.ExportToDirectory(path);
+        }
+
+        void CreateNewSprite(Vector3 position)
+        {
+            m_Artifact.ExportToDirectory(ExporterHelpers.assetsRoot, true, savePath =>
+            {
+                if (!string.IsNullOrEmpty(savePath) && ExporterHelpers.IsInAssets(savePath, out var relativePath))
+                {
+                    var sprite = AssetDatabase.LoadAssetAtPath<UnityEngine.Sprite>(relativePath);
+                    var go = new GameObject(sprite.name);
+                    go.transform.position = position;
+                    var spriteRenderer = go.AddComponent<SpriteRenderer>();
+                    spriteRenderer.sprite = sprite;
+
+                    Undo.RegisterCreatedObjectUndo(go, $"Create Sprite ({sprite.name})");
+                }
+            });
+        }
+    }
+}
