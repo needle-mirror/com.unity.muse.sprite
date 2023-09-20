@@ -1,8 +1,6 @@
 .styletrainer-trainingitemgriditem {
-    border-width: 3px;
-    margin: var(--appui-spacing-50);
-    border-color: var(--appui-backgrounds-300);
 }
+
 
 .styletrainer-trainingitemgriditem__deletebutton {
     position: absolute;
@@ -18,8 +16,6 @@
     flex-shrink: 1;
     justify-content: center;
     align-items: center;
-    border-width: 3px;
-    border-color: var(--appui-backgrounds-100);
 }
 
 .styletrainer-trainingitemgriditem__promptField {
@@ -31,9 +27,13 @@
     height: 100%;
     flex-grow: 1;
     flex-shrink: 1;
+    border-radius: var(--appui-alias-control-border-radius);
+    overflow: hidden;
+    border-width: 3px;
+    border-color: var(--appui-backgrounds-300);
 }
 
-.appui-grid-view__item.is-selected {
+.appui-grid-view__item.is-selected  .styletrainer-trainingitemgriditem__gridItem{
     border-width: 3px;
     border-color: var(--appui-accent-100);
 }

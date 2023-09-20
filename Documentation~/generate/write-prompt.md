@@ -31,10 +31,7 @@ To generate the full animal instead of just the head, include `full body` in the
 
 To exclude specific elements from generated sprites, in the **Negative Prompt**, enter keywords that describe the elements to exclude. To ensure the separation of concepts, enter multiple keywords separated by commas.
 
-> [!TIP]
-> The tool favors rocks and stones. If your desired result isn't achieved because of this, input `stone, rock` into the **Negative Prompt** field to decrease their occurrence in your outputs.
-
 ## Additional resources
 
 * [Refine with masking](xref:refine)
-* [Tool reference](xref:tool-reference)
+* [Tool reference](xref:reference)

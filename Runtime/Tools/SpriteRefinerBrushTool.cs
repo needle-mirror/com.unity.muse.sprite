@@ -1,11 +1,10 @@
-using System.Collections.Generic;
-using System.Linq;
 using Unity.AppUI.UI;
 using Unity.Muse.Common;
 using Unity.Muse.Sprite.Operators;
 using UnityEngine;
 using UnityEngine.UIElements;
 using Toggle = Unity.AppUI.UI.Toggle;
+using TextContent = Unity.Muse.Sprite.UIComponents.TextContent;
 
 namespace Unity.Muse.Sprite.Tools
 {
@@ -28,18 +27,19 @@ namespace Unity.Muse.Sprite.Tools
 
         public bool EvaluateEnableState(Artifact artifact)
         {
-            return m_CurrentModel.isRefineMode && (m_CurrentModel.CurrentOperators?.Any(x => x is SpriteRefiningMaskOperator) ?? false);
+            return m_CurrentModel.isRefineMode;
         }
 
         public void ActivateOperators()
         {
             if(m_CurrentModel == null) return;
 
-            var opMask = m_CurrentModel.CurrentOperators.Find(x => x.GetType() == typeof(SpriteRefiningMaskOperator));
+            var opMask = m_CurrentModel.CurrentOperators.Find(x => x.GetType() == typeof(SpriteRefiningMaskOperator)) ??
+                m_CurrentModel.AddOperator<SpriteRefiningMaskOperator>();
+
             if (opMask != null && !opMask.Enabled())
             {
                 opMask.Enable(true);
-                //Probably need to do an event refresh nodes list
                 m_CurrentModel.UpdateOperators(opMask);
             }
         }
@@ -51,13 +51,13 @@ namespace Unity.Muse.Sprite.Tools
                 Name = "muse-brush-tool-button",
                 Label = "",
                 Icon = "paint-brush",
-                Tooltip = "Paint a mask over the area that you want to refine"
+                Tooltip = TextContent.controlMaskToolTooltip
             };
         }
 
         public VisualElement GetSettings()
         {
-            return m_Settings.GetSettings();
+            return m_Settings?.GetSettings();
         }
 
         public float radius
@@ -105,7 +105,7 @@ namespace Unity.Muse.Sprite.Tools
             m_Root.style.flexDirection = FlexDirection.Row;
             m_RadiusSlider = new TouchSliderFloat();
             m_RadiusSlider.label = "Radius";
-            m_RadiusSlider.tooltip = "Adjust brush size";
+            m_RadiusSlider.tooltip = TextContent.controlMaskBrushSizeTooltip;
             m_RadiusSlider.incrementFactor = 0.1f;
             m_RadiusSlider.formatString = "F1";
             m_RadiusSlider.lowValue = 3.0f;
@@ -118,7 +118,7 @@ namespace Unity.Muse.Sprite.Tools
                 m_BrushTool.radius = evt.newValue;
             });
 
-            m_ToggleErase =  new Toggle {label = "Eraser", tooltip = "Toggle eraser mode"};
+            m_ToggleErase = new Toggle { label = "Eraser", tooltip = TextContent.controlMaskEraserToolTooltip };
 
             m_ToggleErase.RegisterValueChangedCallback(evt =>
             {
@@ -130,7 +130,7 @@ namespace Unity.Muse.Sprite.Tools
             {
                 name = "refiner-clear-button",
                 label = "",
-                tooltip = "Reset the mask",
+                tooltip = TextContent.controlMaskClearToolTooltip,
                 icon = "delete",
                 quiet = true
             };

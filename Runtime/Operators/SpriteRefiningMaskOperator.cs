@@ -36,6 +36,7 @@ namespace Unity.Muse.Sprite.Operators
         public bool Enabled() => m_OperatorData.enabled;
 
         public void Enable(bool enable) => m_OperatorData.enabled = enable;
+        public bool Hidden { get; set; }
 
         public VisualElement GetCanvasView() => new VisualElement();
 

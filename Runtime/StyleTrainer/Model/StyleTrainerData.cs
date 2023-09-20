@@ -1,5 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using StyleTrainer.Backend;
+using Unity.Muse.Sprite.Common.Backend;
+using Unity.Muse.StyleTrainer.Debug;
 using UnityEngine;
 
 namespace Unity.Muse.StyleTrainer
@@ -34,7 +38,81 @@ namespace Unity.Muse.StyleTrainer
 
         public override void GetArtifact(Action<StyleTrainerData> onDoneCallback, bool useCache)
         {
-            onDoneCallback?.Invoke(this);
+            OnArtifactLoaded += onDoneCallback;
+            if (state == EState.Loaded && useCache)
+            {
+                ArtifactLoaded(this);
+            }
+            else
+            {
+                if (state != EState.Loading)
+                {
+                    state = EState.Loading;
+                    var getStylesRequest = new GetStylesRequest
+                    {
+                        guid = guid
+                    };
+                    var getStylesRestCall = new GetStylesRestCall(ServerConfig.serverConfig, getStylesRequest);
+                    getStylesRestCall.RegisterOnSuccess(OnGetStylesSuccess);
+                    getStylesRestCall.RegisterOnFailure(OnGetStylesFailure);
+                    getStylesRestCall.SendRequest();
+                }
+            }
+        }
+
+        void OnGetStylesFailure(GetStylesRestCall obj)
+        {
+            if (obj.retriesFailed)
+            {
+                state = EState.Error;
+                StyleTrainerDebug.LogError($"Unable to load style trainer project {guid} {obj.requestError} {obj.errorMessage}");
+                ArtifactLoaded(this);
+            }
+        }
+
+        void OnGetStylesSuccess(GetStylesRestCall arg1, GetStylesResponse arg2)
+        {
+            if (arg2.success)
+            {
+                ClearStyles();
+                state = EState.Loaded;
+                UpdateVersion();
+                if (arg2.styleIDs.Length == 0)
+                {
+                    OnGetStyleDone(null);
+                }
+                else
+                {
+                    foreach (var id in arg2.styleIDs)
+                    {
+                        var styleData = new StyleData(EState.Initial, id, Utilities.emptyGUID, guid);
+                        AddStyle(styleData);
+                        styleData.GetArtifact(OnGetStyleDone, false);
+                    }
+                }
+            }
+            else
+            {
+                state = EState.Error;
+                StyleTrainerDebug.Log($"OnGetStylesSuccess but call failed. {guid} {arg1.errorMessage}");
+                ArtifactLoaded(this);
+            }
+        }
+
+        void OnGetStyleDone(StyleData obj)
+        {
+            int i = 0;
+            for(; i < m_Styles?.Count; ++i)
+            {
+                if (m_Styles[i].state != EState.Error && m_Styles[i].state != EState.Loaded)
+                    break;
+            }
+
+            if (i >= m_Styles?.Count())
+            {
+                state = EState.Loaded;
+                ArtifactLoaded(this);
+            }
         }
 
         public IReadOnlyList<StyleData> styles => m_Styles;

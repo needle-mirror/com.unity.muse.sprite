@@ -1,12 +1,12 @@
 {
   "name": "com.unity.muse.sprite",
   "displayName": "Muse Sprite Tool",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "unity": "2022.3",
   "description": "Muse Sprite Tool is a package that provides a set of tools to help create AI-generated 2D asset content from text input in Unity",
   "dependencies": {
     "com.unity.modules.uielements": "1.0.0",
-    "com.unity.muse.common": "0.1.2"
+    "com.unity.muse.common": "0.2.0"
   },
   "samples": [
     {
@@ -16,19 +16,19 @@
     }
   ],
   "relatedPackages": {
-    "com.unity.muse.sprite.tests": "0.1.2",
-    "com.unity.muse.common.tests": "0.1.2"
+    "com.unity.muse.sprite.tests": "0.2.0",
+    "com.unity.muse.common.tests": "0.2.0"
   },
   "_upm": {
-    "changelog": ""
+    "changelog": "### Changed\n\n- Reduce error logging.\n- Style selection is now part of the Sprite Generation operator. Old Sprite Muse asset will enounter exception and might not be usable. Please start with a new project.\n\n### Fixed\n\n- Dragging and dropping elements that are outside of the GridView's ScrollView to the Project, or Scene view.\n- Fix style selection using incorrect settings.\n- Fix grid view alignment in style trainer.\n- Fix empty name and description allowed in style trainer."
   },
   "upmCi": {
-    "footprint": "691187aa453d90ec727fe387863c7f36fae0d368"
+    "footprint": "86032fbb84f8153ed3bd14daa9d2d909c62828d3"
   },
-  "documentationUrl": "https://docs.unity3d.com/Packages/com.unity.muse.sprite@0.1/manual/index.html",
+  "documentationUrl": "https://docs.unity3d.com/Packages/com.unity.muse.sprite@0.2/manual/index.html",
   "repository": {
     "url": "https://github.cds.internal.unity3d.com/unity/UnityMuseAITools.git",
     "type": "git",
-    "revision": "7055fd5bc179fc86b6880b8188edb53fde64667f"
+    "revision": "da1fe357fbde6534473ea14e26b9c5c75435248f"
   }
 }

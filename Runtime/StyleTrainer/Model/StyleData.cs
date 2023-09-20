@@ -232,7 +232,6 @@ namespace Unity.Muse.StyleTrainer
 
         void LoadArtifact()
         {
-            m_CheckPoints.Clear();
             var getStyleRequest = new GetStyleRequest
             {
                 style_guid = guid,
@@ -256,30 +255,53 @@ namespace Unity.Muse.StyleTrainer
         {
             if (arg2.success)
             {
+                var oldCheckPoints = m_CheckPoints.ToArray();
+                m_CheckPoints.Clear();
                 title = arg2.name;
                 description = arg2.desc;
-                favoriteCheckPoint = arg2.checkpoint;
+                favoriteCheckPoint = SetStyleStateRestCall.activeState;
                 visible = arg2.state == "active";
-                for (var i = 0; i < arg2.checkpointIDs?.Length; ++i)
+                if (arg2.checkpointIDs?.Length <= 0)
                 {
-                    var checkPoint = new CheckPointData(EState.Initial, arg2.checkpointIDs[i], m_ProjectID);
-                    m_CheckPoints.Add(checkPoint);
-                    checkPoint.dropDownLabelName = string.Format(StringConstants.checkPointDropDownLabel, m_CheckPoints.Count);
-                    checkPoint.OnStateChanged += OnCheckPointStateChanged;
-                    checkPoint.GetArtifact(_ => { }, false);
+                    StyleLoadSuccessNoCheckPoint(arg2.name, arg2.desc, arg2.prompts);
+                }
+                else
+                {
+                    for (var i = 0; i < arg2.checkpointIDs?.Length; ++i)
+                    {
+                        var checkPoint = new CheckPointData(EState.Initial, arg2.checkpointIDs[i], m_ProjectID);
+                        var oldCheckPoint = Array.Find(oldCheckPoints, cp => cp.guid == checkPoint.guid);
+                        if (oldCheckPoint != null)
+                            checkPoint.trainingSteps = oldCheckPoint.trainingSteps;
+                        m_CheckPoints.Add(checkPoint);
+                        checkPoint.dropDownLabelName = string.Format(StringConstants.checkPointDropDownLabel, m_CheckPoints.Count);
+                        checkPoint.OnStateChanged += OnCheckPointStateChanged;
+                        checkPoint.GetArtifact(_ => { }, false);
+                    }
                 }
             }
             else
             {
-                state = EState.Loaded;
                 StyleTrainerDebug.LogWarning($"GetStyleResponse {guid} failed {arg2.success} {arg2.error}. Init to initial state");
-                m_CheckPoints.Clear();
-                m_CheckPoints.Add(new CheckPointData(EState.New, Utilities.emptyGUID, m_ProjectID));
-                m_CheckPoints[0].parent_id = parentID;
-                title = "New Style";
-                description = "Description of style";
-                ArtifactLoaded(this);
+                StyleLoadSuccessNoCheckPoint("New Style", "Set a description here to help you remember what this style is for.", null);
             }
+        }
+
+        void StyleLoadSuccessNoCheckPoint(string checkpointName, string checkPointDescription, string[] prompts)
+        {
+            state = EState.Loaded;
+
+            m_CheckPoints.Clear();
+            m_CheckPoints.Add(new CheckPointData(EState.New, Utilities.emptyGUID, m_ProjectID));
+            m_CheckPoints[0].parent_id = parentID;
+            m_CheckPoints[0].name = checkpointName?? "New Style";
+            m_CheckPoints[0].description =  checkPointDescription ?? "Set a description here to you remember what this style is for.";
+            m_CheckPoints[0].validationImagesData = new List<SampleOutputData>();
+            for (int i = 0; i < prompts?.Length; ++i)
+            {
+                m_CheckPoints[0].validationImagesData.Add(new SampleOutputData(EState.New, prompts[i]));
+            }
+            ArtifactLoaded(this);
         }
 
         void OnCheckPointStateChanged(CheckPointData obj)
@@ -288,7 +310,12 @@ namespace Unity.Muse.StyleTrainer
             for (var i = 0; i < m_CheckPoints.Count; ++i)
             {
                 if (m_CheckPoints[i].state == EState.Initial || m_CheckPoints[i].state == EState.Loading)
+                {
+                    m_CheckPoints[i].OnStateChanged -= OnCheckPointStateChanged;
+                    m_CheckPoints[i].OnStateChanged += OnCheckPointStateChanged;
+                    m_CheckPoints[i].GetArtifact(_ => { }, false);
                     return;
+                }
                 m_CheckPoints[i].OnStateChanged -= OnCheckPointStateChanged;
                 hasTraining |= m_CheckPoints[i].state == EState.Training;
             }

@@ -46,8 +46,10 @@ namespace Unity.Muse.StyleTrainer
 
         void UnbindItem(VisualElement arg1, int arg2)
         {
-            if(arg1 is TrainingItemGridItem ve)
+            if (arg1 is TrainingItemGridItem ve)
+            {
                 ve.OnDeleteClicked -= OnDeleteClicked;
+            }
         }
 
         void OnDeleteClicked(int obj)
@@ -121,6 +123,15 @@ namespace Unity.Muse.StyleTrainer
             {
                 m_LoadingScreen.style.display = DisplayStyle.None;
                 m_DataContent.style.display = DisplayStyle.Flex;
+                // dispose off old ones
+                for(int i = 0; i < m_GridView.itemsSource?.Count; ++i)
+                {
+                    if (m_GridView.itemsSource[i] is TrainingData td)
+                    {
+                        td.imageArtifact?.OnDispose();
+                    }
+                }
+
                 m_GridView.itemsSource = (IList)obj;
                 UpdateHintView();
                 m_GridView.Refresh();

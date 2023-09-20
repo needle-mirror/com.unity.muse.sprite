@@ -46,8 +46,7 @@ namespace Unity.Muse.StyleTrainer
                     m_RawData = GetRawDataDirect();
                     if (m_RawData?.Length > 0)
                     {
-                        m_Texture = new Texture2D(2, 2);
-                        m_Texture.hideFlags = HideFlags.HideAndDontSave;
+                        m_Texture = TextureUtils.Create();
                         m_Texture.LoadImage(m_RawData);
                         m_Texture.name = $"StyleTrainer-{Guid}";
                     }
@@ -66,8 +65,7 @@ namespace Unity.Muse.StyleTrainer
         {
             if (m_Texture == null)
             {
-                m_Texture = new Texture2D(2, 2);
-                m_Texture.hideFlags = HideFlags.HideAndDontSave;
+                m_Texture = TextureUtils.Create();
             }
 
             m_Texture.LoadImage(value);
@@ -83,6 +81,11 @@ namespace Unity.Muse.StyleTrainer
         public override void Generate(Model model)
         {
             StyleTrainerDebug.LogWarning("StyleTrainerImageArtifactCache.Generate() is not implemented");
+        }
+
+        public override void RetryGenerate(Model model)
+        {
+           Generate(model);
         }
 
         public override ArtifactView CreateView()

@@ -109,7 +109,8 @@ namespace Unity.Muse.StyleTrainer
             }
             else if (state != EState.New && state != EState.Training)
             {
-                StyleTrainerDebug.LogWarning($"Check point data incomplete. Unable to load. guid:{guid} asset_id:{m_ProjectID}");
+                state = EState.Loaded;
+                StyleTrainerDebug.Log($"Check point data incomplete. Unable to load. guid:{guid} asset_id:{m_ProjectID}");
             }
 
             onDoneCallback?.Invoke(this);
@@ -122,9 +123,9 @@ namespace Unity.Muse.StyleTrainer
 
         void OnGetCheckPointFailure(GetCheckPointRestCall obj)
         {
-            StyleTrainerDebug.LogError($"OnGetCheckPointFailure: Failed to create style. {obj.requestError} {obj.errorMessage}");
             if (obj.retriesFailed)
             {
+                StyleTrainerDebug.LogError($"OnGetCheckPointFailure: Failed to create style. {obj.requestError} {obj.errorMessage}");
                 state = EState.Error;
                 ArtifactLoaded(this);
             }
@@ -140,6 +141,8 @@ namespace Unity.Muse.StyleTrainer
             else
             {
                 StyleTrainerDebug.LogError($"OnGetCheckPointSuccess: Request call success but response failed. {arg2.success}");
+                state = EState.Error;
+                ArtifactLoaded(this);
             }
         }
 
@@ -205,9 +208,9 @@ namespace Unity.Muse.StyleTrainer
 
         void OnGetCheckPointStatusFailure(GetCheckPointStatusRestCall obj)
         {
-            StyleTrainerDebug.LogError($"OnGetCheckPointStatusFailure: Failed to get style status. {obj.requestError} {obj.errorMessage}");
             if (obj.retriesFailed)
             {
+                StyleTrainerDebug.LogError($"OnGetCheckPointStatusFailure: Failed to get style status. {obj.requestError} {obj.errorMessage}");
                 state = EState.Error;
                 ArtifactLoaded(this);
             }

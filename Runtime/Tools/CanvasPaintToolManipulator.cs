@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Unity.Muse.Common;
 using Unity.Muse.Sprite.Operators;
@@ -10,17 +11,29 @@ namespace Unity.Muse.Sprite.Tools
 {
     class PaintCanvasToolManipulator : CanvasManipulator
     {
-        readonly DoodlePadManipulator m_PaintingManipulator;
-
+        DoodlePadManipulator m_PaintingManipulator;
         PaintCanvasToolManipulatorUndo m_Undo;
 
         int m_Version = 0;
+        Vector2Int m_Size;
 
         public PaintCanvasToolManipulator(Model model, Vector2Int size)
             : base(model)
         {
-            m_PaintingManipulator = new DoodlePadManipulator(size, 0.8f);
-            m_PaintingManipulator.onValueChanged += OnPaintingDone;
+            m_Size = size;
+            m_PaintingManipulator = new DoodlePadManipulator(m_Size, 0.8f);
+        }
+
+        void Refresh(IEnumerable<IOperator> operators, bool set)
+        {
+            if (!m_CurrentModel.isRefineMode)
+                return;
+            if (m_PaintingManipulator is null)
+                return;
+            if (set)
+                return;
+
+            RefreshMask();
         }
 
         void OnPaintingDone(byte[] data)
@@ -45,14 +58,23 @@ namespace Unity.Muse.Sprite.Tools
                 return;
             }
 
+            UnregisterPaintingManipulator();
+            m_PaintingManipulator = new DoodlePadManipulator(m_Size, 0.8f);
+
             m_CurrentModel.OnDispose += OnDispose;
             m_Undo = PaintCanvasToolManipulatorUndo.Get();
             m_Undo.onUndoRedo += OnUndoRedo;
+            m_CurrentModel.OnOperatorUpdated += Refresh;
+            m_PaintingManipulator.onValueChanged += OnPaintingDone;
 
             var size = m_CurrentModel.CurrentOperators.GetOperator<SpriteGeneratorSettingsOperator>().imageSize;
             m_PaintingManipulator.Resize(size);
             node.PaintSurfaceElement.AddManipulator(m_PaintingManipulator);
+            RefreshMask();
+        }
 
+        void RefreshMask()
+        {
             var maskOperator = m_CurrentModel.CurrentOperators.GetOperator<SpriteRefiningMaskOperator>();
             if (maskOperator != null)
             {
@@ -64,14 +86,23 @@ namespace Unity.Muse.Sprite.Tools
 
         protected override void UnregisterCallbacksFromTarget()
         {
-            m_PaintingManipulator?.target.RemoveManipulator(m_PaintingManipulator);
+            UnregisterPaintingManipulator();
             OnDispose();
+        }
+
+        void UnregisterPaintingManipulator()
+        {
+            if (m_PaintingManipulator is null)
+                return;
+            m_PaintingManipulator.onValueChanged -= OnPaintingDone;
+            m_PaintingManipulator?.target.RemoveManipulator(m_PaintingManipulator);
         }
 
         void OnDispose()
         {
             m_Undo.Dispose();
             m_CurrentModel.OnDispose -= OnDispose;
+            m_CurrentModel.OnOperatorUpdated -= Refresh;
         }
 
         void OnUndoRedo()

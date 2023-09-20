@@ -39,10 +39,13 @@ namespace Unity.Muse.Sprite.Artifacts
                 else if (operators[i] is SpriteGeneratorSettingsOperator sgo)
                 {
                     spriteGenerationOperator = sgo;
+                    var checkpointGuid = spriteGenerationOperator.GetSelectedStyleCheckpointGuid();
+                    request.checkpoint_id = checkpointGuid;
                     if (spriteGenerationOperator.seedUserSpecified)
                         spriteGenerationOperator.SetSeed(spriteGenerationOperator.seed + counter.GetAndIncrementCount());
                     else
                         spriteGenerationOperator.RandomSeed();
+                    spriteGenerationOperator.checkPointUsed = checkpointGuid;
                     spriteGenerationOperator.seedUserSpecified = false;
                     request.removeBackground = spriteGenerationOperator.removeBackground ? 1 : 0;
                     request.maskStrength = 1;
@@ -56,7 +59,6 @@ namespace Unity.Muse.Sprite.Artifacts
                     Guid = sgo.jobID;
                     sgo.artifactID = string.Empty;
                     sgo.Enable(true);
-                    //request.settings.model_guid = serverConfig.model_guid;
                 }
                 else if(operators[i] is KeyImageOperator keyImageOperator)
                 {
@@ -78,11 +80,6 @@ namespace Unity.Muse.Sprite.Artifacts
                         //BackendUtilities.SaveTexture2DToFile("Assets/maskDoodle.png", texture2D);
                         request.mask64Image = Convert.ToBase64String(raw);
                     }
-                }
-                else if (operators[i] is StyleSelectionOperator styleSelectionOperator)
-                {
-                    var checkpointGuid = styleSelectionOperator.GetSelectedStyleCheckpointGuid();
-                    request.checkpoint_id = checkpointGuid;
                 }
                 else if (operators[i] is SessionOperator sessionOperator)
                 {

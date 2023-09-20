@@ -172,35 +172,24 @@ namespace Unity.Muse.StyleTrainer
             // Todo unregister on clean up
             m_StyleData.OnDataChanged += OnStyleDataChanged;
             m_SampleOutputData = arg0.sampleOutput;
+            // dispose off old ones
+            for(int i = 0; i < m_GridView.itemsSource?.Count; ++i)
+            {
+                if (m_GridView.itemsSource[i] is SampleOutputData td)
+                {
+                    td.imageArtifact?.OnDispose();
+                }
+            }
             m_GridView.itemsSource = (IList)m_SampleOutputData;
 
-            //m_ListView.itemsSource = (IList)m_SampleOutputData;
-            // if (!Utilities.ValidStringGUID(m_StyleData.guid))
-            // {
-            //     ShowView(EViewType.List);
-            //     m_ListView.RefreshItems();
-            // }
-            // else
-            {
-                ShowView(EViewType.Grid);
-                m_GridView.Refresh();
-            }
+            ShowView(EViewType.Grid);
+            m_GridView.Refresh();
         }
 
         void OnStyleDataChanged(StyleData styleData)
         {
-            // if (!Utilities.ValidStringGUID(m_StyleData.guid))
-            // {
-            //     ShowView(EViewType.List);
-            //     m_ListView.RefreshItems();
-            // }
-            // else
-            {
-                ShowView(EViewType.Grid);
-                m_GridView.Refresh();
-
-                //m_GridView.RefreshThumbnailSize(m_ThumbnailSize);
-            }
+            ShowView(EViewType.Grid);
+            m_GridView.Refresh();
         }
 
         void OnThumbnailSizeChanged(ThumbnailSizeChangedEvent arg0)

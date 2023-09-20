@@ -57,15 +57,5 @@ namespace Unity.Muse.StyleTrainer.Debug
             File.Delete(k_LogFilePath);
 #endif
         }
-
-        public static bool developerMode
-        {
-            get =>
-#if UNITY_EDITOR
-                Unsupported.IsDeveloperMode();
-#else
-                false;
-#endif
-        }
     }
 }

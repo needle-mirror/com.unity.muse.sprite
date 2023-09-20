@@ -1,6 +1,6 @@
 using System;
-using System.Linq;
 using Unity.AppUI.UI;
+using Unity.Muse.Common;
 using UnityEditor;
 using UnityEditor.Callbacks;
 using UnityEngine;
@@ -102,6 +102,11 @@ namespace Unity.Muse.StyleTrainer.Editor
 
             m_MainUI?.Dispose();
             m_Controller?.Dispose();
+        }
+
+        void OnDestroy()
+        {
+            ArtifactCache.Dispose();
         }
 
         void SetAsset(StyleTrainerProjectData asset)

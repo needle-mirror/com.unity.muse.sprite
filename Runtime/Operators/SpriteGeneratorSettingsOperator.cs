@@ -1,11 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using Unity.AppUI.UI;
 using Unity.Muse.Common;
 using Unity.Muse.Sprite.Backend;
 using Unity.Muse.Sprite.Common.Backend;
+using Unity.Muse.Sprite.Data;
 using Unity.Muse.Sprite.UIComponents;
+using Unity.Muse.StyleTrainer;
 using UnityEngine;
 using UnityEngine.Scripting;
 using UnityEngine.UIElements;
@@ -18,14 +21,15 @@ namespace Unity.Muse.Sprite.Operators
 {
     [Preserve]
     [Serializable]
-    class SpriteGeneratorSettingsOperator : IOperator
+    class SpriteGeneratorSettingsOperator : IOperator, ISerializationCallbackReceiver
     {
         public const string operatorName = "Unity.Muse.Sprite.Operators.SpriteGeneratorSettingsOperator";
         public string OperatorName => operatorName;
+
         /// <summary>
         /// Human-readable label for the operator.
         /// </summary>
-        public string Label => "Parameters";
+        public string Label => "Style and Parameters";
 
         SizeIntField m_SizeField;
         TouchSliderFloat m_StyleStrength;
@@ -34,6 +38,7 @@ namespace Unity.Muse.Sprite.Operators
         Model m_Model;
         [SerializeField]
         OperatorData m_OperatorData;
+
         enum ESettings
         {
             Subject = 0,
@@ -46,16 +51,30 @@ namespace Unity.Muse.Sprite.Operators
             Seed,
             JobID,
             ArtifactID,
-            CheckPointID,
-            SeedUserSpecified
+            SelectedStyleGuid,
+            SeedUserSpecified,
+            CheckPointUsed,
+            ServerURL,
         }
 
         const float k_DefaultStyleStrength = 0.85f;
 
+        bool m_Hidden;
+        Dropdown m_StyleSelection;
+
+        CircularProgress m_StyleLoading;
+
+        static List<StyleData> s_Styles;
+
         public SpriteGeneratorSettingsOperator()
         {
-            m_OperatorData = new OperatorData(OperatorName, "Unity.Muse.Sprite","0.0.1",  new []
-                { "", "", k_DefaultStyleStrength.ToString(), "512", "512", "1", "1", "", "0", "0", "0", "0" }, false);
+            m_OperatorData = CreateDefaultOperatorData();
+        }
+
+        static OperatorData CreateDefaultOperatorData()
+        {
+            return new OperatorData(operatorName, "Unity.Muse.Sprite", "0.0.1", new[]
+                { "", "", k_DefaultStyleStrength.ToString(), "512", "512", "1", "1", "", "0", "0", "0", "0", "0", "" }, false);
         }
 
         public VisualElement GetCanvasView()
@@ -70,31 +89,44 @@ namespace Unity.Muse.Sprite.Operators
             UI.AddToClassList("muse-node");
             UI.name = "prompt-node";
 
-            var text = new Text();
-            text.text = Label;
-            text.AddToClassList("muse-node__title");
-            text.AddToClassList("bottom-gap");
+            var titleContainer = new ExVisualElement()
+            {
+                style =
+                {
+                    flexDirection = FlexDirection.Row,
+                    flexGrow = 1,
+                    flexShrink = 1,
+                }
+            };
+            titleContainer.AddToClassList("muse-node__title");
+            titleContainer.AddToClassList("bottom-gap");
+            UI.Add(titleContainer);
+            var titleText = new Text { text = Label };
+            titleContainer.Add(titleText);
+            m_StyleLoading = new CircularProgress()
+            {
+                style =
+                {
+                    width = 16,
+                    height = 16,
+                    marginLeft = 5,
+                    display = DisplayStyle.None
+                },
+                tooltip = "Loading latest default styles from server...",
+                pickingMode = PickingMode.Position
+            };
+            titleContainer.Add(m_StyleLoading);
 
-            UI.Add(text);
-
-            //  var sizeField = new SizeIntField();
-            //  sizeField.minValue = new Vector2Int(64, 64);
-            //  sizeField.maxValue = new Vector2Int(512, 512);
-            //  sizeField.name = "size-field";
-            //  sizeField.AddToClassList("bottom-gap");
-            //  sizeField.SetValueWithoutNotify(SizeFieldOperatorDataToVector(m_OperatorData.settings));
-            //  sizeField.RegisterValueChangedCallback(SizeFieldChanged);
-            // UI.Add(sizeField);
-
-            var removeBgToggle = new Toggle(){name = "remove-bg-toggle"};
-            removeBgToggle.RegisterValueChangedCallback(OnRemoveBGChanged);
-            removeBgToggle.SetValueWithoutNotify(GetRemoveBgFromOperatorData());
-            var removeBg = new InputLabel("Remove Background");
-            removeBg.inputAlignment = Align.FlexEnd;
-            removeBg.labelOverflow = TextOverflow.Ellipsis;
-            removeBg.Add(removeBgToggle);
-            removeBg.AddToClassList("bottom-gap");
-            UI.Add(removeBg);
+            m_StyleSelection = new Dropdown();
+            var styleSelectionTitle = m_StyleSelection.Q<LocalizedTextElement>(className: Dropdown.titleUssClassName);
+            styleSelectionTitle.style.overflow = Overflow.Hidden;
+            styleSelectionTitle.style.textOverflow = UnityEngine.UIElements.TextOverflow.Ellipsis;
+            styleSelectionTitle.style.whiteSpace = WhiteSpace.NoWrap;
+            m_StyleSelection.bindItem += OnBindStyle;
+            m_StyleSelection.RegisterValueChangedCallback(OnStyleSelected);
+            m_StyleSelection.AddToClassList("bottom-gap");
+            UpdateWithStyleData(GetStylesFromProject());
+            UI.Add(m_StyleSelection);
 
             m_StyleStrength = new TouchSliderFloat();
             m_StyleStrength.name = "style-strength-slider";
@@ -107,18 +139,17 @@ namespace Unity.Muse.Sprite.Operators
             m_StyleStrength.SetValueWithoutNotify(GetStyleStrengthFromOperatorData());
             UI.Add(m_StyleStrength);
 
+            var removeBgToggle = new Toggle() { name = "remove-bg-toggle" };
+            removeBgToggle.RegisterValueChangedCallback(OnRemoveBGChanged);
+            removeBgToggle.SetValueWithoutNotify(GetRemoveBgFromOperatorData());
+            var removeBg = new InputLabel("Remove Background");
+            removeBg.inputAlignment = Align.FlexEnd;
+            removeBg.labelOverflow = TextOverflow.Ellipsis;
+            removeBg.Add(removeBgToggle);
+            removeBg.AddToClassList("bottom-gap");
+            UI.Add(removeBg);
 
-
-            // var useAsScribble = new InputLabel("Use as Scribble");
-            // useAsScribble.inputAlignment = Align.FlexEnd;
-            // var useAsScribbleToggle = new Toggle() {name = "use-as-scribble-toggle"};
-            // useAsScribbleToggle.AddToClassList("bottom-gap");
-            // useAsScribbleToggle.RegisterValueChangedCallback(OnScribbleChanged);
-            // useAsScribbleToggle.SetValueWithoutNotify(GetUseAsScribbleFromOperatorData());
-            // useAsScribble.Add(useAsScribbleToggle);
-            // UI.Add(useAsScribble);
-
-            m_SeedField = new SeedField(){name = "seed-field"};
+            m_SeedField = new SeedField() { name = "seed-field" };
             m_SeedField.RegisterValueChangedCallback(OnSeedChanged);
             m_SeedField.SetValueWithoutNotify(GetSeedFromOperatorData());
             m_SeedField.userSpecified = seedUserSpecified;
@@ -132,7 +163,125 @@ namespace Unity.Muse.Sprite.Operators
                 };
                 UI.Add(textField);
             }
+
             return UI;
+        }
+
+        void OnGetDefaultStyleModified()
+        {
+            UpdateWithStyleData(GetStylesFromProject());
+        }
+
+        public string GetSelectedStyleCheckpointGuid() => GetStarredCheckpointGuid(selectedStyle);
+
+        public string GetStarredCheckpointGuid(string styleId)
+        {
+            var checkpointGuid = Guid.Empty.ToString();
+            s_Styles ??= GetStylesFromProject();
+            var style = s_Styles.FirstOrDefault(s => s.guid == styleId);
+            if (style != null)
+            {
+                var guid = style.selectedCheckPointGUID;
+                var selectedCheckPointData = style.checkPoints.FirstOrDefault(c => c.guid == guid);
+                if (string.IsNullOrEmpty(guid) || guid == Guid.Empty.ToString() || guid == style.guid || selectedCheckPointData is not { state: EState.Loaded })
+                    guid = style.checkPoints.Last(c => c.state == EState.Loaded).guid;
+
+                if (!string.IsNullOrEmpty(guid))
+                    checkpointGuid = guid;
+            }
+
+            return checkpointGuid;
+        }
+
+        List<StyleData> GetStylesFromProject()
+        {
+            var styles = new List<StyleData>(StyleTrainerProjectData.instance.data.styles
+                .Where(styleData => styleData.visible && styleData.checkPoints != null && styleData.checkPoints.Any(c => c.state == EState.Loaded)));
+            if (m_Model != null)
+            {
+                var defaultStyleData = m_Model.GetData<DefaultStyleData>();
+                var defaultStyles = defaultStyleData.GetBuiltInStyle();
+                if (m_StyleLoading != null)
+                    m_StyleLoading.style.display = defaultStyleData.loading ? DisplayStyle.Flex : DisplayStyle.None;
+                for (var i = 0; i < defaultStyles?.Count; ++i)
+                    styles.Insert(i, defaultStyles[i]);
+            }
+
+            return styles;
+        }
+
+        void OnBindStyle(MenuItem visualElement, int i)
+        {
+            if (i >= 0 && i < s_Styles.Count)
+            {
+                var style = s_Styles[i];
+                visualElement.label = style.styleTitle;
+                visualElement.tooltip = style.styleDescription;
+                visualElement.style.maxWidth = 600;
+            }
+        }
+
+        internal void UpdateWithStyleData(List<StyleData> styles)
+        {
+            if (m_StyleSelection != null && styles?.Count > 0)
+            {
+                s_Styles = styles;
+
+                var titles = new List<string>(s_Styles.Select(s => s.styleTitle));
+                m_StyleSelection.sourceItems = titles;
+
+                for (var i = 0; i < s_Styles.Count; i++)
+                {
+                    var style = s_Styles[i];
+                    if (style.guid == selectedStyle)
+                    {
+                        m_StyleSelection.value = i;
+                        break;
+                    }
+                }
+
+                if (m_StyleSelection.value >= s_Styles.Count || m_StyleSelection.value == -1 && s_Styles.Count > 0)
+                {
+                    m_StyleSelection.value = 0;
+                    SetSetting(ESettings.SelectedStyleGuid, s_Styles[0].guid);
+                }
+
+                var selectedStyleValue = s_Styles[m_StyleSelection.value];
+                m_StyleSelection.tooltip = selectedStyleValue.styleDescription;
+                SetSetting(ESettings.SelectedStyleGuid, selectedStyleValue.guid);
+
+                m_StyleSelection.Refresh();
+            }
+        }
+
+        void OnStyleSelected(ChangeEvent<int> changeEvent)
+        {
+            var selectedIndex = m_StyleSelection.value;
+            if (selectedIndex < 0 || selectedIndex >= s_Styles.Count)
+                return;
+
+            var selectedStyleValue = s_Styles[selectedIndex];
+
+            m_StyleSelection.tooltip = selectedStyleValue.styleDescription;
+            SetSetting(ESettings.SelectedStyleGuid, selectedStyleValue.guid);
+        }
+
+        void OnStyleProjectDataChanged(StyleTrainerData styleTrainerData)
+        {
+            for (int i = 0; i < StyleTrainerProjectData.instance.data.styles?.Count; i++)
+            {
+                StyleTrainerProjectData.instance.data.styles[i].OnStateChanged -= OnStyleStateChanged;
+                StyleTrainerProjectData.instance.data.styles[i].OnDataChanged -= OnStyleStateChanged;
+                StyleTrainerProjectData.instance.data.styles[i].OnStateChanged += OnStyleStateChanged;
+                StyleTrainerProjectData.instance.data.styles[i].OnDataChanged += OnStyleStateChanged;
+            }
+
+            UpdateWithStyleData(GetStylesFromProject());
+        }
+
+        void OnStyleStateChanged(StyleData obj)
+        {
+            UpdateWithStyleData(GetStylesFromProject());
         }
 
         public void RandomSeed(bool userSet = false)
@@ -145,7 +294,7 @@ namespace Unity.Muse.Sprite.Operators
             }
 
             SetSetting(ESettings.Seed, value.ToString());
-            SetSetting(ESettings.SeedUserSpecified, userSet? "1" : "0");
+            SetSetting(ESettings.SeedUserSpecified, userSet ? "1" : "0");
         }
 
         void OnStyleStrengthChanging(ChangingEvent<float> evt)
@@ -155,8 +304,8 @@ namespace Unity.Muse.Sprite.Operators
 
         int GetSeedFromOperatorData()
         {
-            if(m_OperatorData.settings[(int)ESettings.Seed].Length == 0)
-                m_OperatorData.settings[(int)ESettings.Seed] = UnityEngine.Random.Range(0, 65535).ToString();
+            if (m_OperatorData.settings[(int)ESettings.Seed].Length == 0)
+                SetSetting(ESettings.Seed, UnityEngine.Random.Range(0, 65535).ToString());
             return int.Parse(m_OperatorData.settings[(int)ESettings.Seed]);
         }
 
@@ -228,7 +377,7 @@ namespace Unity.Muse.Sprite.Operators
             m_OperatorData.enabled = data.enabled;
             if (data.settings == null)
                 return;
-            for(var i = 0; i < data.settings.Length && i < m_OperatorData.settings.Length; i++)
+            for (var i = 0; i < data.settings.Length && i < m_OperatorData.settings.Length; i++)
                 m_OperatorData.settings[i] = data.settings[i];
         }
 
@@ -236,7 +385,7 @@ namespace Unity.Muse.Sprite.Operators
         {
             if ((ServerConfig.serverConfig.debugMode & ServerConfig.EDebugMode.OperatorDebug) > 0)
                 return true;
-            return m_Model.isRefineMode ? false : m_OperatorData.enabled;
+            return m_OperatorData.enabled;
         }
 
         public void ResetNodeList()
@@ -249,9 +398,16 @@ namespace Unity.Muse.Sprite.Operators
             m_OperatorData.enabled = enable;
         }
 
+        public bool Hidden
+        {
+            get => m_Model.isRefineMode || m_Hidden;
+            set => m_Hidden = value;
+        }
+
         public IOperator Clone()
         {
             var result = new SpriteGeneratorSettingsOperator();
+            result.UpdateWithStyleData(s_Styles);
             var operatorData = new OperatorData();
             operatorData.FromJson(GetOperatorData().ToJson());
             result.SetOperatorData(operatorData);
@@ -260,13 +416,34 @@ namespace Unity.Muse.Sprite.Operators
 
         public void RegisterToEvents(Model model)
         {
+            if (s_Styles != null)
+                UpdateWithStyleData(s_Styles);
             m_Model = model;
+
+            StyleTrainerProjectData.instance.data.OnDataChanged += OnStyleProjectDataChanged;
+            for (int i = 0; i < StyleTrainerProjectData.instance.data.styles?.Count; i++)
+            {
+                StyleTrainerProjectData.instance.data.styles[i].OnStateChanged += OnStyleStateChanged;
+                StyleTrainerProjectData.instance.data.styles[i].OnDataChanged += OnStyleStateChanged;
+            }
+
+            model.GetData<DefaultStyleData>().OnModified -= OnGetDefaultStyleModified;
+            model.GetData<DefaultStyleData>().OnModified += OnGetDefaultStyleModified;
         }
 
         public void UnregisterFromEvents(Model model)
         {
-            if(m_Model = model)
+            if (m_Model == model)
                 m_Model = null;
+
+            StyleTrainerProjectData.instance.data.OnDataChanged -= OnStyleProjectDataChanged;
+            for (int i = 0; i < StyleTrainerProjectData.instance.data.styles?.Count; i++)
+            {
+                StyleTrainerProjectData.instance.data.styles[i].OnStateChanged -= OnStyleStateChanged;
+                StyleTrainerProjectData.instance.data.styles[i].OnDataChanged -= OnStyleStateChanged;
+            }
+
+            model.GetData<DefaultStyleData>().OnModified -= OnGetDefaultStyleModified;
         }
 
         public bool IsSavable()
@@ -274,7 +451,7 @@ namespace Unity.Muse.Sprite.Operators
             return true;
         }
 
-
+        public string selectedStyle => m_OperatorData.settings[(int)ESettings.SelectedStyleGuid];
         public string subject => m_OperatorData.settings[(int)ESettings.Subject];
         public Vector2Int imageSize => new Vector2Int(int.Parse(m_OperatorData.settings[(int)ESettings.ImageWidth]), int.Parse(m_OperatorData.settings[(int)ESettings.ImageHeight]));
         public bool scribble => m_OperatorData.settings[(int)ESettings.Scribble] == "1";
@@ -302,10 +479,10 @@ namespace Unity.Muse.Sprite.Operators
             set => m_OperatorData.settings[(int)ESettings.ArtifactID] = value;
         }
 
-        public string checkPointID
+        public string checkPointUsed
         {
-            get => m_OperatorData.settings[(int)ESettings.CheckPointID];
-            set => m_OperatorData.settings[(int)ESettings.CheckPointID] = value;
+            get => m_OperatorData.settings[(int)ESettings.CheckPointUsed];
+            set => m_OperatorData.settings[(int)ESettings.CheckPointUsed] = value;
         }
 
         public void SetSeed(int seed)
@@ -318,9 +495,27 @@ namespace Unity.Muse.Sprite.Operators
             jobID = jobInfoResponse.guid;
             SetSeed(jobInfoResponse.request.settings.seed);
             artifactID = jobInfoResponse.request.inputGuid;
+            SetStyleFromCheckpointId(jobInfoResponse.request.checkpoint_id);
             SetSetting(ESettings.Scribble, jobInfoResponse.request.scribble ? "1" : "0");
             SetSetting(ESettings.RemoveBackground, jobInfoResponse.request.removeBackground ? "1" : "0");
             SetSetting(ESettings.StyleStrength, jobInfoResponse.request.styleStrength.ToString("N2"));
+        }
+
+        void SetStyleFromCheckpointId(string checkPointId)
+        {
+            UpdateWithStyleData(s_Styles);
+
+            foreach (var style in s_Styles)
+            {
+                foreach (var checkPoint in style.checkPoints)
+                {
+                    if (checkPoint.guid == checkPointId)
+                    {
+                        SetSetting(ESettings.SelectedStyleGuid, style.guid);
+                        return;
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -329,8 +524,32 @@ namespace Unity.Muse.Sprite.Operators
         /// <returns> UI for the operator. Set to Null if the operator should not be displayed in the settings view. Disable the returned VisualElement if you want it to be displayed but not usable.</returns>
         public VisualElement GetSettingsView()
         {
-            var description = seedUserSpecified ? $"{TextContent.customSeed}: {seed:00000}." : $"{TextContent.randomSeed}.";
-            return new Text { text = description };
+            var result = new VisualElement();
+            var styleDescription = $"{TextContent.style}: {s_Styles.FirstOrDefault(s => s.guid == selectedStyle)?.title ?? TextContent.styleUndefined}";
+            var styleStrengthDescription = $"{TextContent.styleStrength}: {styleStrength}";
+            var removeBackgroundDescription = $"{TextContent.removeBackground}: {removeBackground}";
+            var seedDescription = seedUserSpecified ? $"{TextContent.customSeed}: {seed:00000}." : $"{TextContent.randomSeed}";
+            result.Add(new Text { text = styleDescription });
+            result.Add(new Text { text = styleStrengthDescription });
+            result.Add(new Text { text = removeBackgroundDescription });
+            result.Add(new Text { text = seedDescription });
+            return result;
+        }
+
+        public void OnBeforeSerialize()
+        {
+            // not needed
+        }
+
+        public void OnAfterDeserialize()
+        {
+            var newOperator = CreateDefaultOperatorData();
+            if (newOperator.settings.Length != m_OperatorData.settings.Length)
+            {
+                for (var i = 0; i < newOperator.settings.Length && i < m_OperatorData.settings.Length; i++)
+                    newOperator.settings[i] = m_OperatorData.settings[i];
+                m_OperatorData = newOperator;
+            }
         }
     }
 }

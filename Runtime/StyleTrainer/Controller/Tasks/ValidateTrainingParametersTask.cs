@@ -31,6 +31,15 @@ namespace Unity.Muse.StyleTrainer
             };
             var config = StyleTrainerConfig.config;
 
+            // Validate style name and description
+            if (string.IsNullOrWhiteSpace(m_StyleData.title) || string.IsNullOrWhiteSpace(m_StyleData.description))
+            {
+                showDialogEvent.description = $"Version's name and description cannot be empty.";
+                m_EventBus.SendEvent(showDialogEvent);
+                m_OnDoneCallback.Invoke(false);
+                return;
+            }
+
             // validate sample output
             if (m_StyleData.sampleOutputData?.Count < config.minSampleSetSize)
             {
@@ -86,7 +95,7 @@ namespace Unity.Muse.StyleTrainer
             for (var i = 0; i < m_StyleData.sampleOutputData?.Count; ++i)
             {
                 var prompt1 = m_StyleData.sampleOutputData[i].prompt;
-                if (string.IsNullOrEmpty(prompt1))
+                if (string.IsNullOrWhiteSpace(prompt1))
                 {
                     showDialogEvent.description = $"Sample output cannot have empty prompts.";
                     showDialogEvent.confirmAction = () =>

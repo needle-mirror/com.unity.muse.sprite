@@ -95,11 +95,19 @@ namespace Unity.Muse.Sprite.Operators
         /// </summary>
         public string Label => "Input Image";
 
-        public bool Enabled() => m_Model.isRefineMode ? false : m_OperatorData.enabled;
+        public bool Enabled() => m_OperatorData.enabled;
 
         public void Enable(bool enable)
         {
             m_OperatorData.enabled = enable;
+        }
+
+        bool m_Hidden;
+
+        public bool Hidden
+        {
+            get => m_Model.isRefineMode || m_Hidden;
+            set => m_Hidden = value;
         }
 
         public VisualElement GetCanvasView()
@@ -193,7 +201,7 @@ namespace Unity.Muse.Sprite.Operators
             m_SpriteTextureDropManipulator.onDragEnd += () => UI.EnableInClassList(acceptDragClassName, false);
             m_ImageContainer.AddManipulator(m_SpriteTextureDropManipulator);
 
-            m_MaskTightness = new TouchSliderFloat();
+            m_MaskTightness = new TouchSliderFloat { tooltip = TextContent.operatorTightnessTooltip };
             m_MaskTightness.name = "mask-tightness-slider";
             m_MaskTightness.AddToClassList("bottom-gap");
             m_MaskTightness.label = "Tightness";
@@ -213,7 +221,7 @@ namespace Unity.Muse.Sprite.Operators
 
         internal bool HasReference() => string.IsNullOrEmpty(GetReferenceImage());
 
-        internal bool HasDoodle() => !m_DoodlePadManipulator.isClear;
+        internal bool HasDoodle() => m_DoodlePadManipulator != null && !m_DoodlePadManipulator.isClear;
 
         /// <summary>
         /// Get the settings view for this operator.

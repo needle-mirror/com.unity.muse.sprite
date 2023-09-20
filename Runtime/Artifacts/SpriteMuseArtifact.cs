@@ -24,8 +24,6 @@ namespace Unity.Muse.Sprite.Artifacts
         string m_JobStatus = string.Empty;
         ArtifactCreationDelegate m_ArtifactCreationDelegate;
         Model m_Model;
-        public Func<EventBus> GetEventBus = () => null;
-        public event Action OnEventBusInjected;
         bool m_Disposing = false;
 
         public SpriteMuseArtifact(string guid, uint seed)
@@ -42,12 +40,6 @@ namespace Unity.Muse.Sprite.Artifacts
             m_GetJobRestCall?.Dispose();
             m_GetArtifactRestCall?.Dispose();
             m_SpriteGenerateCall?.Dispose();
-        }
-
-        public void InjectEventBus(Func<EventBus> getEventBus)
-        {
-            GetEventBus = getEventBus;
-            OnEventBusInjected?.Invoke();
         }
 
         public string jobStatus => m_JobStatus;
@@ -82,9 +74,11 @@ namespace Unity.Muse.Sprite.Artifacts
 
         void OnGetJobFailed(GetJobRestCall obj)
         {
-            Debug.LogError($"TextToSpriteController.OnGetJobFailed: Result: {obj.requestResult} Error:{obj.requestError} Retry {m_GetJobRestCall.retries}");
-            if(m_GetJobRestCall.retriesFailed)
+            if (m_GetJobRestCall.retriesFailed)
+            {
+                Debug.LogError($"TextToSpriteController.OnGetJobFailed: Result: {obj.requestResult} Error:{obj.requestError} Retry {m_GetJobRestCall.retries}");
                 NotifyErrorGettingArtifact();
+            }
             else if (m_Disposing)
                 m_GetJobRestCall.maxRetries = 0;
         }
@@ -103,7 +97,7 @@ namespace Unity.Muse.Sprite.Artifacts
             }
             else if (arg2.status == SpriteGenerateRestCall.Status.failed)
             {
-                Debug.LogError($"Job failed:{Guid}");
+                Debug.LogError($"TextToSpriteController.OnGetJobFailed: Result: {arg1.requestResult} Error:{arg1.requestError} Retry {m_GetJobRestCall.retries}");
                 NotifyErrorGettingArtifact();
             }
             else if(!m_Disposing)
@@ -112,9 +106,11 @@ namespace Unity.Muse.Sprite.Artifacts
 
         void OnGetArtifactFailed(GetArtifactRestCall request)
         {
-            Debug.LogError($"TextToSpriteController.OnGetArtifactFailed: Result: {request.requestResult} Error:{request.requestError} Retry {m_GetArtifactRestCall.retries}");
-            if(m_GetArtifactRestCall.retriesFailed)
+            if (m_GetArtifactRestCall.retriesFailed)
+            {
+                Debug.LogError($"TextToSpriteController.OnGetArtifactFailed: Result: {request.requestResult} Error:{request.requestError} Retry {m_GetArtifactRestCall.retries}");
                 NotifyErrorGettingArtifact();
+            }
             else if (m_Disposing)
                 m_GetArtifactRestCall.maxRetries = 0;
         }
@@ -132,10 +128,10 @@ namespace Unity.Muse.Sprite.Artifacts
 
         public override Texture2D ConstructFromData(byte[] data)
         {
-            Texture2D tex = new Texture2D(2, 2);
+            Texture2D tex = TextureUtils.Create();
             tex.LoadImage(data);
             tex.Apply();
-            tex.hideFlags = HideFlags.HideAndDontSave;
+
             return tex;
         }
 
@@ -211,7 +207,6 @@ namespace Unity.Muse.Sprite.Artifacts
         public override void Generate(Model model)
         {
             m_Model = model;
-            InjectEventBus(model.GetData<EventBus>);
             if (model.isRefineMode)
             {
                 var refineArtifact = new SpriteRefinerArtifact();
@@ -225,13 +220,18 @@ namespace Unity.Muse.Sprite.Artifacts
             }
         }
 
+        public override void RetryGenerate(Model model)
+        {
+           Generate(model);
+        }
+
         void RefineSpriteDone(string id, uint seed)
         {
             Guid = id;
             var sgo = m_Operators.GetOperator<SpriteGeneratorSettingsOperator>();
             sgo.jobID = id;
             Seed = seed;
-            OnGenerationDone?.Invoke();
+            OnGenerationDone?.Invoke(this, null);
         }
 
         public void Generate(GenerateCountData generateCountData)
@@ -254,10 +254,13 @@ namespace Unity.Muse.Sprite.Artifacts
                 else if (operators[i] is SpriteGeneratorSettingsOperator sgo)
                 {
                     spriteGenerationOperator = sgo;
+                    var checkpointGuid = spriteGenerationOperator.GetSelectedStyleCheckpointGuid();
+                    request.checkpoint_id = checkpointGuid;
                     if (spriteGenerationOperator.seedUserSpecified)
                         spriteGenerationOperator.SetSeed(spriteGenerationOperator.seed + generateCountData.GetAndIncrementCount());
                     else
                         spriteGenerationOperator.RandomSeed();
+                    spriteGenerationOperator.checkPointUsed = checkpointGuid;
                     request.removeBackground = spriteGenerationOperator.removeBackground;
                     request.styleStrength = spriteGenerationOperator.styleStrength;
                     var imageSize = spriteGenerationOperator.imageSize;
@@ -266,14 +269,8 @@ namespace Unity.Muse.Sprite.Artifacts
                     request.settings.seed = spriteGenerationOperator.seed;
                     request.settings.model = serverConfig.model;
                     request.settings.strength = spriteGenerationOperator.styleStrength;
-                    // request.model_guid = serverConfig.model_guid;
                     request.settings.seamless = false;
                     spriteGenerationOperator.Enable(true);
-                }
-                else if (operators[i] is StyleSelectionOperator styleSelectionOperator)
-                {
-                    var checkpointGuid = styleSelectionOperator.GetSelectedStyleCheckpointGuid();
-                    request.checkpoint_id = checkpointGuid;
                 }
                 else if (operators[i] is KeyImageOperator keyImageOperator)
                 {
@@ -302,7 +299,6 @@ namespace Unity.Muse.Sprite.Artifacts
             request.simulate = serverConfig.simulate;
             if (spriteGenerationOperator != null)
             {
-                spriteGenerationOperator.checkPointID = request.checkpoint_id;
                 if(string.IsNullOrEmpty(request.base64Image))
                     m_SpriteGenerateCall = new SpriteGenerateRestCall(serverConfig, request, sessionId);
                 else
@@ -380,7 +376,6 @@ namespace Unity.Muse.Sprite.Artifacts
 
         void OnSpriteGenerateSuccess(SpriteGenerateRestCall arg1, GenerateResponse arg2)
         {
-            //Debug.LogError($"TextToSpriteController.OnSpriteGenerateSuccess {arg2.jobID}");
             var operators = GetOperators();
             for (int i = 0; i < operators.Count; ++i)
             {
@@ -393,13 +388,11 @@ namespace Unity.Muse.Sprite.Artifacts
 
             Guid = arg2.jobID;
             Seed = (uint)arg1.request.settings.seed;
-            OnGenerationDone?.Invoke();
+            OnGenerationDone?.Invoke(this, null);
         }
 
         void OnSpriteGenerateFailed(SpriteGenerateRestCall obj)
         {
-            Debug.LogError($"TextToSpriteController.OnSpriteGenerateFailed: Result: {obj.requestResult} Error:{obj.requestError} Retry:{m_SpriteGenerateCall.retries} {obj.errorMessage}");
-
             if (m_SpriteGenerateCall.retries == 1 && obj.requestError.Contains("HTTP/1.1 403 Forbidden") && m_Model != null)
             {
                 m_Model.ForbiddenAccess();
@@ -407,8 +400,9 @@ namespace Unity.Muse.Sprite.Artifacts
 
             if (m_SpriteGenerateCall.retriesFailed)
             {
+                Debug.LogError($"TextToSpriteController.OnSpriteGenerateFailed: Result: {obj.requestResult} Error:{obj.requestError} Retry:{m_SpriteGenerateCall.retries} {obj.errorMessage}");
                 Guid = "Error-" + System.Guid.NewGuid().ToString();
-                OnGenerationDone?.Invoke();
+                OnGenerationDone?.Invoke(this, obj.requestError);
             }else if (m_Disposing)
                 m_SpriteGenerateCall.maxRetries = 0;
         }

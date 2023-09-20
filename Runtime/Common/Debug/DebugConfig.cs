@@ -3,6 +3,10 @@ using System.IO;
 using Unity.Muse.Sprite.Common.Backend;
 using UnityEngine;
 
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
+
 namespace Unity.Muse.Sprite.Common.DebugConfig
 {
     //[CreateAssetMenu(fileName = "DebugConfig.asset", menuName = "Muse/Sprite/DebugConfig")]
@@ -79,6 +83,16 @@ namespace Unity.Muse.Sprite.Common.DebugConfig
         {
 #if UNITY_EDITOR
             UnityEditor.EditorUtility.RevealInFinder(k_LogFilePath);
+#endif
+        }
+
+        public static bool developerMode
+        {
+            get =>
+#if UNITY_EDITOR
+                Unsupported.IsDeveloperMode();
+#else
+                false;
 #endif
         }
     }

@@ -293,12 +293,18 @@ namespace Unity.Muse.StyleTrainer
 
         void OnNameChanged(ChangeEvent<string> evt)
         {
-            m_StyleData.title = evt.newValue;
+            if(!string.IsNullOrWhiteSpace(evt.newValue))
+                m_StyleData.title = evt.newValue;
+            else
+                m_Name.SetValueWithoutNotify(m_StyleData.title);
         }
 
         void OnDescriptionChanged(ChangeEvent<string> evt)
         {
-            m_StyleData.description = evt.newValue;
+            if(!string.IsNullOrWhiteSpace(evt.newValue))
+                m_StyleData.description = evt.newValue;
+            else
+                m_Description.SetValueWithoutNotify(m_StyleData.description);
         }
 
         string GetCheckPointIcon(CheckPointData checkPoint)

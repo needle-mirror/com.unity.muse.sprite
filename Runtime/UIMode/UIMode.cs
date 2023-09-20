@@ -20,12 +20,14 @@ namespace Unity.Muse.Sprite.UIMode
             m_Model = m_MainUI.model;
             m_Model.OnGenerateButtonClicked += OnGenerateButtonClicked;
             m_Model.OnSetOperatorDefaults += OnSetOperatorDefault;
+            m_Model.GetData<DefaultStyleData>().Reset();
         }
 
         public void Deactivate()
         {
             m_Model.OnGenerateButtonClicked -= OnGenerateButtonClicked;
             m_Model.OnSetOperatorDefaults -= OnSetOperatorDefault;
+            m_Model.GetData<DefaultStyleData>().Reset();
         }
 
         void OnGenerateButtonClicked()
@@ -44,7 +46,6 @@ namespace Unity.Muse.Sprite.UIMode
                     var newOp = op switch
                     {
                         SpriteGeneratorSettingsOperator => m_Model.SelectedArtifact.GetOperator<SpriteGeneratorSettingsOperator>().Clone() ?? op,
-                        StyleSelectionOperator => m_Model.SelectedArtifact.GetOperator<StyleSelectionOperator>().Clone() ?? op,
                         SessionOperator => m_Model.SelectedArtifact.GetOperator<SessionOperator>().Clone() ?? op,
                         _ => op
                     };

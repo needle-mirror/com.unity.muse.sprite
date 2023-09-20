@@ -1,4 +1,5 @@
 using System;
+using Unity.Muse.Sprite.Common.DebugConfig;
 using Unity.Muse.StyleTrainer.Debug;
 using UnityEditor;
 using UnityEngine;
@@ -56,7 +57,7 @@ namespace Unity.Muse.StyleTrainer.Editor
         public void CreateInspectorUI(VisualElement element)
         {
             VisualElement imguiContainer;
-            if (StyleTrainerDebug.developerMode)
+            if (DebugConfig.developerMode)
                 imguiContainer = new IMGUIContainer(DeveloperUI);
             else
                 imguiContainer = new IMGUIContainer(ReleaseUI);

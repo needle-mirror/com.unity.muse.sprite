@@ -44,6 +44,8 @@ namespace Unity.Muse.Sprite.Operators
             m_OperatorData.enabled = enable;
         }
 
+        public bool Hidden { get; set; }
+
         public VisualElement GetCanvasView()
         {
             Debug.Log("SessionOperator.GetCanvasView()");
@@ -178,7 +180,6 @@ namespace Unity.Muse.Sprite.Operators
         SpriteMuseArtifact LoadFromJobInfo(GetJobRestCall arg1, JobInfoResponse jir)
         {
             var artifact = new SpriteMuseArtifact();
-            artifact.InjectEventBus(m_Model.GetData<EventBus>);
             artifact.Guid = jir.guid;
             artifact.Seed = (uint)jir.request.settings.seed;
             m_JobIdMapping[arg1.jobID] = artifact;

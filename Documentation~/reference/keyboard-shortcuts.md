@@ -19,4 +19,3 @@ The following table describes the keyboard shortcuts for the **Muse Sprite** too
 
 * [Generate sprites](xref:generate)
 * [Refine with masking](xref:refine)
-* [Tool reference](xref:tool-reference)

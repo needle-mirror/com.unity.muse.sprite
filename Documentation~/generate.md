@@ -17,4 +17,4 @@ The Muse Sprite Generator uses machine learning to generate sprites based on a p
 ## Additional resources
 
 * [Refine with masking](xref:refine)
-* [Tool reference](xref:tool-reference)
+* [Tool reference](xref:reference)

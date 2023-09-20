@@ -168,9 +168,7 @@ namespace Unity.Muse.StyleTrainer
             scrollView.contentContainer.usageHints &= ~UsageHints.GroupTransform; // Scroll views with virtualized content shouldn't have the "view transform" optimization
 
             focusable = true;
-
             m_Dragger = new GridViewDragger(OnDraggerStarted, OnDraggerMoved, OnDraggerEnded, OnDraggerCanceled);
-            this.AddManipulator(m_Dragger);
         }
 
         /// <summary>
@@ -191,6 +189,13 @@ namespace Unity.Muse.StyleTrainer
             m_BindItem = bindItem;
 
             operationMask = ~GridOperation.None;
+        }
+
+        public void SupportDrag(bool drag)
+        {
+            this.RemoveManipulator(m_Dragger);
+            if (drag)
+                this.AddManipulator(m_Dragger);
         }
 
         bool Apply(GridOperation operation, bool shiftKey)

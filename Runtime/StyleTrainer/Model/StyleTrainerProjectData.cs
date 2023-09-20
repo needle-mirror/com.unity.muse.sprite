@@ -9,6 +9,7 @@ using System.Linq;
 using Unity.Muse.StyleTrainer.Debug;
 using UnityEngine;
 using UnityEngine.Scripting;
+using UnityEngine.Serialization;
 
 namespace Unity.Muse.StyleTrainer
 {
@@ -19,6 +20,9 @@ namespace Unity.Muse.StyleTrainer
     {
         [SerializeReference]
         StyleTrainerData m_StyleTrainerData;
+        [FormerlySerializedAs("m_DefaultProjectData")]
+        [SerializeReference]
+        StyleTrainerData m_DefaultStyleData = new StyleTrainerData(EState.New);
 
         [SerializeField]
         ulong m_DefaultStyleVersion;
@@ -52,7 +56,37 @@ namespace Unity.Muse.StyleTrainer
 
         public StyleTrainerData data => m_StyleTrainerData;
 
-        public IReadOnlyList<StyleData> defaultStyles
+
+        public IReadOnlyList<StyleData> GetDefaultStyles(Action<IReadOnlyList<StyleData>> onDone, bool cache)
+        {
+            if (m_DefaultStyleData.state == EState.Loaded && cache)
+            {
+                var buildStyleList = GetDefaultStyles();
+                onDone(buildStyleList);
+            }
+            else if(m_DefaultStyleData.state != EState.Loading)
+            {
+                var getDefaultStyle = new RetrieveDefaultStyleTask();
+                getDefaultStyle.Execute(m_DefaultStyleData, () =>
+                {
+                    var buildStyleList = GetDefaultStyles();
+                    onDone(buildStyleList);
+                });
+            }
+
+            return builtInStyles;
+        }
+
+        IReadOnlyList<StyleData> GetDefaultStyles()
+        {
+            IReadOnlyList<StyleData> serverDefaultStyles = m_DefaultStyleData.styles.Where(s => s.state == EState.Loaded && s.visible && s.checkPoints != null && s.checkPoints.Any(c => c.state == EState.Loaded)).ToList();
+            if (serverDefaultStyles.Count == 0)
+                return builtInStyles;
+
+            return serverDefaultStyles;
+        }
+
+        IReadOnlyList<StyleData> builtInStyles
         {
             get
             {
@@ -63,11 +97,6 @@ namespace Unity.Muse.StyleTrainer
                 }
                 return m_DefaultStyles;
             }
-        }
-
-        public void AddStyle(StyleData style)
-        {
-            m_StyleTrainerData.AddStyle(style);
         }
 
         internal void Init()

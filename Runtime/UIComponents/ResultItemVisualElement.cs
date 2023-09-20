@@ -17,8 +17,6 @@ namespace Unity.Muse.Sprite.UIComponents
         ActionButton m_EditButton;
         ActionButton m_ActionButton;
         private VisualElement m_ButtonContainer;
-
-        Func<EventBus> GetEventBus;
         ActionButton m_BookmarkButton;
 
         public SpriteMuseArtifactResultView(Artifact artifact)
@@ -26,19 +24,12 @@ namespace Unity.Muse.Sprite.UIComponents
         {
             EnableInClassList("no-mouse", !Input.mousePresent);
 
-
-            if (artifact is SpriteMuseArtifact spriteMuseArtifact)
-            {
-                spriteMuseArtifact.OnEventBusInjected += OnEventBusInjected;
-                OnEventBusInjected();
-            }
-
             m_ButtonContainer = new VisualElement();
             m_ButtonContainer.AddToClassList("muse-asset-image__control-buttons-container");
 
             styleSheets.Add(Resources.Load<StyleSheet>("uss/Bookmark"));
 
-            m_EditButton = new ActionButton { name="refine", icon = "pen", tooltip = "Refine this sprite" };
+            m_EditButton = new ActionButton { name="refine", icon = "pen", tooltip = Muse.Common.TextContent.refineTooltip };
             m_EditButton.AddToClassList("refine-button");
             m_EditButton.AddToClassList("refine-button-item");
             m_EditButton.clicked += OnRefineClicked;
@@ -58,9 +49,7 @@ namespace Unity.Muse.Sprite.UIComponents
             m_BookmarkButton.AddToClassList("refine-button");
             m_ButtonContainer.Add(m_BookmarkButton);
 
-
             m_PreviewImage.OnLoadedPreview += UpdateView;
-            RegisterCallback<DetachFromPanelEvent>(OnDetachedFromPanel);
             RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
         }
 
@@ -88,28 +77,8 @@ namespace Unity.Muse.Sprite.UIComponents
         {
             UpdateBookmark();
             UpdateView();
-            if (Artifact is SpriteMuseArtifact spriteMuseArtifact)
-            {
-                spriteMuseArtifact.OnEventBusInjected += OnEventBusInjected;
-                OnEventBusInjected();
-            }
         }
 
-        void OnDetachedFromPanel(DetachFromPanelEvent evt)
-        {
-            if (Artifact is SpriteMuseArtifact spriteMuseArtifact)
-            {
-                spriteMuseArtifact.OnEventBusInjected -= OnEventBusInjected;
-            }
-        }
-
-        void OnEventBusInjected()
-        {
-            if (Artifact is SpriteMuseArtifact spriteMuseArtifact)
-            {
-                GetEventBus = spriteMuseArtifact.GetEventBus;
-            }
-        }
 
         public override bool TryGoToRefineMode()
         {
@@ -166,7 +135,7 @@ namespace Unity.Muse.Sprite.UIComponents
         {
             var actions = new List<ContextMenuAction>();
 
-            if (Artifact != null && Artifact is Artifacts.SpriteMuseArtifact spriteMuseArtifact)
+            if (Artifact is SpriteMuseArtifact spriteMuseArtifact)
             {
                 if (CurrentModel.isRefineMode)
                 {
@@ -174,7 +143,7 @@ namespace Unity.Muse.Sprite.UIComponents
                     {
                         id = (int)Actions.SetAsThumbnail,
                         label = "Set as Thumbnail",
-                        enabled = !context.isMultiSelect
+                        enabled = !context.isMultiSelect && !CurrentModel.IsThumbnail(Artifact)
                     });
 
                     actions.Add(new ContextMenuAction
@@ -192,6 +161,16 @@ namespace Unity.Muse.Sprite.UIComponents
                     enabled = !context.isMultiSelect
                 });
 
+                actions.Add(new ContextMenuAction
+                {
+                    // Context menu Delete is available even if the generation is not ready yet, it's to have the option
+                    // to delete the item when there is an error with the generation, otherwise, delete was only
+                    // available with the keyboard shortcut
+                    enabled = true,
+                    id = (int)Actions.Delete,
+                    label = context.isMultiSelect ? Unity.Muse.Common.TextContent.deleteMultiple : Unity.Muse.Common.TextContent.deleteSingle
+                });
+
                 if (context.selectedArtifacts.Any(view => ArtifactCache.IsInCache(view.Artifact)))
                 {
                     actions.Add(new ContextMenuAction
@@ -200,12 +179,7 @@ namespace Unity.Muse.Sprite.UIComponents
                         id = (int)Actions.Save,
                         label = context.isMultiSelect ? Unity.Muse.Common.TextContent.exportMultiple : Unity.Muse.Common.TextContent.exportSingle
                     });
-                    actions.Add(new ContextMenuAction
-                    {
-                        enabled = true,
-                        id = (int)Actions.Delete,
-                        label = context.isMultiSelect ? Unity.Muse.Common.TextContent.deleteMultiple : Unity.Muse.Common.TextContent.deleteSingle
-                    });
+
                     if (context.isMultiSelect)
                     {
                         actions.Add(new ContextMenuAction
@@ -271,7 +245,7 @@ namespace Unity.Muse.Sprite.UIComponents
                         var log = $"JobID:{spriteMuseArtifact?.Guid}\n" +
                             $"Session:{session?.GetSessionID()}\n" +
                             $"ArtifactID:{sgs?.artifactID}\n" +
-                            $"CheckPointID:{sgs?.checkPointID}\n" +
+                            $"CheckPointID:{sgs?.checkPointUsed}\n" +
                             $"job Status:{spriteMuseArtifact.jobStatus}";
                         ShowDialog(log);
 #endif

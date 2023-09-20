@@ -10,7 +10,7 @@ namespace Unity.Muse.Sprite.Tools
 #endif
         public static void RegisterTools()
         {
-            AvailableToolsFactory.RegisterTool<SpriteRefinerBrushTool>();
+            AvailableToolsFactory.RegisterTool<SpriteRefinerBrushTool>(UIMode.UIMode.modeKey);
         }
     }
 }

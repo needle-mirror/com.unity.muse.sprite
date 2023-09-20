@@ -1,7 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using Unity.Collections;
 using Unity.Muse.Common;
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
@@ -18,6 +18,14 @@ namespace Unity.Muse.Sprite.Common.Backend
 {
     internal static class BackendUtilities
     {
+        struct RequestQueue
+        {
+            public UnityWebRequest request;
+            public Action<UnityWebRequest> onDone;
+        }
+        static Queue<RequestQueue> s_Requests = new Queue<RequestQueue>();
+        static int s_RequestCount = 0;
+        const int k_MaxRequest = 10;
         public static UnityWebRequest SendRequest<T>(string url, T data, Action<UnityWebRequest> onDone, string method = "POST")
         {
             var request = new UnityWebRequest(url, method);
@@ -30,34 +38,45 @@ namespace Unity.Muse.Sprite.Common.Backend
             }
 
             request.downloadHandler = new DownloadHandlerBuffer();
-
-            AsyncOperation operation = request.SendWebRequest();
-            operation.completed += _ =>
-            {
-                try
-                {
-                    onDone(request);
-                }
-                finally
-                {
-                    request.uploadHandler?.Dispose();
-                    request.downloadHandler?.Dispose();
-                    request.Dispose();
-                }
-            };
+            SendRequest(request, onDone);
             return request;
         }
 
-        public static string ConvertTextureToPNGBase64(Texture2D t)
+        static void SendRequest(UnityWebRequest request, Action<UnityWebRequest> onDone)
         {
-            if (t == null)
-                return "";
-            if (!t.isReadable)
-                t = CreateTemporaryDuplicate(t, t.width, t.height);
-            var s = System.Convert.ToBase64String(t.EncodeToPNG());
-            return s;
+            if(s_RequestCount >= k_MaxRequest)
+            {
+                s_Requests.Enqueue(new RequestQueue
+                {
+                    request = request,
+                    onDone = onDone
+                });
+            }
+            else
+            {
+                ++s_RequestCount;
+                AsyncOperation operation = request.SendWebRequest();
+                operation.completed += _ =>
+                {
+                    try
+                    {
+                        --s_RequestCount;
+                        onDone(request);
+                    }
+                    finally
+                    {
+                        request.uploadHandler?.Dispose();
+                        request.downloadHandler?.Dispose();
+                        request.Dispose();
+                        if (s_Requests.Count > 0 && s_RequestCount < k_MaxRequest)
+                        {
+                            var newRequest = s_Requests.Dequeue();
+                            SendRequest(newRequest.request, newRequest.onDone);
+                        }
+                    }
+                };
+            }
         }
-
         public static Texture2D CreateTemporaryDuplicate(Texture2D original, int width, int height, TextureFormat format = TextureFormat.RGBA32)
         {
             //if (!ShaderUtil.hardwareSupportsRectRenderTexture || !(bool)(UnityEngine.Object)original)

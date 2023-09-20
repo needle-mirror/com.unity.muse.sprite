@@ -120,14 +120,15 @@ namespace Unity.Muse.StyleTrainer
             base.OnDispose();
         }
 
+        bool IsSharedTexture()
+        {
+            return m_Cache?.Guid == k_PlaceHolderGUID ||
+                m_Cache?.Guid == k_ErrorTextureGUID ||
+                m_Cache?.Guid == k_ForbiddenTextureGUID;
+        }
         void DisposeCache()
         {
-            if (state == EState.New &&
-                m_Cache?.Guid != k_PlaceHolderGUID &&
-                m_Cache?.Guid != k_ErrorTextureGUID &&
-                m_Cache?.Guid != k_ForbiddenTextureGUID)
-                m_Cache?.Dispose();
-            if (state == EState.Loaded)
+            if ((state == EState.New || state == EState.Loaded) && !IsSharedTexture())
                 m_Cache?.Dispose();
         }
 

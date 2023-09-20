@@ -85,7 +85,7 @@ namespace Unity.Muse.Sprite.UIComponents
 
         public void SetValueWithoutNotify(byte[] newValue)
         {
-            m_DoodlePad.SetValueWithoutNotify(newValue);
+            m_DoodlePad?.SetValueWithoutNotify(newValue);
         }
 
         public event Action<DoodleModifierState> onModifierStateChanged;

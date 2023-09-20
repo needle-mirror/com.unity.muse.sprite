@@ -409,6 +409,10 @@ namespace Unity.Muse.StyleTrainer
                 if (m_StyleTrainerData.version != StyleTrainerData.k_Version
                     || m_StyleTrainerData.state == EState.Initial)
                     OnLoadStyleProject(new LoadStyleProjectEvent());
+                else
+                {
+                    m_StyleTrainerData.GetArtifact(_ => { }, true);
+                }
             }
         }
 

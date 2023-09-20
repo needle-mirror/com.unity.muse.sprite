@@ -26,6 +26,7 @@ namespace StyleTrainer.Backend
         }
 
         public StyleTrainerData project;
+        public StyleTrainerData defaultStyleProject;
         public List<TrainingSetData> trainingSetData = new();
         public List<MockImageArtifact> imageArtifacts = new();
         public List<StylePrompt> stylePrompts = new();
@@ -39,6 +40,31 @@ namespace StyleTrainer.Backend
             trainingSetData = new List<TrainingSetData>();
             imageArtifacts = new List<MockImageArtifact>();
             stylePrompts = new List<StylePrompt>();
+            InitDefaultStyleProjectMockData();
+        }
+
+        void InitDefaultStyleProjectMockData()
+        {
+            defaultStyleProject = new StyleTrainerData(EState.Initial);
+            defaultStyleProject.guid = "MOCK-DEFAULT-PROJECT-GUID";
+            var s = new StyleData(EState.Initial, "MOCK-DEFAULT-PROJECT-GUID-Style-1", Utilities.emptyGUID, defaultStyleProject.guid);
+            s.visible = true;
+            while(s.checkPoints.Count > 0)
+            {
+                s.RemoveCheckPointAt(0);
+            }
+            s.AddCheckPoint(new CheckPointData(EState.Initial, "MOCK-DEFAULT-PROJECT-GUID-Style-1-CheckPoint-1", Utilities.emptyGUID)
+            {
+                name = "Mock Checkpoint 1",
+                description = "Mock Checkpoint 1 Description",
+            });
+
+            s.AddCheckPoint(new CheckPointData(EState.Initial, "MOCK-DEFAULT-PROJECT-GUID-Style-1-CheckPoint-2", Utilities.emptyGUID)
+            {
+                name = "Mock Checkpoint 2",
+                description = "Mock Checkpoint 2 Description",
+            });
+            defaultStyleProject.AddStyle(s);
         }
 
         public void Init()
@@ -48,6 +74,7 @@ namespace StyleTrainer.Backend
                 project = new StyleTrainerData(EState.Initial);
                 project.Init();
             }
+            InitDefaultStyleProjectMockData();
         }
 
         public CreateStyleResponse CreateStyleRestCallMock(CreateStyleRequest req)
@@ -73,12 +100,13 @@ namespace StyleTrainer.Backend
             instance.Save(false);
         }
 
-        public GetStylesResponse GetStylesRestCallMock(GetStylesRequest _)
+        public GetStylesResponse GetStylesRestCallMock(GetStylesRequest req)
         {
+            var p = req.guid == defaultStyleProject.guid ? defaultStyleProject : project;
             var res = new GetStylesResponse
             {
                 success = true,
-                styleIDs = project.styles.Select(style => style.guid).ToArray()
+                styleIDs = p.styles.Select(style => style.guid).ToArray()
             };
             return res;
         }
@@ -97,7 +125,8 @@ namespace StyleTrainer.Backend
 
         public GetStyleResponse GetStyleRestCallMock(GetStyleRequest req)
         {
-            var d = project.styles.FirstOrDefault(x => x.guid == req.guid);
+            var p = req.guid == defaultStyleProject.guid ? defaultStyleProject : project;
+            var d = p.styles.FirstOrDefault(x => x.guid == req.style_guid);
             if (d != null)
             {
                 var res = new GetStyleResponse
@@ -108,7 +137,8 @@ namespace StyleTrainer.Backend
                     name = d.title,
                     prompts = d.sampleOutputData.Select(sampleOutput => sampleOutput.prompt).ToArray(),
                     success = true,
-                    trainingsetIDs = trainingSetData.ConvertAll(x => x.guid).ToArray()
+                    trainingsetIDs = trainingSetData.ConvertAll(x => x.guid).ToArray(),
+                    state = d.visible ? SetStyleStateRestCall.activeState : SetStyleStateRestCall.inactiveState
                 };
                 return res;
             }
@@ -203,16 +233,17 @@ namespace StyleTrainer.Backend
 
         public GetCheckPointResponse GetCheckPointRestCallMock(GetCheckPointRequest req)
         {
-            for (var i = 0; i < project.styles.Count; ++i)
+            var p = req.guid == defaultStyleProject.guid ? defaultStyleProject : project;
+            for (var i = 0; i < p.styles.Count; ++i)
             {
-                var checkpoint = project.styles[i].checkPoints.FirstOrDefault(x => x.guid == req.checkpoint_guid);
-                var styleId = project.styles[i].guid;
+                var checkpoint = p.styles[i].checkPoints.FirstOrDefault(x => x.guid == req.checkpoint_guid);
+                var styleId = p.styles[i].guid;
                 if (checkpoint != null)
                 {
                     var res = new GetCheckPointResponse
                     {
                         success = true,
-                        asset_id = project.guid,
+                        asset_id = p.guid,
                         styleID = styleId,
                         trainingsetID = checkpoint.trainingSetData.guid,
                         checkpointID = checkpoint.guid,
@@ -290,6 +321,16 @@ namespace StyleTrainer.Backend
                 url = request.guid,
                 success = true
             };
+        }
+
+        public GetDefaultStyleProjectResponse GetDefaultStyleProject(GetDefaultStyleProjectRequest request)
+        {
+            var res = new GetDefaultStyleProjectResponse
+            {
+                success = true,
+                guid = defaultStyleProject.guid
+            };
+            return res;
         }
     }
 }

@@ -360,9 +360,42 @@ namespace StyleTrainer.Backend
 
         protected override void OnMockResponse()
         {
-
+            throw new NotImplementedException();
         }
     }
+
+    class GetDefaultStyleProjectRestCall : StyleTrainerRestCall<GetDefaultStyleProjectRequest, GetDefaultStyleProjectResponse, GetDefaultStyleProjectRestCall>
+    {
+        public GetDefaultStyleProjectRestCall(ServerConfig asset, GetDefaultStyleProjectRequest request)
+            : base(asset, request)
+        {
+            request.access_token = asset.accessToken;
+            this.request = request;
+        }
+
+        public override string endPoint => "/api/v1/sprite/default_project";
+
+        public override IQuarkEndpoint.EMethod method => IQuarkEndpoint.EMethod.POST;
+
+        protected override void OnMockResponse()
+        {
+            OnSuccess(mockData.GetDefaultStyleProject(request));
+        }
+    }
+
+    [Serializable]
+    record GetDefaultStyleProjectResponse
+    {
+        public bool success;
+        public string guid;
+    }
+
+    [Serializable]
+    record GetDefaultStyleProjectRequest
+    {
+        public string access_token;
+    }
+
 
     [Serializable]
     record GetCheckPointStatusResponse
@@ -523,6 +556,7 @@ namespace StyleTrainer.Backend
     {
         public string guid;
         public bool success;
+        public string error;
     }
 
     [Serializable]
@@ -554,6 +588,7 @@ namespace StyleTrainer.Backend
     {
         public string guid;
         public bool success;
+        public string error;
     }
 
     [Serializable]

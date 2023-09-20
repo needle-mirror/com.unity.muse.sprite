@@ -13,7 +13,7 @@ The Muse Sprite Generator is a tool that uses machine learning to generate [spri
 > [!TIP]
 > When possible, dock the **Muse Generator** window. This keeps you from losing the window and launching it multiple times.
 
-## Generate sprites
+## Generate sprites from a prompt
 
 1. Enter a [prompt](xref:write-prompt).
 1. To set the number of sprites to generate, move the **Images** slider or enter a number in the **Images** field.

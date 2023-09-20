@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using StyleTrainer.Backend;
 using Unity.Muse.Sprite.Common.Backend;
+using Unity.Muse.Sprite.Common.DebugConfig;
 using UnityEditor;
 using UnityEditor.ProjectWindowCallback;
 using UnityEngine;
@@ -229,7 +230,7 @@ namespace Unity.Muse.StyleTrainer.Editor
         public void CreateInspectorUI(VisualElement element)
         {
             VisualElement imguiContainer;
-            if (Debug.StyleTrainerDebug.developerMode)
+            if (DebugConfig.developerMode)
                 imguiContainer = new IMGUIContainer(DeveloperUI);
             else
                 imguiContainer = new IMGUIContainer(ReleaseUI);

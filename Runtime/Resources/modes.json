@@ -40,12 +40,6 @@
           "enabled": true
         },
         {
-          "type": "Unity.Muse.Sprite.Operators.StyleSelectionOperator",
-          "assembly": "Unity.Muse.Sprite",
-          "version": "1.0",
-          "enabled": true
-        },
-        {
           "type": "Unity.Muse.Sprite.Operators.SpriteRefiningMaskOperator",
           "assembly": "Unity.Muse.Sprite",
           "version": "1.0",

@@ -7,6 +7,7 @@
    * [Generate from a scribble](xref:generate-from-scribble)
    * [Manage generated sprites](xref:manage-sprites)
 * [Refine with masking](xref:refine)
-* [Tool reference](xref:tool-reference)
+* [Style trainer](xref:style-trainer)
+* [Tool reference](xref:reference)
    * [UI elements](xref:ui-elements)
    * [Keyboard shortcuts](xref:keyboard-shortcuts)

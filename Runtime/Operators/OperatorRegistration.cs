@@ -12,7 +12,6 @@ namespace Unity.Muse.Sprite.Operators
         {
             OperatorsFactory.RegisterOperator<SpriteGeneratorSettingsOperator>();
             OperatorsFactory.RegisterOperator<KeyImageOperator>();
-            OperatorsFactory.RegisterOperator<StyleSelectionOperator>();
             OperatorsFactory.RegisterOperator<SpriteRefiningMaskOperator>();
             OperatorsFactory.RegisterOperator<SessionOperator>();
         }

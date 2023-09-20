@@ -22,6 +22,25 @@ namespace Unity.Muse.StyleTrainer
         {
             m_EventBus = eventBus;
             m_EventBus.RegisterEvent<GenerateButtonClickEvent>(OnGenerateClicked);
+            m_EventBus.RegisterEvent<StyleTrainingEvent>(OnStyleTrainingEvent);
+        }
+
+        void OnStyleTrainingEvent(StyleTrainingEvent arg0)
+        {
+            if (arg0.state == EState.Error)
+            {
+                switch (arg0.trainingState)
+                {
+                    case ETrainingState.CreateTrainingSet:
+                    case ETrainingState.CreateStyle:
+                    case ETrainingState.CreateCheckPoint:
+                        if (Utilities.ValidStringGUID(arg0.styleData.guid))
+                            arg0.styleData.state = EState.Initial;
+                        else
+                            arg0.styleData.state = EState.New;
+                        break;
+                }
+            }
         }
 
         void OnGenerateClicked(GenerateButtonClickEvent arg0)

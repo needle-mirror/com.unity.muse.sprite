@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using StyleTrainer.Backend;
+using Unity.Muse.Sprite.Common.DebugConfig;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -68,7 +69,7 @@ namespace Unity.Muse.StyleTrainer.Editor
                 }
             });
 
-            if (Debug.StyleTrainerDebug.developerMode)
+            if (DebugConfig.developerMode)
             {
                 newScrollView.Add(new Label("Developer Mode Settings")
                 {

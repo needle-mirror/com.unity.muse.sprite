@@ -31,8 +31,7 @@ This page describes the UI elements of the **Muse Sprite** tool.
 | --- | --- |
 | **Remove Background** | Removes the background from the generated sprites. |
 | **Style Strength** | Determines how closely the generated sprites follow the style of the referenced image or the scribble. Higher values result in more closely aligned styles.|
-| **Seed** | Sets a seed number used to generate the sprites. |
-| **R** | Generates a random seed number. |
+| **Custom Seed** | If enabled, you can enter a custom seed number to generate the sprite. Otherwise, the tool generates a random seed number. |
 
 ## Input Image panel
 
@@ -43,6 +42,15 @@ This page describes the UI elements of the **Muse Sprite** tool.
 | **Clear tool** | Clears the scribbles or the reference image. |
 | **Sprite picker** | Selects a sprite from the **Scene** view, **Hierarchy** panel or the **Project** window to use as the reference image. |
 | **Tightness** | Determines the likeness between the generated sprites and the referenced image. Higher values result in more alike sprites.|
+
+## Image context menu items
+
+The following table describes the context menu (&#8230;) items of a generated sprite:
+
+| **Property** | **Description** |
+| --- | --- |
+| **Generation Settings** | Displays and reuses the prompt, negative prompt, seed number, and style used in the generation. |
+| **Export** | Exports the sprite to the project's `Assets` folder. |
 
 ## Additional resources
 

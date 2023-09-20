@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using Unity.AppUI.UI;
+using Unity.Muse.Sprite.Common.DebugConfig;
 using Unity.Muse.Sprite.Common.Events;
 using Unity.Muse.StyleTrainer.Events.StyleModelListUIEvents;
 using Unity.Muse.StyleTrainer.Events.StyleTrainerProjectEvents;
@@ -21,7 +22,7 @@ namespace Unity.Muse.StyleTrainer
         {
             m_AddStyleButton = this.Q<ActionButton>("AddStyleButton");
             m_AddStyleButton.clicked += OnAddStyleClicked;
-            if (Debug.StyleTrainerDebug.developerMode) m_DebugMenu = new ContextualMenuManipulator(DebugMenuBuilder);
+            if (DebugConfig.developerMode) m_DebugMenu = new ContextualMenuManipulator(DebugMenuBuilder);
             this.AddManipulator(m_DebugMenu);
             SetupListView();
         }

@@ -86,34 +86,41 @@ namespace Unity.Muse.StyleTrainer
             else
             {
                 StyleTrainerDebug.LogError($"CreateStyleRestCall: Request call success but response failed. {arg2.success}");
+                CreateStyleFailed(arg2.error);
             }
+        }
+
+        void CreateStyleFailed(string failReason)
+        {
+
+            m_EventBus.SendEvent(new ShowDialogEvent
+            {
+                title = "Training Failed",
+                description = $"Failed to create new style. Please try again. {failReason}",
+                semantic = AlertSemantic.Error
+            });
+
+            //check point create fail. So we just reset it back so that it can be trained again
+            m_StyleData.state = EState.New;
+            m_CheckPointData.state = EState.New;
+            m_EventBus.SendEvent(new StyleTrainingEvent
+            {
+                state = EState.Error,
+                styleData = m_StyleData,
+                trainingState = m_TrainingState
+            });
+            m_EventBus.SendEvent(new GenerateButtonStateUpdateEvent
+            {
+                state = true
+            });
         }
 
         void OnCreateStyleFailure(CreateStyleRestCall obj)
         {
-            StyleTrainerDebug.LogError($"CreateStyleRestCall: Failed to create style. {obj.requestError} {obj.errorMessage}");
-            if (obj.restCallState == QuarkRestCall.EState.Error)
+            if (obj.retriesFailed)
             {
-                m_EventBus.SendEvent(new ShowDialogEvent
-                {
-                    title = "Training Failed",
-                    description = $"Failed to create new style. Please try again. {obj.requestError}",
-                    semantic = AlertSemantic.Error
-                });
-
-                //check point create fail. So we just reset it back so that it can be trained again
-                m_StyleData.state = EState.New;
-                m_CheckPointData.state = EState.New;
-                m_EventBus.SendEvent(new StyleTrainingEvent
-                {
-                    state = EState.Error,
-                    styleData = m_StyleData,
-                    trainingState = m_TrainingState
-                });
-                m_EventBus.SendEvent(new GenerateButtonStateUpdateEvent
-                {
-                    state = true
-                });
+                StyleTrainerDebug.LogError($"CreateStyleRestCall: Failed to create style. {obj.requestError} {obj.errorMessage}");
+                CreateStyleFailed(obj.requestError);
             }
         }
 
@@ -159,27 +166,32 @@ namespace Unity.Muse.StyleTrainer
 
         void OnCreateTrainingSetFailure(CreateTrainingSetRestCall obj)
         {
-            StyleTrainerDebug.LogError($"OnCreateTrainingSetFailure: Failed to create style. {obj.requestError} {obj.errorMessage}");
-            if (obj.restCallState == QuarkRestCall.EState.Error)
+            if (obj.retriesFailed)
             {
-                m_EventBus.SendEvent(new ShowDialogEvent
-                {
-                    title = "Training Failed",
-                    description = $"Failed to create training set. Please try again. {obj.requestError}",
-                    semantic = AlertSemantic.Error
-                });
-                m_CheckPointData.state = EState.New;
-                m_EventBus.SendEvent(new StyleTrainingEvent
-                {
-                    state = EState.Error,
-                    styleData = m_StyleData,
-                    trainingState = m_TrainingState
-                });
-                m_EventBus.SendEvent(new GenerateButtonStateUpdateEvent
-                {
-                    state = true
-                });
+                StyleTrainerDebug.LogError($"OnCreateTrainingSetFailure: Failed to create style. {obj.requestError} {obj.errorMessage}");
+                ReportTrainingSetError(obj.requestError);
             }
+        }
+
+        void ReportTrainingSetError(string error)
+        {
+            m_EventBus.SendEvent(new ShowDialogEvent
+            {
+                title = "Training Failed",
+                description = $"Failed to create training set. Please try again.\nError:{error}",
+                semantic = AlertSemantic.Error
+            });
+            m_CheckPointData.state = EState.New;
+            m_EventBus.SendEvent(new StyleTrainingEvent
+            {
+                state = EState.Error,
+                styleData = m_StyleData,
+                trainingState = m_TrainingState
+            });
+            m_EventBus.SendEvent(new GenerateButtonStateUpdateEvent
+            {
+                state = true
+            });
         }
 
         void OnCreateTrainingSetSuccess(CreateTrainingSetRestCall arg1, CreateTrainingSetResponse arg2)
@@ -187,14 +199,14 @@ namespace Unity.Muse.StyleTrainer
             if (arg2.success)
             {
                 m_CheckPointData.trainingSetData.guid = arg2.guid;
-
                 // Marking this as loaded since it comes from training.
                 m_CheckPointData.trainingSetData.state = EState.Initial;
                 CreateCheckPoint();
             }
             else
             {
-                StyleTrainerDebug.LogError($"OnCreateTrainingSetSuccess: Request call success but response failed. {arg2.success}");
+                StyleTrainerDebug.LogError($"OnCreateTrainingSetSuccess: Request call success but response failed. {arg2.success} {arg2.error}");
+                ReportTrainingSetError(arg2.error);
             }
         }
 

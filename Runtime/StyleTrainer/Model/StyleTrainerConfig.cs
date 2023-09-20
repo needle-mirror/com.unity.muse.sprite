@@ -1,5 +1,5 @@
 using System;
-using Unity.Muse.StyleTrainer.Debug;
+using Unity.Muse.Sprite.Common.DebugConfig;
 using UnityEngine;
 
 namespace Unity.Muse.StyleTrainer
@@ -24,7 +24,7 @@ namespace Unity.Muse.StyleTrainer
 
         public bool useMockData =>
 #if UNITY_EDITOR
-            StyleTrainerDebug.developerMode && m_UseMockData;
+            DebugConfig.developerMode && m_UseMockData;
 #else
             false;
 #endif
