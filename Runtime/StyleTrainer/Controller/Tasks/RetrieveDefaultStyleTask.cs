@@ -30,6 +30,7 @@ namespace Unity.Muse.StyleTrainer
                 var projectId = arg2.guid;
                 StyleTrainerDebug.Log($"Default style project id {projectId}");
                 m_DefaultProject.guid = projectId;
+                m_DefaultProject.state = EState.Initial;
                 m_DefaultProject.GetArtifact(GetDefaultProjectDone, false);
             }
             else

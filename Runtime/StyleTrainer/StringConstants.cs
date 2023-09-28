@@ -15,5 +15,6 @@ namespace Unity.Muse.StyleTrainer
         public const string trainingSetTab = "Training Set";
         public const string versionNotTrained = "(Version is not trained)";
         public const string versionTrainedError = "(Error when training version)";
+        public const string styleError = "(Error loading Style)";
     }
 }

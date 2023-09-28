@@ -13,6 +13,7 @@ namespace Unity.Muse.Sprite.Editor
             pathName = Path.ChangeExtension(pathName, ".asset");
 
             var asset = CreateInstance<Model>();
+            asset.Initialize();
             int mode = ModesFactory.GetModeIndexFromKey(UIMode.UIMode.modeKey);
             if (mode < 0)
                 Debug.LogError($"Mode {UIMode.UIMode.modeKey} not found");
@@ -23,7 +24,7 @@ namespace Unity.Muse.Sprite.Editor
             AssetDatabase.Refresh();
         }
 
-        [MenuItem("Assets/Create/Muse/Muse Sprite")]
+        [MenuItem("Assets/Create/Muse/Sprite Generator", false, 0)]
         static void CreateSpriteLibrarySourceAssetMenu()
         {
             var action = CreateInstance<MuseAssetCreation>();

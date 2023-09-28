@@ -34,7 +34,7 @@ namespace Unity.Muse.Sprite.Operators
 
         VisualElement m_ImageContainer;
         TouchSliderFloat m_MaskTightness;
-        Label m_HintLabel;
+        Text m_HintLabel;
 
         readonly Vector2Int k_DefaultDoodleSize = new Vector2Int(512, 512);
         MuseShortcut[] m_Shortcuts;
@@ -49,6 +49,10 @@ namespace Unity.Muse.Sprite.Operators
         /// Container of the image class name.
         /// </summary>
         public const string imageContainerClassName = baseUssClassName + "__image-container";
+        /// <summary>
+        /// Hint label class name.
+        /// </summary>
+        public const string hintUssClassName = baseUssClassName + "__hint";
         /// <summary>
         /// Main container for control buttons class name.
         /// </summary>
@@ -135,12 +139,12 @@ namespace Unity.Muse.Sprite.Operators
             controlButtons.AddToClassList("bottom-gap");
             UI.Add(controlButtons);
 
-            var controlButtonsLeft = new VisualElement();
+            var controlButtonsLeft = new ActionGroup { compact = true };
             controlButtonsLeft.AddToClassList(controlButtonsContainerLeftClassName);
             controlButtons.Add(controlButtonsLeft);
 
-            m_BrushButton = new ActionButton(ToggleBrush) { icon = "paint-brush", accent = true, size = Size.S, tooltip = TextContent.doodleBrushTooltip };
-            m_EraserButton = new ActionButton(ToggleEraser) { icon = "eraser", accent = true, size = Size.S, tooltip = TextContent.doodleEraserTooltip };
+            m_BrushButton = new ActionButton(ToggleBrush) { icon = "paint-brush", accent = true, tooltip = TextContent.doodleBrushTooltip };
+            m_EraserButton = new ActionButton(ToggleEraser) { icon = "eraser", accent = true, tooltip = TextContent.doodleEraserTooltip };
             controlButtonsLeft.Add(m_BrushButton);
             controlButtonsLeft.Add(m_EraserButton);
 
@@ -149,14 +153,14 @@ namespace Unity.Muse.Sprite.Operators
             m_ScenePicker.onSelectedObject += OnScenePickerSelectedObject;
             m_ScenePicker.onPickStart += UpdateVisibility;
             m_ScenePicker.onPickEnd += UpdateVisibility;
-            m_PickerButton = new ActionButton(ToggleEditorSelection) { icon = "color-picker", accent = true, size = Size.S, tooltip = TextContent.doodleSelectorTooltip };
+            m_PickerButton = new ActionButton(ToggleEditorSelection) { icon = "color-picker", accent = true, tooltip = TextContent.doodleSelectorTooltip };
             controlButtonsLeft.Add(m_PickerButton);
 #endif
             var controlButtonsRight = new VisualElement();
             controlButtonsRight.AddToClassList(controlButtonsContainerRightClassName);
             controlButtons.Add(controlButtonsRight);
 
-            m_DeleteButton = new Button(OnDeleteClicked) { leadingIcon = "x", size = Size.S, tooltip = TextContent.doodleClearTooltip };
+            m_DeleteButton = new Button(OnDeleteClicked) { leadingIcon = "x", tooltip = TextContent.doodleClearTooltip };
             controlButtonsRight.Add(m_DeleteButton);
 
             m_ImageContainer = new VisualElement();
@@ -165,10 +169,9 @@ namespace Unity.Muse.Sprite.Operators
             m_ImageContainer.AddToClassList("bottom-gap");
             UI.Add(m_ImageContainer);
 
-            m_HintLabel = new Label(TextContent.doodleStartTooltip);
-            m_HintLabel.style.display = DisplayStyle.None;
-            m_HintLabel.style.alignSelf = Align.Center;
-            m_HintLabel.style.whiteSpace = WhiteSpace.Normal;
+            m_HintLabel = new Text(TextContent.doodleStartTooltip);
+            m_HintLabel.AddToClassList(hintUssClassName);
+            m_HintLabel.size = TextSize.XS;
             m_ImageContainer.Add(m_HintLabel);
 
             m_ReferenceImage = new Image { pickingMode = PickingMode.Ignore };

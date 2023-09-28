@@ -7,7 +7,7 @@ namespace Unity.Muse.Sprite.Editor
 {
     internal static class WindowMenuItem
     {
-        public const string menuItemPath = "Muse/Muse Sprite";
+        public const string menuItemPath = "Muse/New Sprite Generator";
 
         [MenuItem(menuItemPath, false, 100)]
         public static void CreateSpriteWindow()

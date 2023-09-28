@@ -22,7 +22,8 @@ namespace Unity.Muse.Sprite.Editor
 
         public string GetSaveFileName(Artifact artifact)
         {
-            var name = artifact.GetOperator<PromptOperator>()?.GetPrompt();
+            var prompt = artifact.GetOperator<PromptOperator>()?.GetPrompt();
+            var name = ExporterHelpers.RemoveSpecialCharacters(prompt);
             name = !string.IsNullOrWhiteSpace(name) ? name : defaultArtifactName;
             return name;
         }

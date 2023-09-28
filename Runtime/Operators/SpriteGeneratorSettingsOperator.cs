@@ -53,7 +53,9 @@ namespace Unity.Muse.Sprite.Operators
             ArtifactID,
             SelectedStyleGuid,
             SeedUserSpecified,
-            CheckPointUsed,
+            CheckPointGUID,
+            CheckPointName,
+            CheckPointDescription,
             ServerURL,
         }
 
@@ -74,7 +76,23 @@ namespace Unity.Muse.Sprite.Operators
         static OperatorData CreateDefaultOperatorData()
         {
             return new OperatorData(operatorName, "Unity.Muse.Sprite", "0.0.1", new[]
-                { "", "", k_DefaultStyleStrength.ToString(), "512", "512", "1", "1", "", "0", "0", "0", "0", "0", "" }, false);
+                { "", // Subject
+                    "", // NegPrompt
+                    k_DefaultStyleStrength.ToString(),// StyleStrength
+                    "512", // ImageWidth
+                    "512", // ImageHeight
+                    "1", // Scribble
+                    "1", // RemoveBackground
+                    "", // Seed
+                    "0", // JobID
+                    "0", // ArtifactID
+                    "0", // SelectedStyleGuid
+                    "0", // SeedUserSpecified
+                    "0", // CheckPointGUID
+                    "", // CheckPointName
+                    "", // CheckPointDescription
+                    ""  // ServerURL
+                }, false);
         }
 
         public VisualElement GetCanvasView()
@@ -118,7 +136,7 @@ namespace Unity.Muse.Sprite.Operators
             titleContainer.Add(m_StyleLoading);
 
             m_StyleSelection = new Dropdown();
-            var styleSelectionTitle = m_StyleSelection.Q<LocalizedTextElement>(className: Dropdown.titleUssClassName);
+            var styleSelectionTitle = m_StyleSelection.Q<DropdownItem>().labelElement;
             styleSelectionTitle.style.overflow = Overflow.Hidden;
             styleSelectionTitle.style.textOverflow = UnityEngine.UIElements.TextOverflow.Ellipsis;
             styleSelectionTitle.style.whiteSpace = WhiteSpace.NoWrap;
@@ -172,25 +190,24 @@ namespace Unity.Muse.Sprite.Operators
             UpdateWithStyleData(GetStylesFromProject());
         }
 
-        public string GetSelectedStyleCheckpointGuid() => GetStarredCheckpointGuid(selectedStyle);
+        public CheckPointData GetSelectedStyleCheckpointGuid() => GetStarredCheckpointGuid(selectedStyle);
 
-        public string GetStarredCheckpointGuid(string styleId)
+        public CheckPointData GetStarredCheckpointGuid(string styleId)
         {
-            var checkpointGuid = Guid.Empty.ToString();
             s_Styles ??= GetStylesFromProject();
             var style = s_Styles.FirstOrDefault(s => s.guid == styleId);
             if (style != null)
             {
-                var guid = style.selectedCheckPointGUID;
-                var selectedCheckPointData = style.checkPoints.FirstOrDefault(c => c.guid == guid);
-                if (string.IsNullOrEmpty(guid) || guid == Guid.Empty.ToString() || guid == style.guid || selectedCheckPointData is not { state: EState.Loaded })
-                    guid = style.checkPoints.Last(c => c.state == EState.Loaded).guid;
-
-                if (!string.IsNullOrEmpty(guid))
-                    checkpointGuid = guid;
+                var checkPoint = style.GetFavouriteOrLatestCheckPoint();
+                if (checkPoint != null)
+                    return checkPoint;
             }
 
-            return checkpointGuid;
+            return new CheckPointData(EState.New, Utilities.emptyGUID, Utilities.emptyGUID)
+            {
+                name = "Default No Style",
+                description = "Default No Style"
+            };
         }
 
         List<StyleData> GetStylesFromProject()
@@ -206,12 +223,15 @@ namespace Unity.Muse.Sprite.Operators
                 for (var i = 0; i < defaultStyles?.Count; ++i)
                     styles.Insert(i, defaultStyles[i]);
             }
-
             return styles;
         }
 
-        void OnBindStyle(MenuItem visualElement, int i)
+        void OnBindStyle(DropdownItem visualElement, int i)
         {
+            // Workaround to disable icons.
+            foreach (var icon in visualElement.Query<Icon>().ToList())
+                icon.style.display = DisplayStyle.None;
+
             if (i >= 0 && i < s_Styles.Count)
             {
                 var style = s_Styles[i];
@@ -235,18 +255,30 @@ namespace Unity.Muse.Sprite.Operators
                     var style = s_Styles[i];
                     if (style.guid == selectedStyle)
                     {
-                        m_StyleSelection.value = i;
+                        m_StyleSelection.value = new[] { i };
                         break;
                     }
                 }
 
-                if (m_StyleSelection.value >= s_Styles.Count || m_StyleSelection.value == -1 && s_Styles.Count > 0)
+                using var selection = m_StyleSelection.value.GetEnumerator();
+                if (!selection.MoveNext())
                 {
-                    m_StyleSelection.value = 0;
+                    m_StyleSelection.value = new[] { 0 };
                     SetSetting(ESettings.SelectedStyleGuid, s_Styles[0].guid);
+                    m_StyleSelection.Refresh();
+                    return;
                 }
 
-                var selectedStyleValue = s_Styles[m_StyleSelection.value];
+
+                var index = selection.Current;
+                if (index >= s_Styles.Count || index == -1 && s_Styles.Count > 0)
+                {
+                    index = 0;
+                    m_StyleSelection.value = new[] { index };
+                    SetSetting(ESettings.SelectedStyleGuid, s_Styles[index].guid);
+                }
+
+                var selectedStyleValue = s_Styles[index];
                 m_StyleSelection.tooltip = selectedStyleValue.styleDescription;
                 SetSetting(ESettings.SelectedStyleGuid, selectedStyleValue.guid);
 
@@ -254,9 +286,13 @@ namespace Unity.Muse.Sprite.Operators
             }
         }
 
-        void OnStyleSelected(ChangeEvent<int> changeEvent)
+        void OnStyleSelected(ChangeEvent<IEnumerable<int>> changeEvent)
         {
-            var selectedIndex = m_StyleSelection.value;
+            using var selection = changeEvent.newValue.GetEnumerator();
+            if (!selection.MoveNext())
+                return;
+
+            var selectedIndex = selection.Current;
             if (selectedIndex < 0 || selectedIndex >= s_Styles.Count)
                 return;
 
@@ -479,10 +515,22 @@ namespace Unity.Muse.Sprite.Operators
             set => m_OperatorData.settings[(int)ESettings.ArtifactID] = value;
         }
 
-        public string checkPointUsed
+        public string checkPointGUID
         {
-            get => m_OperatorData.settings[(int)ESettings.CheckPointUsed];
-            set => m_OperatorData.settings[(int)ESettings.CheckPointUsed] = value;
+            get => m_OperatorData.settings[(int)ESettings.CheckPointGUID];
+            private set => m_OperatorData.settings[(int)ESettings.CheckPointGUID] = value;
+        }
+
+        public string checkPointName
+        {
+            get => m_OperatorData.settings[(int)ESettings.CheckPointName];
+            private set => m_OperatorData.settings[(int)ESettings.CheckPointName] = value;
+        }
+
+        public string checkPointDescription
+        {
+            get => m_OperatorData.settings[(int)ESettings.CheckPointDescription];
+            private set => m_OperatorData.settings[(int)ESettings.CheckPointDescription] = value;
         }
 
         public void SetSeed(int seed)
@@ -524,8 +572,23 @@ namespace Unity.Muse.Sprite.Operators
         /// <returns> UI for the operator. Set to Null if the operator should not be displayed in the settings view. Disable the returned VisualElement if you want it to be displayed but not usable.</returns>
         public VisualElement GetSettingsView()
         {
+            if (string.IsNullOrWhiteSpace(checkPointName))
+            {
+                var styles = GetStylesFromProject();
+                var style = styles.FirstOrDefault(x => x.guid == selectedStyle);
+                if (style != null)
+                {
+                    var checkPoint = style.checkPoints.FirstOrDefault(x => x.guid == checkPointGUID);
+                    if (checkPoint != null)
+                    {
+                        checkPointName = checkPoint.name;
+                        checkPointDescription = checkPoint.description;
+                    }
+                }
+            }
+            var checkPointSettingName = string.IsNullOrWhiteSpace(checkPointName) ? TextContent.styleUndefined : checkPointName;
             var result = new VisualElement();
-            var styleDescription = $"{TextContent.style}: {s_Styles.FirstOrDefault(s => s.guid == selectedStyle)?.title ?? TextContent.styleUndefined}";
+            var styleDescription = $"{TextContent.style}: {checkPointSettingName}";
             var styleStrengthDescription = $"{TextContent.styleStrength}: {styleStrength}";
             var removeBackgroundDescription = $"{TextContent.removeBackground}: {removeBackground}";
             var seedDescription = seedUserSpecified ? $"{TextContent.customSeed}: {seed:00000}." : $"{TextContent.randomSeed}";
@@ -550,6 +613,13 @@ namespace Unity.Muse.Sprite.Operators
                     newOperator.settings[i] = m_OperatorData.settings[i];
                 m_OperatorData = newOperator;
             }
+        }
+
+        public void SetCheckPointUsed(CheckPointData checkPointData)
+        {
+            checkPointName = checkPointData?.name;
+            checkPointDescription = checkPointData?.description;
+            checkPointGUID = checkPointData?.guid;
         }
     }
 }

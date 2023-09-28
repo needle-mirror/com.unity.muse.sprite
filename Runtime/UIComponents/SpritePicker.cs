@@ -64,12 +64,15 @@ namespace Unity.Muse.Sprite.UIComponents
             if (!isPicking)
                 return;
 
-            switch (EditorWindow.focusedWindow.titleContent.text)
+            if (EditorWindow.focusedWindow)
             {
-                case "Hierarchy":
-                case "Project":
-                    schedule.Execute(OnSelectionChanged);
-                    break;
+                switch (EditorWindow.focusedWindow.titleContent.text)
+                {
+                    case "Hierarchy":
+                    case "Project":
+                        schedule.Execute(OnSelectionChanged);
+                        break;
+                }
             }
         }
 

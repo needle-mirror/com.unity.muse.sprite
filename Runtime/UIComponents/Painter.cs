@@ -53,7 +53,7 @@ namespace Unity.Muse.Sprite
         bool m_Initialized;
         bool m_Clear;
 
-        class PaintMaterial
+        class PaintMaterial : IDisposable
         {
             static readonly int k_Color = Shader.PropertyToID("_Color");
             static readonly int k_Pos = Shader.PropertyToID("_Pos");
@@ -63,7 +63,7 @@ namespace Unity.Muse.Sprite
 
             public PaintMaterial()
             {
-                material = new Material(Resources.Load<Shader>("Shaders/DoodlePaint"));
+                material = new Material(Resources.Load<Shader>("Shaders/DoodlePaint")) { hideFlags = HideFlags.HideAndDontSave };
             }
 
             public void SetRadius(float radius) => material.SetFloat(k_Radius, radius);
@@ -71,9 +71,11 @@ namespace Unity.Muse.Sprite
 
             public void SetPositions(Vector2 startPosition, Vector2 endPosition) =>
                 material.SetVector(k_Pos, new Vector4(startPosition.x, startPosition.y, endPosition.x, endPosition.y));
+
+            public void Dispose() => material.SafeDestroy();
         }
 
-        class TransformMaterial
+        class TransformMaterial : IDisposable
         {
             static readonly int k_MainTexture = Shader.PropertyToID("_MainTex");
             static readonly int k_Offset = Shader.PropertyToID("_Offset");
@@ -84,13 +86,14 @@ namespace Unity.Muse.Sprite
 
             public TransformMaterial()
             {
-                material = new Material(Resources.Load<Shader>("Shaders/DoodleTransform"));
+                material = new Material(Resources.Load<Shader>("Shaders/DoodleTransform")) { hideFlags = HideFlags.HideAndDontSave };
             }
 
             public void SetMainTexture(UnityEngine.Texture texture) => material.SetTexture(k_MainTexture, texture);
             public void SetOffset(Vector2 offset) => material.SetVector(k_Offset, offset);
             public void SetRotation(float rotation) => material.SetFloat(k_Rotation, rotation * Mathf.Deg2Rad);
             public void SetScale(Vector2 scale) => material.SetVector(k_Scale, scale);
+            public void Dispose() => material.SafeDestroy();
         }
 
         /// <summary>
@@ -135,7 +138,7 @@ namespace Unity.Muse.Sprite
         public void InitializeWithData(byte[] imageData)
         {
             if (m_Texture == null)
-                m_Texture = new Texture2D(m_Size.x, m_Size.y);
+                m_Texture = new Texture2D(m_Size.x, m_Size.y) { hideFlags = HideFlags.HideAndDontSave };
             if (imageData != null && imageData.Length > 0)
             {
                 m_Texture.LoadImage(imageData);
@@ -168,7 +171,8 @@ namespace Unity.Muse.Sprite
                 wrapMode = TextureWrapMode.Clamp,
                 filterMode = FilterMode.Bilinear,
                 updateZoneSpace = CustomRenderTextureUpdateZoneSpace.Pixel,
-                doubleBuffered = true
+                doubleBuffered = true,
+                hideFlags = HideFlags.HideAndDontSave
             };
 
             if (isClear)
@@ -204,13 +208,13 @@ namespace Unity.Muse.Sprite
             if (m_RenderTexture != null)
                 m_RenderTexture.Release();
 
-            m_RenderTexture = new CustomRenderTexture(m_Size.x, m_Size.y);
+            m_RenderTexture = new CustomRenderTexture(m_Size.x, m_Size.y) { hideFlags = HideFlags.HideAndDontSave };
 
             var activeRT = RenderTexture.active;
             RenderTexture.active = m_RenderTexture;
             Graphics.Blit(m_Texture, m_RenderTexture);
             if (m_Texture == null)
-                m_Texture = new Texture2D(m_Size.x, m_Size.y);
+                m_Texture = new Texture2D(m_Size.x, m_Size.y) { hideFlags = HideFlags.HideAndDontSave };
             else
                 m_Texture.Reinitialize(m_Size.x, m_Size.y);
             m_Texture.ReadPixels(new Rect(Vector2.zero, new Vector2(m_Size.x, m_Size.y)), 0, 0);
@@ -423,6 +427,7 @@ namespace Unity.Muse.Sprite
             m_Texture.Apply();
 
             UpdateRenderTexture();
+            QueueFrame();
         }
 
         /// <summary>
@@ -455,6 +460,8 @@ namespace Unity.Muse.Sprite
             if (!isInitialized)
                 return;
 
+            m_PaintMaterial.Dispose();
+            m_TransformMaterial.Dispose();
             m_Texture.SafeDestroy();
             m_RenderTexture.SafeDestroy();
 

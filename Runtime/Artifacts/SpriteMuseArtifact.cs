@@ -254,13 +254,13 @@ namespace Unity.Muse.Sprite.Artifacts
                 else if (operators[i] is SpriteGeneratorSettingsOperator sgo)
                 {
                     spriteGenerationOperator = sgo;
-                    var checkpointGuid = spriteGenerationOperator.GetSelectedStyleCheckpointGuid();
-                    request.checkpoint_id = checkpointGuid;
+                    var checkPoint = spriteGenerationOperator.GetSelectedStyleCheckpointGuid();
+                    request.checkpoint_id = checkPoint.guid;
                     if (spriteGenerationOperator.seedUserSpecified)
                         spriteGenerationOperator.SetSeed(spriteGenerationOperator.seed + generateCountData.GetAndIncrementCount());
                     else
                         spriteGenerationOperator.RandomSeed();
-                    spriteGenerationOperator.checkPointUsed = checkpointGuid;
+                    spriteGenerationOperator.SetCheckPointUsed(checkPoint);
                     request.removeBackground = spriteGenerationOperator.removeBackground;
                     request.styleStrength = spriteGenerationOperator.styleStrength;
                     var imageSize = spriteGenerationOperator.imageSize;

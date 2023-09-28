@@ -25,7 +25,7 @@ namespace Unity.Muse.StyleTrainer
                     m_RawData = GetRawDataDirect();
                     if (m_RawData != null)
                     {
-                        ArtifactCache.Delete(this);
+                        StyleTrainerConfig.config.artifactCache.Delete(this);
                         Guid = guid;
                         WriteToCache(m_RawData);
                         if (m_Texture != null)
@@ -72,9 +72,9 @@ namespace Unity.Muse.StyleTrainer
             m_RawData = value;
             using (Debug.Profiling.styleTrainerImageArtifactCache_WriteCache.Auto())
             {
-                if (ArtifactCache.IsInCache(this))
-                    ArtifactCache.Delete(this);
-                ArtifactCache.Write(this, value);
+                if (StyleTrainerConfig.config.artifactCache.IsInCache(this))
+                    StyleTrainerConfig.config.artifactCache.Delete(this);
+                StyleTrainerConfig.config.artifactCache.Write(this, value);
             }
         }
 
@@ -94,11 +94,16 @@ namespace Unity.Muse.StyleTrainer
             return null;
         }
 
+        public bool IsLoaded()
+        {
+            return m_Texture != null && m_RawData != null && m_RawData.Length > 0;
+        }
+
         public byte[] GetRawDataDirect()
         {
             using (Debug.Profiling.styleTrainerImageArtifactCache_ReadCache.Auto())
             {
-                if ((m_RawData == null || m_RawData.Length == 0) && ArtifactCache.IsInCache(this)) m_RawData = ArtifactCache.ReadRawData(this);
+                if ((m_RawData == null || m_RawData.Length == 0) && StyleTrainerConfig.config.artifactCache.IsInCache(this)) m_RawData = StyleTrainerConfig.config.artifactCache.ReadRawData(this);
             }
 
             return m_RawData;
@@ -114,8 +119,8 @@ namespace Unity.Muse.StyleTrainer
 
         public void DeleteCache()
         {
-            if (ArtifactCache.IsInCache(this))
-                ArtifactCache.Delete(this);
+            if (StyleTrainerConfig.config.artifactCache.IsInCache(this))
+                StyleTrainerConfig.config.artifactCache.Delete(this);
         }
 
         public void ChangeGUID(string guid)

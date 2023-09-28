@@ -28,14 +28,22 @@ namespace Unity.Muse.StyleTrainer
         void OnImageArtifactDataChanged(ImageArtifact obj)
         {
             OnLoading();
-            if(s_ImageCount < k_MaxRequest)
+            var result = m_ImageArtifact.GetLoaded();
+            if (result.cached)
             {
-                ++s_ImageCount;
-                m_ImageArtifact.GetArtifact(OnDoneCallback, true);
+                OnDoneCallback(result.texture);
             }
             else
             {
-                schedule.Execute(DelayLoad).StartingIn(UnityEngine.Random.Range(k_DelayLoadMS.x, k_DelayLoadMS.y));
+                if(s_ImageCount < k_MaxRequest)
+                {
+                    ++s_ImageCount;
+                    m_ImageArtifact.GetArtifact(OnDoneCallback, true);
+                }
+                else
+                {
+                    schedule.Execute(DelayLoad).StartingIn(UnityEngine.Random.Range(k_DelayLoadMS.x, k_DelayLoadMS.y));
+                }
             }
         }
 

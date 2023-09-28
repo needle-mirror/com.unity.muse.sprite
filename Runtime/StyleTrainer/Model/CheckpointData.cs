@@ -24,6 +24,10 @@ namespace Unity.Muse.StyleTrainer
         GetCheckPointRestCall m_GetCheckPointRestCall;
         GetCheckPointStatusRestCall m_GetCheckPointStatusRestCall;
 
+        // Arbitrary. Server limits to 256.
+        public const int maxNameLength = 150;
+        public const int maxDescriptionLength = 256;
+
         public CheckPointData(EState state, string guid, string projectID)
             : base(state)
         {
@@ -31,6 +35,11 @@ namespace Unity.Muse.StyleTrainer
             this.guid = guid;
             trainingSetData = new TrainingSetData(state, Utilities.emptyGUID, projectID);
             m_TrainingSteps = StyleTrainerConfig.config.trainingStepRange.x;
+        }
+
+        public void SetName(string newName)
+        {
+            name = newName.Substring(0, Math.Min(newName.Length, maxNameLength));
         }
 
         public int trainingSteps
@@ -102,7 +111,7 @@ namespace Unity.Muse.StyleTrainer
 
                     LoadCheckPoint();
                 }
-                else if (state != EState.Loading)
+                else if (state != EState.Loading && state != EState.Training)
                 {
                     ArtifactLoaded(this);
                 }
@@ -111,9 +120,8 @@ namespace Unity.Muse.StyleTrainer
             {
                 state = EState.Loaded;
                 StyleTrainerDebug.Log($"Check point data incomplete. Unable to load. guid:{guid} asset_id:{m_ProjectID}");
+                onDoneCallback?.Invoke(this);
             }
-
-            onDoneCallback?.Invoke(this);
         }
 
         void LoadCheckPoint()

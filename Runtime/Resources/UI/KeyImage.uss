@@ -6,7 +6,10 @@
     border-width: var(--appui-alias-control-border-width);
     background-color: var(--appui-base-100);
     border-color: var(--appui-base-400);
+    justify-content: center;
+    align-items: center;
 }
+
 .appui-sprite-keyimage__accept-drag .appui-sprite-keyimage__image-container {
     border-color: var(--appui-accent-300);
 }
@@ -29,4 +32,12 @@
 .appui-sprite-keyimage__reference-image {
     flex-grow: 1;
     position: absolute;
+}
+
+.appui-sprite-keyimage__hint {
+    -unity-text-align: middle-center;
+    align-self: center;
+    display: none;
+    white-space: normal;
+    margin: 0 var(--appui-sizing-200);
 }

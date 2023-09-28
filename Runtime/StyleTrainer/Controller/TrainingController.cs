@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Unity.AppUI.UI;
 using Unity.Muse.Sprite.Common.Events;
 using Unity.Muse.StyleTrainer.Debug;
@@ -83,6 +84,7 @@ namespace Unity.Muse.StyleTrainer
         void OnDuplicateCheckPointDone(CheckPointData newCheckPoint)
         {
             newCheckPoint.parent_id = m_StyleData.checkPoints[^1].guid;
+            newCheckPoint.SetName($"{newCheckPoint.name} (new)");
             m_StyleData.AddCheckPoint(newCheckPoint);
             m_StyleData.selectedCheckPointGUID = newCheckPoint.guid;
             m_EventBus.SendEvent(new CheckPointSourceDataChangedEvent

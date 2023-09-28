@@ -33,10 +33,6 @@ namespace Unity.Muse.StyleTrainer
         TouchSliderInt m_TrainingStepSlider;
         bool m_DuplicateButtonState = false;
         bool m_GenerateButtonState = false;
-        const int k_MaxDescriptionLength = 256;
-
-        // Arbitrary. Server limits to 256.
-        const int k_MaxNameLength = 150;
 
         public StyleModelInfo()
         {
@@ -127,19 +123,23 @@ namespace Unity.Muse.StyleTrainer
 
         void OnNameChanging(ChangingEvent<string> evt)
         {
-            if (evt.newValue.Length > k_MaxNameLength) m_Name.SetValueWithoutNotify(evt.previousValue);
+            if (evt.newValue.Length > CheckPointData.maxNameLength) m_Name.SetValueWithoutNotify(evt.previousValue);
         }
 
         void OnDescriptionChanging(ChangingEvent<string> evt)
         {
-            if (evt.newValue.Length > k_MaxDescriptionLength) m_Description.SetValueWithoutNotify(evt.previousValue);
+            if (evt.newValue.Length > CheckPointData.maxDescriptionLength) m_Description.SetValueWithoutNotify(evt.previousValue);
 
-            m_DescriptionTextCount.text = $"{m_Description.value.Length}/{k_MaxDescriptionLength}";
+            m_DescriptionTextCount.text = $"{m_Description.value.Length}/{CheckPointData.maxDescriptionLength}";
         }
 
         void OnFavoriteToggleChanged(ChangeEvent<CheckboxState> evt)
         {
-            var checkPoint = m_StyleCheckPointDropdown.sourceItems[m_StyleCheckPointDropdown.value] as CheckPointData;
+            using var selection = m_StyleCheckPointDropdown.value.GetEnumerator();
+            if (!selection.MoveNext())
+                return;
+
+            var checkPoint = m_StyleCheckPointDropdown.sourceItems[selection.Current] as CheckPointData;
             m_EventBus.SendEvent(new SetFavouriteCheckPointEvent
             {
                 checkPointGUID = evt.newValue == CheckboxState.Checked ? checkPoint.guid : Guid.Empty.ToString(),
@@ -149,17 +149,25 @@ namespace Unity.Muse.StyleTrainer
 
         void OnFavouriteCheckPointChanged(FavouriteCheckPointChangeEvent evt)
         {
+            using var selection = m_StyleCheckPointDropdown.value.GetEnumerator();
+            if (!selection.MoveNext())
+                return;
+
             m_StyleCheckPointDropdown.Refresh();
-            UpdateFavouriteState(m_StyleCheckPointDropdown.value);
+            UpdateFavouriteState(selection.Current);
         }
 
-        void OnCheckPointDropDownChanged(ChangeEvent<int> evt)
+        void OnCheckPointDropDownChanged(ChangeEvent<IEnumerable<int>> evt)
         {
-            UpdateInfoUI(evt.newValue);
+            using var selection = evt.newValue.GetEnumerator();
+            if (!selection.MoveNext())
+                return;
+
+            UpdateInfoUI(selection.Current);
             m_EventBus.SendEvent(new CheckPointSelectionChangeEvent
             {
                 styleData = m_StyleData,
-                index = evt.newValue
+                index = selection.Current
             });
         }
 
@@ -176,7 +184,11 @@ namespace Unity.Muse.StyleTrainer
 
         void OnCheckPointStateChanged(CheckPointData obj)
         {
-            UpdateInfoUI(m_StyleCheckPointDropdown.value);
+            using var selection = m_StyleCheckPointDropdown.value.GetEnumerator();
+            if (!selection.MoveNext())
+                return;
+
+            UpdateInfoUI(selection.Current);
         }
 
         void UpdateInfoUI(int selected)
@@ -192,7 +204,7 @@ namespace Unity.Muse.StyleTrainer
                 m_Name.SetValueWithoutNotify(checkPoint.name);
                 m_Description.SetEnabled(checkPoint.state == EState.New);
                 m_Description.SetValueWithoutNotify(checkPoint.description);
-                m_DescriptionTextCount.text = $"{m_Description.value.Length}/{k_MaxDescriptionLength}";
+                m_DescriptionTextCount.text = $"{m_Description.value.Length}/{CheckPointData.maxDescriptionLength}";
                 m_TrainingStepSlider.SetEnabled(checkPoint.state == EState.New);
                 m_TrainingStepSlider.SetValueWithoutNotify(checkPoint.trainingSteps);
             }
@@ -203,77 +215,94 @@ namespace Unity.Muse.StyleTrainer
             m_StatusLabel.style.display = DisplayStyle.None;
             m_ErrorIcon.style.display = DisplayStyle.None;
             m_TrainingIcon.style.display = DisplayStyle.None;
-            switch (checkPoint.state)
+            if (m_StyleData.state == EState.Error)
             {
-                case EState.Error:
-                    m_StatusLabel.style.display = DisplayStyle.Flex;
-                    m_StatusLabel.text = StringConstants.versionTrainedError;
-                    m_ErrorIcon.style.display = DisplayStyle.Flex;
-                    break;
-                case EState.Training:
-                case EState.Loading:
-                    m_TrainingIcon.style.display = DisplayStyle.Flex;
-                    break;
-                case EState.New:
-                case EState.Initial:
-                    m_StatusLabel.text = StringConstants.versionNotTrained;
-                    m_StatusLabel.style.display = DisplayStyle.Flex;
-                    break;
+                m_StatusLabel.text = StringConstants.styleError;
+                m_StatusLabel.style.display = DisplayStyle.Flex;
             }
+            else
+            {
+                switch (checkPoint.state)
+                {
+                    case EState.Error:
+                        m_StatusLabel.style.display = DisplayStyle.Flex;
+                        m_StatusLabel.text = StringConstants.versionTrainedError;
+                        m_ErrorIcon.style.display = DisplayStyle.Flex;
+                        break;
+                    case EState.Training:
+                    case EState.Loading:
+                        m_TrainingIcon.style.display = DisplayStyle.Flex;
+                        break;
+                    case EState.New:
+                    case EState.Initial:
+                        m_StatusLabel.text = StringConstants.versionNotTrained;
+                        m_StatusLabel.style.display = DisplayStyle.Flex;
+                        break;
+                }
+            }
+
         }
 
         void UpdateButtonState(EState state, int itemCount)
         {
-            switch (state)
+            if (m_StyleData.state == EState.Error || m_StyleData.state == EState.Loading)
             {
-                case EState.Training:
-                    m_GenerateButton.SetEnabled(false);
-                    m_GenerateButton.icon = "stop";
-                    m_GenerateButton.label = StringConstants.stopGenerate;
-                    m_DuplicateButton.SetEnabled(false);
-                    m_DuplicateButton.label = StringConstants.duplicateStyle;
-                    m_DuplicateButton.icon = "duplicate";
-                    break;
-                case EState.Loaded:
-                    m_GenerateButton.SetEnabled(m_GenerateButtonState);
-                    m_GenerateButton.icon = "review";
-                    m_GenerateButton.label = StringConstants.newVersion;
-                    m_DuplicateButton.SetEnabled(m_DuplicateButtonState);
-                    m_DuplicateButton.label = StringConstants.duplicateStyle;
-                    m_DuplicateButton.icon = "duplicate";
-                    break;
-                case EState.Loading:
-                    m_GenerateButton.SetEnabled(false);
-                    m_GenerateButton.icon = "review";
-                    m_GenerateButton.label = StringConstants.newVersion;
-                    m_DuplicateButton.SetEnabled(false);
-                    m_DuplicateButton.label = StringConstants.discardCheckPoint;
-                    m_DuplicateButton.icon = "duplicate";
-                    break;
-                case EState.New:
-                    m_GenerateButton.SetEnabled(true);
-                    m_GenerateButton.icon = "play";
-                    m_GenerateButton.label = StringConstants.generateStyle;
-                    m_DuplicateButton.SetEnabled(itemCount > 1);
-                    m_DuplicateButton.label = StringConstants.discardCheckPoint;
-                    m_DuplicateButton.icon = "delete";
-                    break;
-                case EState.Error:
-                    m_GenerateButton.SetEnabled(m_GenerateButtonState);
-                    m_GenerateButton.icon = "review";
-                    m_GenerateButton.label = StringConstants.newVersion;
-                    m_DuplicateButton.SetEnabled(false);
-                    m_DuplicateButton.label = StringConstants.discardCheckPoint;
-                    m_DuplicateButton.icon = "delete";
-                    break;
-                case EState.Initial:
-                    m_GenerateButton.SetEnabled(m_GenerateButtonState);
-                    m_GenerateButton.icon = "play";
-                    m_GenerateButton.label = StringConstants.generateStyle;
-                    m_DuplicateButton.SetEnabled(false);
-                    m_DuplicateButton.label = StringConstants.duplicateStyle;
-                    m_DuplicateButton.icon = "duplicate";
-                    break;
+                m_GenerateButton.SetEnabled(false);
+                m_DuplicateButton.SetEnabled(false);
+            }
+            else
+            {
+             switch (state)
+                {
+                    case EState.Training:
+                        m_GenerateButton.SetEnabled(false);
+                        m_GenerateButton.icon = "stop";
+                        m_GenerateButton.label = StringConstants.stopGenerate;
+                        m_DuplicateButton.SetEnabled(false);
+                        m_DuplicateButton.label = StringConstants.duplicateStyle;
+                        m_DuplicateButton.icon = "duplicate";
+                        break;
+                    case EState.Loaded:
+                        m_GenerateButton.SetEnabled(m_GenerateButtonState);
+                        m_GenerateButton.icon = "review";
+                        m_GenerateButton.label = StringConstants.newVersion;
+                        m_DuplicateButton.SetEnabled(m_DuplicateButtonState);
+                        m_DuplicateButton.label = StringConstants.duplicateStyle;
+                        m_DuplicateButton.icon = "duplicate";
+                        break;
+                    case EState.Loading:
+                        m_GenerateButton.SetEnabled(false);
+                        m_GenerateButton.icon = "review";
+                        m_GenerateButton.label = StringConstants.newVersion;
+                        m_DuplicateButton.SetEnabled(false);
+                        m_DuplicateButton.label = StringConstants.discardCheckPoint;
+                        m_DuplicateButton.icon = "duplicate";
+                        break;
+                    case EState.New:
+                        m_GenerateButton.SetEnabled(true);
+                        m_GenerateButton.icon = "play";
+                        m_GenerateButton.label = StringConstants.generateStyle;
+                        m_DuplicateButton.SetEnabled(itemCount > 1);
+                        m_DuplicateButton.label = StringConstants.discardCheckPoint;
+                        m_DuplicateButton.icon = "delete";
+                        break;
+                    case EState.Error:
+                        m_GenerateButton.SetEnabled(m_GenerateButtonState);
+                        m_GenerateButton.icon = "review";
+                        m_GenerateButton.label = StringConstants.newVersion;
+                        m_DuplicateButton.SetEnabled(false);
+                        m_DuplicateButton.label = StringConstants.discardCheckPoint;
+                        m_DuplicateButton.icon = "delete";
+                        break;
+                    case EState.Initial:
+                        m_GenerateButton.SetEnabled(m_GenerateButtonState);
+                        m_GenerateButton.icon = "play";
+                        m_GenerateButton.label = StringConstants.generateStyle;
+                        m_DuplicateButton.SetEnabled(false);
+                        m_DuplicateButton.label = StringConstants.duplicateStyle;
+                        m_DuplicateButton.icon = "duplicate";
+                        break;
+                }
             }
         }
 
@@ -332,11 +361,11 @@ namespace Unity.Muse.StyleTrainer
             }
 
             if (checkPoint.guid == m_StyleData.favoriteCheckPoint && checkPoint.state != EState.New)
-                icon = "star";
+                icon = "star-selected";
             return icon;
         }
 
-        void BindDropDownItem(MenuItem arg1, int arg2)
+        void BindDropDownItem(DropdownItem arg1, int arg2)
         {
             var checkPoint = m_StyleCheckPointDropdown.sourceItems[arg2] as CheckPointData;
             arg1.styleSheets.Add(Resources.Load<StyleSheet>("Unity.Muse.StyleTrainer/uss/Icons"));
@@ -389,12 +418,16 @@ namespace Unity.Muse.StyleTrainer
 
         void OnCheckPointDataChanged(CheckPointDataChangedEvent arg0)
         {
+            using var selection = m_StyleCheckPointDropdown.value.GetEnumerator();
+            if (!selection.MoveNext())
+                return;
+
             for (var i = 0; i < m_StyleCheckPointDropdown.sourceItems.Count; ++i)
             {
                 var d = m_StyleCheckPointDropdown.sourceItems[i] as CheckPointData;
                 if (d?.guid == arg0.checkPointData.guid)
                 {
-                    if (m_StyleCheckPointDropdown.value == i)
+                    if (selection.Current == i)
                     {
                         UpdateInfoUI(i);
                         m_StyleCheckPointDropdown.Refresh();
@@ -413,22 +446,30 @@ namespace Unity.Muse.StyleTrainer
 
         void OnDuplicateButtonStateUpdate(DuplicateButtonStateUpdateEvent arg0)
         {
+            using var selection = m_StyleCheckPointDropdown.value.GetEnumerator();
+            if (!selection.MoveNext())
+                return;
+
             m_DuplicateButtonState = arg0.state;
             m_DuplicateButton.SetEnabled(arg0.state);
-            if (m_StyleCheckPointDropdown.sourceItems?.Count > m_StyleCheckPointDropdown.value)
+            if (m_StyleCheckPointDropdown.sourceItems?.Count >selection.Current)
             {
-                var checkpoint = (CheckPointData)m_StyleCheckPointDropdown.sourceItems[m_StyleCheckPointDropdown.value];
+                var checkpoint = (CheckPointData)m_StyleCheckPointDropdown.sourceItems[selection.Current];
                 UpdateButtonState(checkpoint.state, m_StyleCheckPointDropdown.sourceItems.Count);
             }
         }
 
         void OnGenerateButtonStateUpdate(GenerateButtonStateUpdateEvent arg0)
         {
+            using var selection = m_StyleCheckPointDropdown.value.GetEnumerator();
+            if (!selection.MoveNext())
+                return;
+
             m_GenerateButtonState = arg0.state;
             m_GenerateButton.SetEnabled(arg0.state);
-            if (m_StyleCheckPointDropdown.sourceItems?.Count > m_StyleCheckPointDropdown.value)
+            if (m_StyleCheckPointDropdown.sourceItems?.Count > selection.Current)
             {
-                var checkpoint = (CheckPointData)m_StyleCheckPointDropdown.sourceItems[m_StyleCheckPointDropdown.value];
+                var checkpoint = (CheckPointData)m_StyleCheckPointDropdown.sourceItems[selection.Current];
                 UpdateButtonState(checkpoint.state, m_StyleCheckPointDropdown.sourceItems.Count);
             }
         }
@@ -458,7 +499,7 @@ namespace Unity.Muse.StyleTrainer
                 m_Name.SetValueWithoutNotify(obj.title);
                 m_Description.SetValueWithoutNotify(obj.description);
                 m_DescriptionTextCount = this.Q<Text>("DescriptionTextCount");
-                m_DescriptionTextCount.text = $"{m_Description.value.Length}/{k_MaxDescriptionLength}";
+                m_DescriptionTextCount.text = $"{m_Description.value.Length}/{CheckPointData.maxDescriptionLength}";
                 UpdateCheckPointDropDown(obj.checkPoints, obj.SelectedCheckPointIndex());
             }
         }
@@ -467,8 +508,10 @@ namespace Unity.Muse.StyleTrainer
         {
             if (checkPoints?.Count > 0)
             {
+                // need to clear selection first in case the selected index is greater than the source items count
+                m_StyleCheckPointDropdown.value = Array.Empty<int>();
                 m_StyleCheckPointDropdown.sourceItems = (IList)checkPoints;
-                m_StyleCheckPointDropdown.value = selectedCheckPoint;
+                m_StyleCheckPointDropdown.value = new []{selectedCheckPoint};
             }
             else
             {
@@ -477,7 +520,7 @@ namespace Unity.Muse.StyleTrainer
                     new CheckPointData(EState.New, Utilities.emptyGUID, m_StyleData.projectID)
                         { dropDownLabelName = StringConstants.newVersion }
                 };
-                m_StyleCheckPointDropdown.value = 0;
+                m_StyleCheckPointDropdown.value = new[] {0};
             }
 
             m_StyleCheckPointDropdown.Refresh();

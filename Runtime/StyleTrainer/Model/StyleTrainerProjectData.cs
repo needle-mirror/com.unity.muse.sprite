@@ -38,6 +38,7 @@ namespace Unity.Muse.StyleTrainer
         public string guid => m_StyleTrainerData?.guid;
         public event Action<StyleTrainerProjectData> onDataChanged = _ => { };
 
+        RetrieveDefaultStyleTask m_RetrieveDefaultStyleTask;
         public string assetPath
         {
             set => m_AssetPath = value;
@@ -64,11 +65,12 @@ namespace Unity.Muse.StyleTrainer
                 var buildStyleList = GetDefaultStyles();
                 onDone(buildStyleList);
             }
-            else if(m_DefaultStyleData.state != EState.Loading)
+            else if(m_DefaultStyleData.state != EState.Loading || m_RetrieveDefaultStyleTask == null)
             {
-                var getDefaultStyle = new RetrieveDefaultStyleTask();
-                getDefaultStyle.Execute(m_DefaultStyleData, () =>
+                m_RetrieveDefaultStyleTask = new RetrieveDefaultStyleTask();
+                m_RetrieveDefaultStyleTask.Execute(m_DefaultStyleData, () =>
                 {
+                    m_RetrieveDefaultStyleTask = null;
                     var buildStyleList = GetDefaultStyles();
                     onDone(buildStyleList);
                 });

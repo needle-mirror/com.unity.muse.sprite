@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.Muse.Common;
+using Unity.Muse.Sprite.Backend;
+using Unity.Muse.Sprite.Common.Backend;
 using Unity.Muse.Sprite.Data;
 using Unity.Muse.Sprite.Operators;
 using UnityEngine;
@@ -14,12 +16,14 @@ namespace Unity.Muse.Sprite.UIMode
 
         MainUI m_MainUI;
         Model m_Model;
+
         public void Activate(MainUI mainUI)
         {
             m_MainUI = mainUI;
             m_Model = m_MainUI.model;
             m_Model.OnGenerateButtonClicked += OnGenerateButtonClicked;
             m_Model.OnSetOperatorDefaults += OnSetOperatorDefault;
+            m_Model.GetData<FeedbackManager>().OnDislike += OnDislike;
             m_Model.GetData<DefaultStyleData>().Reset();
         }
 
@@ -27,6 +31,7 @@ namespace Unity.Muse.Sprite.UIMode
         {
             m_Model.OnGenerateButtonClicked -= OnGenerateButtonClicked;
             m_Model.OnSetOperatorDefaults -= OnSetOperatorDefault;
+            m_Model.GetData<FeedbackManager>().OnDislike -= OnDislike;
             m_Model.GetData<DefaultStyleData>().Reset();
         }
 
@@ -55,6 +60,25 @@ namespace Unity.Muse.Sprite.UIMode
             }
 
             return currentOperators;
+        }
+
+        void OnDislike(Artifact artifact)
+        {
+            var feedbackData = new FeedbackData
+            {
+                version = FeedbackData.currentVersion,
+                disliked = m_Model.GetData<FeedbackManager>().IsDisliked(artifact)
+            };
+
+            var requestData = new FeedbackRequest
+            {
+                guid = artifact.Guid,
+                feedback_flags = feedbackData.GetFlags(),
+                feedback_comment = feedbackData.ToString()
+            };
+
+            var request = new SubmitFeedbackRestCall(ServerConfig.serverConfig, requestData);
+            request.SendRequest();
         }
     }
 }

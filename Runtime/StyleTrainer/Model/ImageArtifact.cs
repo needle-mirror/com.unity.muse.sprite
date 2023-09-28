@@ -44,6 +44,16 @@ namespace Unity.Muse.StyleTrainer
             return texture;
         }
 
+        public (bool cached, Texture2D texture) GetLoaded()
+        {
+            if (Utilities.ValidStringGUID(guid) && m_Cache != null && m_Cache.Guid == guid && m_Cache.IsLoaded())
+            {
+                return (true, m_Cache.GetTexture2D());
+            }
+
+            return (false, null);
+        }
+
         public override void GetArtifact(Action<Texture2D> onDoneCallback, bool useCache)
         {
             if (!Utilities.ValidStringGUID(guid))
@@ -58,7 +68,11 @@ namespace Unity.Muse.StyleTrainer
             }
             else if (Utilities.IsTempGuid(guid))
             {
-                m_Cache.Guid = guid;
+                if (m_Cache?.Guid != guid)
+                {
+                    DisposeCache();
+                    m_Cache = new StyleTrainerImageArtifactCache(guid, 0);
+                }
                 var texture = m_Cache.GetTexture2D();
                 if (texture == null)
                 {

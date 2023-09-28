@@ -105,8 +105,7 @@ namespace Unity.Muse.StyleTrainer.Editor
 
         void CacheInspector()
         {
-            var artifactcacheDB = "ArtifactCache.db";
-            var databasePath = Path.Combine(Application.persistentDataPath, artifactcacheDB);
+            var databasePath = StyleTrainerConfig.config.artifactCachePath;
             if (File.Exists(databasePath))
             {
                 var fi = new FileInfo(databasePath);

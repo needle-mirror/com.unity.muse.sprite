@@ -245,10 +245,13 @@ namespace Unity.Muse.StyleTrainer
 
         void OnGetStyleFailure(GetStyleRestCall obj)
         {
-            state = EState.Error;
-            StyleTrainerDebug.Log($"Failed to load style {guid} {obj.errorMessage}");
-
-            DataChanged(this);
+            if (obj.retriesFailed)
+            {
+                state = EState.Error;
+                StyleTrainerDebug.Log($"Failed to load style {guid} {obj.errorMessage}");
+                DataChanged(this);
+                ArtifactLoaded(this);
+            }
         }
 
         void OnGetStyleSuccess(GetStyleRestCall arg1, GetStyleResponse arg2)

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Unity.AppUI.UI;
 using Unity.Muse.Common;
-using Unity.Muse.Sprite.Common.Events;
 using Unity.Muse.Sprite.Artifacts;
 using Unity.Muse.Sprite.Common.Backend;
 using Unity.Muse.Sprite.Operators;
@@ -16,8 +15,13 @@ namespace Unity.Muse.Sprite.UIComponents
     {
         ActionButton m_EditButton;
         ActionButton m_ActionButton;
-        private VisualElement m_ButtonContainer;
+        VisualElement m_ButtonContainer;
         ActionButton m_BookmarkButton;
+        ActionButton m_DislikeButton;
+        VisualElement m_LeftVerticalContainer;
+
+        const float k_LeftSideWidthVisible = 107f;
+        const float k_EditIconWidthVisible = 70f;
 
         public SpriteMuseArtifactResultView(Artifact artifact)
             : base(artifact)
@@ -27,13 +31,13 @@ namespace Unity.Muse.Sprite.UIComponents
             m_ButtonContainer = new VisualElement();
             m_ButtonContainer.AddToClassList("muse-asset-image__control-buttons-container");
 
-            styleSheets.Add(Resources.Load<StyleSheet>("uss/Bookmark"));
+            styleSheets.Add(Resources.Load<StyleSheet>("uss/ResultItem"));
 
-            m_EditButton = new ActionButton { name="refine", icon = "pen", tooltip = Muse.Common.TextContent.refineTooltip };
+            m_EditButton = new ActionButton { name = "refine", icon = "pen", tooltip = Muse.Common.TextContent.refineTooltip };
             m_EditButton.AddToClassList("refine-button");
             m_EditButton.AddToClassList("refine-button-item");
             m_EditButton.clicked += OnRefineClicked;
-            m_ActionButton = new ActionButton { name="more", icon = "ellipsis", tooltip = "More options" };
+            m_ActionButton = new ActionButton { name = "more", icon = "ellipsis", tooltip = "More options" };
             m_ActionButton.AddToClassList("refine-button");
             m_ActionButton.AddToClassList("refine-button-item");
 
@@ -42,15 +46,38 @@ namespace Unity.Muse.Sprite.UIComponents
             m_ButtonContainer.Add(m_ActionButton);
             m_ButtonContainer.Add(m_EditButton);
 
-            m_BookmarkButton = new ActionButton();
+            m_LeftVerticalContainer = new VisualElement();
+            m_LeftVerticalContainer.AddToClassList("left-vertical-container");
+            m_ButtonContainer.Add(m_LeftVerticalContainer);
+            m_BookmarkButton = new ActionButton
+            {
+                tooltip = Muse.Common.TextContent.bookmarkButtonTooltip,
+                icon = "star"
+            };
             m_BookmarkButton.clicked += OnBookmarkClicked;
-            m_BookmarkButton.icon = "star";
-            m_BookmarkButton.AddToClassList("bookmark-button");
-            m_BookmarkButton.AddToClassList("refine-button");
-            m_ButtonContainer.Add(m_BookmarkButton);
+            m_BookmarkButton.AddToClassList("container-button");
+            m_LeftVerticalContainer.Add(m_BookmarkButton);
+
+            m_DislikeButton = new ActionButton
+            {
+                tooltip = Muse.Common.TextContent.dislikeTooltip,
+                icon = "dislike"
+            };
+            m_DislikeButton.clicked += OnDislikeClicked;
+            m_DislikeButton.AddToClassList("container-button");
+            m_DislikeButton.AddToClassList("dislike-button");
+            m_LeftVerticalContainer.Add(m_DislikeButton);
 
             m_PreviewImage.OnLoadedPreview += UpdateView;
             RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
+            RegisterCallback<GeometryChangedEvent>(OnGeometryChangedEvent);
+        }
+
+        void OnGeometryChangedEvent(GeometryChangedEvent evt)
+        {
+            UpdateEditButton();
+            UpdateLeftSideButtons();
+            UpdateBookmark();
         }
 
         void OnMenuTriggerClicked()
@@ -75,10 +102,10 @@ namespace Unity.Muse.Sprite.UIComponents
 
         void OnAttachToPanel(AttachToPanelEvent evt)
         {
+            UpdateFeedback();
             UpdateBookmark();
             UpdateView();
         }
-
 
         public override bool TryGoToRefineMode()
         {
@@ -101,9 +128,55 @@ namespace Unity.Muse.Sprite.UIComponents
 
         void UpdateBookmark()
         {
-            var isBookmarked = CurrentModel.GetData<BookmarkManager>().IsBookmarked(m_Artifact);
-            m_BookmarkButton.EnableInClassList("refine-button", !isBookmarked);
+            var isBookmarked = IsBookmarked();
+            m_BookmarkButton.EnableInClassList("bookmarked", isBookmarked);
             m_BookmarkButton.icon = isBookmarked ? "star-filled" : "star";
+        }
+
+        void OnDislikeClicked()
+        {
+            var feedbackManager = CurrentModel.GetData<FeedbackManager>();
+            feedbackManager.ToggleDislike(m_Artifact);
+
+            UpdateFeedback();
+        }
+
+        void UpdateFeedback()
+        {
+            var feedbackManager = CurrentModel.GetData<FeedbackManager>();
+            var isDisliked = feedbackManager.IsDisliked(m_Artifact);
+            m_DislikeButton.icon = isDisliked ? "dislike-filled" : "dislike";
+        }
+
+        void UpdateEditButton()
+        {
+            m_EditButton.EnableInClassList("refine-button-hidden", !ShouldEditButtonBeVisible());
+            m_EditButton.EnableInClassList("refine-button", ShouldEditButtonBeVisible());
+        }
+
+        void UpdateLeftSideButtons()
+        {
+            m_LeftVerticalContainer.EnableInClassList("container-hidden", !ShouldLeftSideButtonBeVisible());
+        }
+
+        internal bool ShouldLeftSideButtonBeVisible()
+        {
+            return resolvedStyle.width >= k_LeftSideWidthVisible && resolvedStyle.height >= k_LeftSideWidthVisible;
+        }
+
+        internal bool ShouldEditButtonBeVisible()
+        {
+            return resolvedStyle.width >= k_EditIconWidthVisible;
+        }
+
+        internal bool IsBookmarked()
+        {
+            return CurrentModel.GetData<BookmarkManager>().IsBookmarked(m_Artifact);
+        }
+
+        internal bool IsDisliked()
+        {
+            return CurrentModel.GetData<FeedbackManager>().IsDisliked(m_Artifact);
         }
     }
 
@@ -195,6 +268,62 @@ namespace Unity.Muse.Sprite.UIComponents
                             label = Unity.Muse.Common.TextContent.unStarMultiple
                         });
                     }
+                    else
+                    {
+                        if (this is SpriteMuseArtifactResultView spriteResultView)
+                        {
+                            if (!spriteResultView.ShouldLeftSideButtonBeVisible())
+                            {
+                                if (spriteResultView.IsBookmarked())
+                                {
+                                    actions.Add(new ContextMenuAction
+                                    {
+                                        enabled = true,
+                                        id = (int)Actions.UnStar,
+                                        label = Unity.Muse.Common.TextContent.unStarSingle,
+                                    });
+                                }
+                                else
+                                {
+                                    actions.Add(new ContextMenuAction
+                                    {
+                                        enabled = true,
+                                        id = (int)Actions.Star,
+                                        label = Unity.Muse.Common.TextContent.starSingle
+                                    });
+                                }
+
+                                if (spriteResultView.IsDisliked())
+                                {
+                                    actions.Add(new ContextMenuAction
+                                    {
+                                        enabled = true,
+                                        id = (int)Actions.Feedback,
+                                        label = Unity.Muse.Common.TextContent.removeDislike
+                                    });
+                                }
+                                else
+                                {
+                                    actions.Add(new ContextMenuAction
+                                    {
+                                        enabled = true,
+                                        id = (int)Actions.Feedback,
+                                        label = Unity.Muse.Common.TextContent.dislike
+                                    });
+                                }
+                            }
+
+                            if (!spriteResultView.ShouldEditButtonBeVisible() && canRefine)
+                            {
+                                actions.Add(new ContextMenuAction
+                                {
+                                    enabled = true,
+                                    id = (int)Actions.Refine,
+                                    label = Unity.Muse.Common.TextContent.refineSingle
+                                });
+                            }
+                        }
+                    }
                 }
             }
 
@@ -226,6 +355,9 @@ namespace Unity.Muse.Sprite.UIComponents
 
                 switch (id)
                 {
+                    case Actions.Feedback:
+                        CurrentModel.GetData<FeedbackManager>().ToggleDislike(m_Artifact);
+                        break;
                     case Actions.Download:
 #if UNITY_WEBGL && !UNITY_EDITOR
                     spriteMuseArtifact.GetArtifact((Texture2D artifactInstance, byte[] rawData, string errorMessage) =>
@@ -245,7 +377,7 @@ namespace Unity.Muse.Sprite.UIComponents
                         var log = $"JobID:{spriteMuseArtifact?.Guid}\n" +
                             $"Session:{session?.GetSessionID()}\n" +
                             $"ArtifactID:{sgs?.artifactID}\n" +
-                            $"CheckPointID:{sgs?.checkPointUsed}\n" +
+                            $"CheckPointID:{sgs?.checkPointGUID}\n" +
                             $"job Status:{spriteMuseArtifact.jobStatus}";
                         ShowDialog(log);
 #endif
