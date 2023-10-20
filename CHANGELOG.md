@@ -4,6 +4,17 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.4.1] - 2023-10-20
+
+### Added
+
+- Add option for Default Path of Muse assets in Preferences.
+
+### Fixed
+
+- Fixed Style Trainer split view handle can be dragged beyond the intended size.
+- Fix UltraLiteDB could not be found when doing builds.
+
 ## [0.3.0] - 2023-09-28
 
 ### Added

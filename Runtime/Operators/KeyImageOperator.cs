@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using Unity.AppUI.UI;
 using Unity.Muse.Common;
@@ -37,7 +38,7 @@ namespace Unity.Muse.Sprite.Operators
         Text m_HintLabel;
 
         readonly Vector2Int k_DefaultDoodleSize = new Vector2Int(512, 512);
-        MuseShortcut[] m_Shortcuts;
+        List<MuseShortcut> m_Shortcuts;
 
         const int k_BrushSizeStep = 2;
 
@@ -154,6 +155,7 @@ namespace Unity.Muse.Sprite.Operators
             m_ScenePicker.onPickStart += UpdateVisibility;
             m_ScenePicker.onPickEnd += UpdateVisibility;
             m_PickerButton = new ActionButton(ToggleEditorSelection) { icon = "color-picker", accent = true, tooltip = TextContent.doodleSelectorTooltip };
+            m_PickerButton.AddManipulator(m_ScenePicker);
             controlButtonsLeft.Add(m_PickerButton);
 #endif
             var controlButtonsRight = new VisualElement();
@@ -236,11 +238,11 @@ namespace Unity.Muse.Sprite.Operators
 
             var referenceImage = GetTexture(ESettings.ReferenceImage);
             if (referenceImage != null)
-                result.Add(new Image {image = referenceImage});
+                result.Add(new Image { image = referenceImage });
 
             var doodleImage = GetTexture(ESettings.Doodle);
             if (doodleImage != null)
-                result.Add(new Image {image = doodleImage});
+                result.Add(new Image { image = doodleImage });
 
             if (result.childCount == 0)
                 return null;
@@ -258,14 +260,18 @@ namespace Unity.Muse.Sprite.Operators
 
         void OnAttach(AttachToPanelEvent evt)
         {
-            m_Shortcuts = new[]
+            m_Shortcuts = new List<MuseShortcut>
             {
-                new MuseShortcut("Increase Brush Size", OnIncreaseBrushSize, KeyCode.RightBracket, source: (VisualElement)evt.target),
-                new MuseShortcut("Decrease Brush Size", OnDecreaseBrushSize, KeyCode.LeftBracket, source: (VisualElement)evt.target),
-                new MuseShortcut("Toggle Brush", ToggleBrush, KeyCode.B, source: (VisualElement)evt.target),
-                new MuseShortcut("Toggle Eraser", ToggleEraser, KeyCode.E, source: (VisualElement)evt.target),
-                new MuseShortcut("Clear", ClearDoodle, KeyCode.Delete, source: (VisualElement)evt.target)
+                new("Increase Brush Size", OnIncreaseBrushSize, KeyCode.RightBracket, source: (VisualElement)evt.target),
+                new("Decrease Brush Size", OnDecreaseBrushSize, KeyCode.LeftBracket, source: (VisualElement)evt.target),
+                new("Toggle Brush", ToggleBrush, KeyCode.B, source: (VisualElement)evt.target),
+                new("Toggle Eraser", ToggleEraser, KeyCode.E, source: (VisualElement)evt.target)
             };
+            if (Application.platform == RuntimePlatform.OSXEditor || Application.platform == RuntimePlatform.OSXPlayer)
+                m_Shortcuts.Add(new MuseShortcut("Clear", ClearDoodle, KeyCode.Backspace, KeyModifier.Action, source: (VisualElement)evt.target) { requireFocus = true });
+            else
+                m_Shortcuts.Add(new MuseShortcut("Clear", ClearDoodle, KeyCode.Delete, source: (VisualElement)evt.target) { requireFocus = true });
+
             foreach (var shortcut in m_Shortcuts)
                 MuseShortcuts.AddShortcut(shortcut);
         }

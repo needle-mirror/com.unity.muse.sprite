@@ -1,7 +1,7 @@
 .styletrainer-stylemodelinfoeditor {
 
     right: var(--appui-spacing-125);
-    min-width: 288px;
+    min-width: 50%;
     bottom: var(--appui-spacing-125);
     top: var(--appui-spacing-125);
     background-color: var(--appui-backgrounds-200);

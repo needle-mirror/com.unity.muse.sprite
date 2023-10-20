@@ -3,7 +3,6 @@
     right: var(--appui-spacing-125);
     width: 538px;
     min-width: 300px;
-    max-width: 49%;
     bottom: var(--appui-spacing-125);
     top: var(--appui-spacing-125);
     background-color: var(--appui-backgrounds-200);

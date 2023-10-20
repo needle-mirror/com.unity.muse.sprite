@@ -73,7 +73,7 @@ namespace Unity.Muse.StyleTrainer.Editor
             var newWindow = CreateInstance<StyleTrainerWindow>();
             newWindow.SetAsset(asset);
             newWindow.titleContent = new GUIContent("Style Trainer");
-            newWindow.minSize = new Vector2(500, 400);
+            newWindow.minSize = new Vector2(800, 600);
             newWindow.Show();
 
             newWindow.position = new Rect(newWindow.position.position, newWindow.position.size);

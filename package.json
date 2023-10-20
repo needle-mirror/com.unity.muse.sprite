@@ -1,27 +1,27 @@
 {
   "name": "com.unity.muse.sprite",
   "displayName": "Muse Sprite Tool",
-  "version": "0.3.0",
+  "version": "0.4.1",
   "unity": "2022.3",
   "description": "Muse Sprite Tool is a package that provides a set of tools to help create AI-generated 2D asset content from text input in Unity",
   "dependencies": {
     "com.unity.modules.uielements": "1.0.0",
-    "com.unity.muse.common": "0.3.0"
+    "com.unity.muse.common": "0.4.1"
   },
   "relatedPackages": {
-    "com.unity.muse.sprite.tests": "0.3.0",
-    "com.unity.muse.common.tests": "0.3.0"
+    "com.unity.muse.sprite.tests": "0.4.1",
+    "com.unity.muse.common.tests": "0.4.1"
   },
   "_upm": {
-    "changelog": "### Added\n\n- Feedback mechanism.\n\n### Changed\n\n- Style Trainer cache DB moved to project's library folder in Unity Editor.\n- Changed star icon in version drop down to better reflect the selected version.\n\n### Fixed\n\n- Remove special characters from suggested export name.\n- Doodle pad works after entering-exiting playmode.\n- Reduce image preloading in Style Trainer.\n- Fix unable to load default style in when default style project goes into a weird state.\n- Remove incorrect icons in the style dropdown.\n- Fix index out of range exception in style version drop down."
+    "changelog": "### Added\n\n- Add option for Default Path of Muse assets in Preferences.\n\n### Fixed\n\n- Fixed Style Trainer split view handle can be dragged beyond the intended size.\n- Fix UltraLiteDB could not be found when doing builds."
   },
   "upmCi": {
-    "footprint": "06aa81a1d8b84cf2bf8529a815604e676d1ea098"
+    "footprint": "22aff62da549483dd71554f63c158abbcca68297"
   },
-  "documentationUrl": "https://docs.unity3d.com/Packages/com.unity.muse.sprite@0.3/manual/index.html",
+  "documentationUrl": "https://docs.unity3d.com/Packages/com.unity.muse.sprite@0.4/manual/index.html",
   "repository": {
     "url": "https://github.cds.internal.unity3d.com/unity/UnityMuseAITools.git",
     "type": "git",
-    "revision": "5969a3e565b4f1d647235a78ef428c516aa47bd3"
+    "revision": "1dccb55c0f83cedf718411bcc20e723deb2538c2"
   }
 }

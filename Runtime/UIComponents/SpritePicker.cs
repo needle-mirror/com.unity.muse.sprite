@@ -2,11 +2,12 @@ using System;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
+using Object = UnityEngine.Object;
 
 namespace Unity.Muse.Sprite.UIComponents
 {
 #if UNITY_EDITOR
-    internal class SpritePicker : VisualElement
+    internal class SpritePicker : Manipulator
     {
         public event Action onPickStart;
         public event Action onPickEnd;
@@ -15,11 +16,28 @@ namespace Unity.Muse.Sprite.UIComponents
 
         public bool isPicking => m_StartedPicking;
 
+        UnityEngine.Sprite m_SelectedSprite;
+
         bool m_StartedPicking;
 
-        public SpritePicker()
+        Object m_FocusedWindow;
+
+        protected override void RegisterCallbacksOnTarget() { }
+
+        protected override void UnregisterCallbacksFromTarget() { }
+
+        void AddListeners()
         {
-            RegisterCallback<MouseDownEvent>(OnMouseDownHandler);
+            target.RegisterCallback<FocusOutEvent>(OnFocusOut);
+            SceneView.duringSceneGui += OnSceneGui;
+            Selection.selectionChanged += OnSelectionChanged;
+        }
+
+        void RemoveListeners()
+        {
+            target.UnregisterCallback<FocusOutEvent>(OnFocusOut);
+            SceneView.duringSceneGui -= OnSceneGui;
+            Selection.selectionChanged -= OnSelectionChanged;
         }
 
         public void StartPicking()
@@ -27,18 +45,16 @@ namespace Unity.Muse.Sprite.UIComponents
             if (isPicking)
                 return;
 
+            m_SelectedSprite = null;
             m_StartedPicking = true;
 
-            EditorApplication.update += OnEditorUpdate;
-            SceneView.duringSceneGui += OnSceneGui;
-            Selection.selectionChanged += OnSelectionChanged;
-            if (this.HasMouseCapture())
-                return;
-
-            this.CaptureMouse();
-            RegisterCallback<MouseCaptureOutEvent>(OnMouseCaptureOut);
-
             onPickStart?.Invoke();
+
+            m_FocusedWindow = EditorWindow.focusedWindow;
+
+            AddListeners();
+
+            target.schedule.Execute(() => { target.CaptureMouse(); });
         }
 
         public void EndPicking()
@@ -46,31 +62,34 @@ namespace Unity.Muse.Sprite.UIComponents
             if (!isPicking)
                 return;
 
-            UnregisterCallback<MouseCaptureOutEvent>(OnMouseCaptureOut);
-
             m_StartedPicking = false;
 
-            EditorApplication.update -= OnEditorUpdate;
-            SceneView.duringSceneGui -= OnSceneGui;
-            Selection.selectionChanged -= OnSelectionChanged;
-            if (this.HasMouseCapture())
-                this.ReleaseMouse();
+            RemoveListeners();
+
+            if (target.HasMouseCapture())
+                target.ReleaseMouse();
+
+            if (m_SelectedSprite != null)
+                onSelectedObject?.Invoke(m_SelectedSprite);
 
             onPickEnd?.Invoke();
         }
 
-        void OnEditorUpdate()
+        void CheckWindowFocus()
         {
             if (!isPicking)
                 return;
 
-            if (EditorWindow.focusedWindow)
+            if (EditorWindow.focusedWindow != m_FocusedWindow)
             {
                 switch (EditorWindow.focusedWindow.titleContent.text)
                 {
                     case "Hierarchy":
                     case "Project":
-                        schedule.Execute(OnSelectionChanged);
+                        EditorApplication.delayCall += OnSelectionChanged;
+                        break;
+                    default:
+                        EndPicking();
                         break;
                 }
             }
@@ -86,37 +105,29 @@ namespace Unity.Muse.Sprite.UIComponents
                 case GameObject go:
                 {
                     var spriteRenderer = go.GetComponent<SpriteRenderer>();
-                    if (spriteRenderer != null && spriteRenderer.sprite != null)
-                        onSelectedObject?.Invoke(spriteRenderer.sprite);
+                    if (spriteRenderer != null)
+                        m_SelectedSprite = spriteRenderer.sprite;
                     break;
                 }
-                case UnityEngine.Sprite sr:
-                    onSelectedObject?.Invoke(sr);
+                case UnityEngine.Sprite sprite:
+                    m_SelectedSprite = sprite;
                     break;
                 default:
                 {
                     var assetPath = AssetDatabase.GetAssetPath(Selection.activeObject);
                     var sprite = AssetDatabase.LoadAssetAtPath<UnityEngine.Sprite>(assetPath);
                     if (sprite != null)
-                        onSelectedObject?.Invoke(sprite);
+                        m_SelectedSprite = sprite;
                     break;
                 }
             }
 
             EndPicking();
         }
-
-        void OnMouseCaptureOut(MouseCaptureOutEvent mouseCaptureOutEvent)
+        
+        void OnFocusOut(FocusOutEvent evt)
         {
-            EndPicking();
-        }
-
-        void OnMouseDownHandler(MouseDownEvent evt)
-        {
-            if (!isPicking)
-                StartPicking();
-            else
-                EndPicking();
+            EditorApplication.delayCall += CheckWindowFocus;
         }
 
         void OnSceneGui(SceneView sceneView)
@@ -127,9 +138,9 @@ namespace Unity.Muse.Sprite.UIComponents
             var e = Event.current;
             if (e.type == EventType.MouseDown)
             {
-                var obj = FindObject();
-                if (obj != null)
-                    onSelectedObject?.Invoke(obj);
+                var sprite = FindObject();
+                if (sprite != null)
+                    m_SelectedSprite = sprite;
 
                 EndPicking();
             }

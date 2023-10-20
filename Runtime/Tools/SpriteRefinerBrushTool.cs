@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Unity.AppUI.UI;
 using Unity.Muse.Common;
 using Unity.Muse.Sprite.Operators;
@@ -8,11 +9,12 @@ using TextContent = Unity.Muse.Sprite.UIComponents.TextContent;
 
 namespace Unity.Muse.Sprite.Tools
 {
-    class SpriteRefinerBrushTool: ICanvasTool
+    class SpriteRefinerBrushTool : ICanvasTool
     {
         Model m_CurrentModel;
         PaintCanvasToolManipulator m_CurrentManipulator;
         PaintingManipulatorSettings m_Settings;
+
         public CanvasManipulator GetToolManipulator()
         {
             m_CurrentManipulator = new PaintCanvasToolManipulator(m_CurrentModel, new Vector2Int(2, 2));
@@ -32,7 +34,7 @@ namespace Unity.Muse.Sprite.Tools
 
         public void ActivateOperators()
         {
-            if(m_CurrentModel == null) return;
+            if (m_CurrentModel == null) return;
 
             var opMask = m_CurrentModel.CurrentOperators.Find(x => x.GetType() == typeof(SpriteRefiningMaskOperator)) ??
                 m_CurrentModel.AddOperator<SpriteRefiningMaskOperator>();
@@ -83,7 +85,7 @@ namespace Unity.Muse.Sprite.Tools
         SpriteRefinerBrushTool m_BrushTool;
         PaintCanvasToolManipulator m_ToolManipulator;
         bool m_IsInitialized;
-        MuseShortcut[] m_Shortcuts;
+        List<MuseShortcut> m_Shortcuts;
         TouchSliderFloat m_RadiusSlider;
         Toggle m_ToggleErase;
 
@@ -152,14 +154,17 @@ namespace Unity.Muse.Sprite.Tools
 
         void OnAttach(AttachToPanelEvent evt)
         {
-            m_Shortcuts = new[]
+            m_Shortcuts = new List<MuseShortcut>
             {
-                new MuseShortcut("Increase Brush Size", OnIncreaseBrushSize, KeyCode.RightBracket, source: m_Root),
-                new MuseShortcut("Decrease Brush Size", OnDecreaseBrushSize, KeyCode.LeftBracket, source: m_Root),
-                new MuseShortcut("Toggle Brush", ToggleBrush, KeyCode.B, source: m_Root),
-                new MuseShortcut("Toggle Eraser", ToggleEraser, KeyCode.E, source: m_Root),
-                new MuseShortcut("Clear", ClearDoodle, KeyCode.Delete, source: m_Root)
+                new("Increase Brush Size", OnIncreaseBrushSize, KeyCode.RightBracket, source: m_Root),
+                new("Decrease Brush Size", OnDecreaseBrushSize, KeyCode.LeftBracket, source: m_Root),
+                new("Toggle Brush", ToggleBrush, KeyCode.B, source: m_Root),
+                new("Toggle Eraser", ToggleEraser, KeyCode.E, source: m_Root)
             };
+            if (Application.platform == RuntimePlatform.OSXEditor || Application.platform == RuntimePlatform.OSXPlayer)
+                m_Shortcuts.Add(new MuseShortcut("Clear", ClearDoodle, KeyCode.Backspace, KeyModifier.Action, source: m_Root));
+            else
+                m_Shortcuts.Add(new MuseShortcut("Clear", ClearDoodle, KeyCode.Delete, source: m_Root));
 
             foreach (var shortcut in m_Shortcuts)
                 MuseShortcuts.AddShortcut(shortcut);
