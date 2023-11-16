@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Unity.AppUI.UI;
 using Unity.Muse.Common;
-using Unity.Muse.Common.Baryon.UI.Manipulators;
 using Unity.Muse.Sprite.Artifacts;
 using Unity.Muse.Sprite.Common.Backend;
 using Unity.Muse.Sprite.Operators;
@@ -98,7 +97,7 @@ namespace Unity.Muse.Sprite.UIComponents
             m_ButtonContainer.style.display = canRefineBookmark ? DisplayStyle.Flex : DisplayStyle.None;
             m_ButtonContainer.visible = canRefineBookmark;
             m_EditButton.SetEnabled(m_PreviewImage.image != null);
-            m_ActionButton.visible = canRefine;
+            m_ActionButton.visible = isArtifactAvailable;
             m_EditButton.visible = canRefine;
         }
 

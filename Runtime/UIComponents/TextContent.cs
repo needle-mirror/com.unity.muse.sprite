@@ -5,6 +5,7 @@ namespace Unity.Muse.Sprite.UIComponents
         public static readonly string doodleStartTooltip = "Scribble or drag & drop reference image here.";
         public static readonly string doodleBrushTooltip = "Scribble Tool. (B)\n'[' or ']' decreases/increases brush size.";
         public static readonly string doodleEraserTooltip = "Erases the scribbles. (E)\n'[' or ']' decreases/increases brush size.";
+        public static readonly string doodleBrushSizeTooltip = "Sets the brush size.";
         public static readonly string doodleTooltipDisabled = "Clear reference image to use Scribble/Eraser Tools";
         public static readonly string doodleClearTooltip = "Clear Tool clears all the scribbles and/or image reference.";
         public static readonly string doodleSelectorTooltip = "Sprite Picker Tool picks sprites from the Scene view or the Project window.";

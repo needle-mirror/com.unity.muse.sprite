@@ -13,8 +13,11 @@ using Debug = UnityEngine.Debug;
 
 namespace Unity.Muse.Sprite.Artifacts
 {
+    [Serializable]
     internal class SpriteMuseArtifact : Artifact<Texture2D>, IGenerateArtifact, IDisposable
     {
+        public override bool isSafe => !m_UnsafeContent;
+
         public override string FileExtension => "png";
         GetJobRestCall m_GetJobRestCall;
         GetArtifactRestCall m_GetArtifactRestCall;
@@ -23,6 +26,9 @@ namespace Unity.Muse.Sprite.Artifacts
         ArtifactCreationDelegate m_ArtifactCreationDelegate;
         Model m_Model;
         bool m_Disposing = false;
+
+        [SerializeField]
+        bool m_UnsafeContent;
 
         public SpriteMuseArtifact(string guid, uint seed)
             : base(guid, seed)
@@ -46,11 +52,12 @@ namespace Unity.Muse.Sprite.Artifacts
 
         public override void GetArtifact(ArtifactCreationDelegate onReceived, bool useCache)
         {
-            if(Guid.StartsWith("Error-"))
+            if (Guid.StartsWith("Error-"))
             {
                 onReceived?.Invoke(spriteGeneratorErrorTexture, Array.Empty<byte>(), "Failed to generate artifact");
                 return;
             }
+
             if (useCache && IsCached)
             {
                 var artifact = ReadFromCache(out var rawData);
@@ -99,7 +106,7 @@ namespace Unity.Muse.Sprite.Artifacts
                 Debug.LogError($"TextToSpriteController.OnGetJobFailed: Result: {arg1.requestResult} Error:{arg1.requestError} Retry {m_GetJobRestCall.retries} Endpoint: {arg1.info}");
                 NotifyErrorGettingArtifact();
             }
-            else if(!m_Disposing)
+            else if (!m_Disposing)
                 Scheduler.ScheduleCallback(serverConfig.webRequestPollRate, () => m_GetJobRestCall.SendRequest());
         }
 
@@ -117,7 +124,11 @@ namespace Unity.Muse.Sprite.Artifacts
         void OnGetArtifactSuccess(GetArtifactRestCall request, byte[] bytes)
         {
             var deserializedArtifact = CreateFromData(bytes, true);
-            m_ArtifactCreationDelegate?.Invoke(deserializedArtifact, bytes, "");
+
+            if (m_UnsafeContent)
+                m_ArtifactCreationDelegate?.Invoke(deserializedArtifact, Array.Empty<byte>(), "Potentially inappropriate content was detected.");
+            else
+                m_ArtifactCreationDelegate?.Invoke(deserializedArtifact, bytes, string.Empty);
             m_ArtifactCreationDelegate = null;
         }
 
@@ -140,6 +151,22 @@ namespace Unity.Muse.Sprite.Artifacts
         {
             Texture2D tex = ConstructFromData(data);
 
+            var hasDifferentPixels = false;
+            var pixels = tex.GetPixels();
+            var pixel = pixels[0];
+            for (var i = 1; i < pixels.Length; i++)
+            {
+                if (pixels[i] != pixel)
+                {
+                    hasDifferentPixels = true;
+                    break;
+                }
+            }
+
+            m_UnsafeContent = !hasDifferentPixels;
+            if (m_UnsafeContent)
+                return null;
+
             if (updateCache)
             {
                 WriteToCache(data);
@@ -161,6 +188,7 @@ namespace Unity.Muse.Sprite.Artifacts
                 tex.hideFlags = HideFlags.HideAndDontSave;
                 return tex;
             }
+
             rawData = null;
             return null;
         }
@@ -222,7 +250,12 @@ namespace Unity.Muse.Sprite.Artifacts
 
         public override void RetryGenerate(Model model)
         {
-           Generate(model);
+            if (m_UnsafeContent)
+            {
+                Seed = (uint)UnityEngine.Random.Range(0, 65535);
+                m_UnsafeContent = false;
+            }
+            Generate(model);
         }
 
         void RefineSpriteDone(string id, uint seed)
@@ -296,11 +329,11 @@ namespace Unity.Muse.Sprite.Artifacts
             request.simulate = serverConfig.simulate;
             if (spriteGenerationOperator != null)
             {
-                if(string.IsNullOrEmpty(request.base64Image))
+                if (string.IsNullOrEmpty(request.base64Image))
                     m_SpriteGenerateCall = new SpriteGenerateRestCall(serverConfig, request, sessionId);
                 else
                 {
-                    if(request.scribble)
+                    if (request.scribble)
                         m_SpriteGenerateCall = new SpriteScribbleRestCall(serverConfig, request, sessionId);
                     else
                         m_SpriteGenerateCall = new SpriteVariantRestCall(serverConfig, request, sessionId);
@@ -357,7 +390,7 @@ namespace Unity.Muse.Sprite.Artifacts
                 keyImageTexture.SetPixels32(referenceImagePixels);
                 keyImageTexture.Apply();
             }
-            else if(doodleImage != null)
+            else if (doodleImage != null)
             {
                 keyImageTexture = doodleImage;
             }
@@ -394,11 +427,12 @@ namespace Unity.Muse.Sprite.Artifacts
                 Debug.LogError($"TextToSpriteController.OnSpriteGenerateFailed: Result: {obj.requestResult} Error:{obj.requestError} Retry:{m_SpriteGenerateCall.retries} {obj.errorMessage}");
                 Guid = "Error-" + System.Guid.NewGuid().ToString();
                 OnGenerationDone?.Invoke(this, obj.requestError);
-            }else if (m_Disposing)
+            }
+            else if (m_Disposing)
                 m_SpriteGenerateCall.maxRetries = 0;
         }
 
-        public void SetOperators(JobInfoResponse jobInfoResponse )
+        public void SetOperators(JobInfoResponse jobInfoResponse)
         {
             //todo putting jobInfoResponse back to operatorData
         }

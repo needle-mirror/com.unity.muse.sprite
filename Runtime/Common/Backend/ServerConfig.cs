@@ -74,8 +74,13 @@ namespace Unity.Muse.Sprite.Common.Backend
         static ServerConfig GetServerConfigEditor()
         {
             var objs = UnityEditorInternal.InternalEditorUtility.LoadSerializedFileAndForget("ProjectSettings/SpriteMuseServerConfig.asset");
-            ServerConfig config = (objs.Length > 0 ? objs[0] : null) as ServerConfig;
-            return config != null ? config : ResourceManager.Load<ServerConfig>(PackageResources.spriteGeneratorServerConfig);
+            var config = (objs.Length > 0 ? objs[0] : null) as ServerConfig;
+            if (config == null)
+            {
+                objs = UnityEditorInternal.InternalEditorUtility.LoadSerializedFileAndForget(PackageResources.spriteGeneratorServerConfig);
+                config = (objs.Length > 0 ? objs[0] : null) as ServerConfig;
+            }
+            return config;
         }
 #endif
     }

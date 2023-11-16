@@ -21,6 +21,7 @@
 .appui-sprite-keyimage__control-buttons-container-left {
     flex-direction: row;
     justify-content: flex-start;
+    flex-grow: 0;
 }
 
 .appui-sprite-keyimage__control-buttons-container-right {
@@ -40,4 +41,10 @@
     display: none;
     white-space: normal;
     margin: 0 var(--appui-sizing-200);
+}
+
+#brush-size-slider {
+    flex-grow: 1;
+    margin-left: 2px;
+    margin-right: 2px;
 }

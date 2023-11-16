@@ -26,6 +26,7 @@ namespace Unity.Muse.Sprite.Operators
         Image m_ReferenceImage;
         ActionButton m_BrushButton;
         ActionButton m_EraserButton;
+        TouchSliderFloat m_BrushSizeSlider;
         Button m_DeleteButton;
 #if UNITY_EDITOR
         SpritePicker m_ScenePicker;
@@ -41,7 +42,11 @@ namespace Unity.Muse.Sprite.Operators
         readonly Vector2Int k_DefaultDoodleSize = new Vector2Int(512, 512);
         List<MuseShortcut> m_Shortcuts;
 
-        const int k_BrushSizeStep = 2;
+        float m_BrushSize;
+
+        const int k_BrushSizeStep = 3;
+        const int k_MinSize = 3;
+        const int k_MaxSize = 50;
 
         /// <summary>
         /// Base USS class name.
@@ -150,6 +155,16 @@ namespace Unity.Muse.Sprite.Operators
 
             m_BrushButton = new ActionButton(ToggleBrush) { icon = "paint-brush", accent = true, tooltip = TextContent.doodleBrushTooltip };
             m_EraserButton = new ActionButton(ToggleEraser) { icon = "eraser", accent = true, tooltip = TextContent.doodleEraserTooltip };
+            m_BrushSizeSlider = new TouchSliderFloat
+            {
+                tooltip = TextContent.doodleBrushSizeTooltip,
+                name = "brush-size-slider",
+                lowValue = k_MinSize,
+                highValue = k_MaxSize
+            };
+            m_BrushSizeSlider.RegisterValueChangedCallback(OnBrushSizeChanged);
+            m_BrushSizeSlider.RegisterValueChangingCallback(OnBrushSizeChanging);
+            m_BrushSizeSlider.label = "Radius";
             controlButtonsLeft.Add(m_BrushButton);
             controlButtonsLeft.Add(m_EraserButton);
 
@@ -162,6 +177,8 @@ namespace Unity.Muse.Sprite.Operators
             m_PickerButton.AddManipulator(m_ScenePicker);
             controlButtonsLeft.Add(m_PickerButton);
 #endif
+            controlButtons.Add(m_BrushSizeSlider);
+
             var controlButtonsRight = new VisualElement();
             controlButtonsRight.AddToClassList(controlButtonsContainerRightClassName);
             controlButtons.Add(controlButtonsRight);
@@ -202,6 +219,7 @@ namespace Unity.Muse.Sprite.Operators
             m_DoodlePadManipulator.SetValueWithoutNotify(Convert.FromBase64String(GetDoodle()));
             m_DoodlePadManipulator.isClear = bool.Parse(m_OperatorData.settings[(int)ESettings.IsClear]);
             m_DoodlePadManipulator.onValueChanged += OnDoodleChanged;
+            m_BrushSize = m_DoodlePadManipulator.GetBrushSize();
             UI.focusable = true;
 
             m_SpriteTextureDropManipulator = new SpriteTextureDropManipulator(model);
@@ -259,10 +277,8 @@ namespace Unity.Muse.Sprite.Operators
 
             return result;
         }
-                
-        public void AddCustomGenerationSettingsSubviews(VisualElement container, Model model)
-        {
-        }
+
+        public void AddCustomGenerationSettingsSubviews(VisualElement container, Model model) { }
 
         void OnMaskTightnessChanging(ChangingEvent<float> evt)
         {
@@ -304,6 +320,22 @@ namespace Unity.Muse.Sprite.Operators
         {
             m_OperatorData.settings[(int)ESettings.MaskStrength] = evt.newValue.ToString("N2", new CultureInfo("en-US"));
             m_MaskTightness.SetValueWithoutNotify(maskStrength);
+        }
+
+        void OnBrushSizeChanged(ChangeEvent<float> evt)
+        {
+            m_BrushSize = (float)Math.Round(evt.newValue, 0);
+
+            m_DoodlePadManipulator.SetBrushSize(m_BrushSize);
+
+            UpdateVisibility();
+        }
+
+        void OnBrushSizeChanging(ChangingEvent<float> evt)
+        {
+            m_BrushSize = (float)Math.Round(evt.newValue, 0);
+
+            UpdateVisibility();
         }
 
         public float maskStrength => float.Parse(m_OperatorData.settings[(int)ESettings.MaskStrength], new CultureInfo("en-US"));
@@ -417,12 +449,18 @@ namespace Unity.Muse.Sprite.Operators
 
         void OnIncreaseBrushSize()
         {
-            m_DoodlePadManipulator.IncreaseBrushSize();
+            m_BrushSize = (float)Math.Round(Mathf.Clamp(m_BrushSize + k_BrushSizeStep, k_MinSize, k_MaxSize), 0);
+            m_DoodlePadManipulator.SetBrushSize(m_BrushSize);
+
+            UpdateVisibility();
         }
 
         void OnDecreaseBrushSize()
         {
-            m_DoodlePadManipulator.DecreaseBrushSize();
+            m_BrushSize = (float)Math.Round(Mathf.Clamp(m_BrushSize - k_BrushSizeStep, k_MinSize, k_MaxSize), 0);
+            m_DoodlePadManipulator.SetBrushSize(m_BrushSize);
+
+            UpdateVisibility();
         }
 
         void ClearDoodle()
@@ -483,6 +521,9 @@ namespace Unity.Muse.Sprite.Operators
             m_EraserButton.selected = m_DoodlePadManipulator.currentState == DoodleModifierState.Erase;
 
             m_DeleteButton.SetEnabled(m_ReferenceImage.image != null || !m_DoodlePadManipulator.isClear);
+
+            m_BrushSizeSlider.SetValueWithoutNotify(m_BrushSize);
+            m_BrushSizeSlider.SetEnabled(m_DoodlePadManipulator.currentState != DoodleModifierState.None);
         }
 
         public void InitFromJobInfo(JobInfoResponse jobInfoResponse)

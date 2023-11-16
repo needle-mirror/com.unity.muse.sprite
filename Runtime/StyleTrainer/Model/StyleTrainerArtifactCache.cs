@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Threading;
 using Unity.Muse.Common;
 using UnityEngine;
 using MuseArtifact = Unity.Muse.Common.Artifact;
@@ -10,9 +11,14 @@ namespace Unity.Muse.StyleTrainer
     {
         BaseArtifactCache m_ArtifactCache;
         string m_ArtifactCachePath;
+        Mutex m_Mutex;
+
         public StyleTrainerArtifactCache(string artifactCachePath)
         {
             m_ArtifactCachePath = artifactCachePath;
+
+            m_Mutex = new Mutex(true, m_ArtifactCachePath);
+
             CreateCache();
         }
 
@@ -21,7 +27,7 @@ namespace Unity.Muse.StyleTrainer
             if (m_ArtifactCache == null)
             {
 #if UNITY_EDITOR
-                if(!Directory.Exists(Path.GetDirectoryName(m_ArtifactCachePath)))
+                if (!Directory.Exists(Path.GetDirectoryName(m_ArtifactCachePath)))
                     Directory.CreateDirectory(Path.GetDirectoryName(m_ArtifactCachePath));
 #endif
                 m_ArtifactCache = ArtifactCache.CreateCacheInstanceForPlatform(Application.platform, m_ArtifactCachePath);
@@ -36,6 +42,7 @@ namespace Unity.Muse.StyleTrainer
         void CacheOperation(Action<BaseArtifactCache> operation)
         {
             bool failedToRun = false;
+            m_Mutex.WaitOne();
             try
             {
                 operation(m_ArtifactCache);
@@ -57,8 +64,9 @@ namespace Unity.Muse.StyleTrainer
             }
             finally
             {
-                if(failedToRun)
+                if (failedToRun)
                     operation(m_ArtifactCache);
+                m_Mutex.ReleaseMutex();
             }
         }
 
@@ -76,6 +84,7 @@ namespace Unity.Muse.StyleTrainer
                 m_ArtifactCachePath = Path.Combine(Path.GetDirectoryName(m_ArtifactCachePath), fileName);
             }
         }
+
         public void Dispose()
         {
             CacheOperation((db) => db.Dispose());

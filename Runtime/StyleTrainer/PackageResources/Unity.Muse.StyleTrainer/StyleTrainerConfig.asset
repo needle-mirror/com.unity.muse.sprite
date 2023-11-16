@@ -23,7 +23,7 @@ MonoBehaviour:
   logToFile: 0
   defaultStyleVersion: 2023090802
   defaultStyles:
-  - m_Guid: 06c229b5-24d4-41bc-9e38-71ae734b2904
+  - m_Guid: 00000000-0000-0000-0000-000000000000
     m_State: 1
     m_Disposing: 0
     m_IsFallback: 1
@@ -33,15 +33,15 @@ MonoBehaviour:
     selectedCheckPointGUID: 00000000-0000-0000-0000-000000000000
     m_FavoriteCheckPointGUID: active
     parentID: 00000000-0000-0000-0000-000000000000
-    m_ProjectID: 11000000-0000-0000-0000-000000000011
-    m_TrainingSteps: 800
+    m_ProjectID: 00000000-0000-0000-0000-000000000000
+    m_TrainingSteps: 2000
     m_CheckPoints:
-    - m_Guid: bab113a4-5ebc-4c50-97f1-4a0738162a3f
+    - m_Guid: 00000000-0000-0000-0000-000000000000
       m_State: 1
       m_Disposing: 0
-      m_ProjectID: 11000000-0000-0000-0000-000000000011
-      m_Name: Buildings
-      m_Description: Buildings (Blackbox 500)
+      m_ProjectID: 00000000-0000-0000-0000-000000000000
+      m_Name: Default
+      m_Description: Default style.
       parent_id: 00000000-0000-0000-0000-000000000000
       m_TrainingSetData:
         m_Guid: 
@@ -53,72 +53,8 @@ MonoBehaviour:
       m_TrainingSteps: 0
     m_SampleOutputPrompts: []
     m_TrainingSetData: []
-    m_Name: Buildings
-    m_Description: Buildings (Blackbox 500)
-  - m_Guid: 8c845506-846c-4573-926c-3845a7c68275
-    m_State: 1
-    m_Disposing: 0
-    m_IsFallback: 1
-    m_Thumbnail:
-      rid: -2
-    m_Visible: 0
-    selectedCheckPointGUID: 00000000-0000-0000-0000-000000000000
-    m_FavoriteCheckPointGUID: active
-    parentID: 00000000-0000-0000-0000-000000000000
-    m_ProjectID: 11000000-0000-0000-0000-000000000011
-    m_TrainingSteps: 800
-    m_CheckPoints:
-    - m_Guid: b1cf774e-39e8-4273-9b39-749067b9c222
-      m_State: 1
-      m_Disposing: 0
-      m_ProjectID: 11000000-0000-0000-0000-000000000011
-      m_Name: Vegetation
-      m_Description: Vegetation (Blackbox 500)
-      parent_id: 00000000-0000-0000-0000-000000000000
-      m_TrainingSetData:
-        m_Guid: 
-        m_State: 0
-        m_Disposing: 0
-        m_TrainingSet: []
-        m_ProjectID: 
-      m_ValidationImagesData: []
-      m_TrainingSteps: 0
-    m_SampleOutputPrompts: []
-    m_TrainingSetData: []
-    m_Name: Vegetation
-    m_Description: Vegetation (Blackbox 500)
-  - m_Guid: 440dded3-6603-4b61-baa9-3b0a11d7cdec
-    m_State: 1
-    m_Disposing: 0
-    m_IsFallback: 1
-    m_Thumbnail:
-      rid: -2
-    m_Visible: 0
-    selectedCheckPointGUID: 00000000-0000-0000-0000-000000000000
-    m_FavoriteCheckPointGUID: active
-    parentID: 00000000-0000-0000-0000-000000000000
-    m_ProjectID: 11000000-0000-0000-0000-000000000011
-    m_TrainingSteps: 800
-    m_CheckPoints:
-    - m_Guid: 3692ac2a-348d-4809-9805-b21a6eada304
-      m_State: 1
-      m_Disposing: 0
-      m_ProjectID: 11000000-0000-0000-0000-000000000011
-      m_Name: Animals
-      m_Description: Animals (Blackbox 500)
-      parent_id: 00000000-0000-0000-0000-000000000000
-      m_TrainingSetData:
-        m_Guid: 
-        m_State: 0
-        m_Disposing: 0
-        m_TrainingSet: []
-        m_ProjectID: 
-      m_ValidationImagesData: []
-      m_TrainingSteps: 0
-    m_SampleOutputPrompts: []
-    m_TrainingSetData: []
-    m_Name: Animals
-    m_Description: Animals (Blackbox 500)
+    m_Name: Default
+    m_Description: Default style.
   m_UseMockData: 0
   references:
     version: 2
