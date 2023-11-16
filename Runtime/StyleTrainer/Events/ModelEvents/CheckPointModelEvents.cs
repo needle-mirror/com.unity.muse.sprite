@@ -1,3 +1,4 @@
+using System;
 using Unity.Muse.Sprite.Common.Events;
 
 namespace Unity.Muse.StyleTrainer.Events.CheckPointModelEvents
@@ -11,5 +12,11 @@ namespace Unity.Muse.StyleTrainer.Events.CheckPointModelEvents
     {
         public StyleData styleData;
         public CheckPointData checkPointData;
+    }
+
+    class RequestCheckPointStatusEvent : BaseEvent<RequestCheckPointStatusEvent>
+    {
+        public CheckPointData checkPointData;
+        public Action<CheckPointData, string, bool> onDoneCallback;
     }
 }

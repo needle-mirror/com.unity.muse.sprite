@@ -1,5 +1,6 @@
 using Unity.Muse.Common;
 using UnityEngine;
+using UnityEngine.Scripting;
 
 namespace Unity.Muse.Sprite.Operators
 {
@@ -8,6 +9,7 @@ namespace Unity.Muse.Sprite.Operators
 #if !UNITY_EDITOR
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
 #endif
+        [Preserve]
         public static void RegisterOperators()
         {
             OperatorsFactory.RegisterOperator<SpriteGeneratorSettingsOperator>();

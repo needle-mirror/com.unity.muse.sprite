@@ -1,0 +1,85 @@
+.styletrainer-mainui {
+    flex-grow: 1;
+    flex-shrink: 1;
+    background-color: var(--appui-backgrounds-50);
+}
+
+.styletrainer-mainui__login {
+    flex-grow: 1;
+    flex-shrink: 1;
+    justify-content: center;
+    align-content: center;
+    align-items: center;
+}
+
+.styletrainer-mainui__login__button {
+}
+
+.styletrainer-mainui__NoAsset {
+    flex-grow: 1;
+    flex-shrink: 1;
+    justify-content: center;
+    align-content: center;
+    align-items: center;
+    border-width: 0px;
+    border-color: transparent;
+}
+
+.styletrainer-mainui__NoAsset_dragging {
+    border-width: var(--appui-sizing-60);
+    border-color: var(--appui-accent-50);
+}
+
+.styletrainer-mainui__NoAsset__text {
+
+}
+
+.styletrainer-mainui__createasset__button {
+
+}
+
+.styletrainer-mainui__content{
+    flex-grow: 1;
+    flex-shrink: 1;
+}
+
+.styletrainer-mainui__topmenu{
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-color: var(--appui-backgrounds-100);
+    height: 46px;
+    padding-left: var(--appui-spacing-125);
+    padding-right: var(--appui-spacing-125);
+}
+
+.styletrainer-mainui__accoutdropdown_container{
+    align-self: flex-end;
+}
+
+.styletrainer-mainui__splitview {
+
+}
+
+.styletrainer-mainui__loadingscreen {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    flex-grow: 1;
+    flex-shrink: 1;
+    align-content: center;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.8);
+}
+
+.styletrainer-mainui__loadingicon {
+    align-self: center;
+}
+
+.styletrainer-mainui__loadingtext {
+    align-self: center;
+}
+
+#unity-dragline{
+    background-color: var(--appui-backgrounds-50);
+}

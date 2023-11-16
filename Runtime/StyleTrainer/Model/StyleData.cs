@@ -10,6 +10,9 @@ namespace Unity.Muse.StyleTrainer
     [Serializable]
     class StyleData : Artifact<StyleData, StyleData>
     {
+        [SerializeField]
+        bool m_IsFallback;
+
         [SerializeReference]
         ImageArtifact m_Thumbnail;
         [SerializeField]
@@ -23,47 +26,33 @@ namespace Unity.Muse.StyleTrainer
         [SerializeField]
         string m_ProjectID = Utilities.emptyGUID;
         [SerializeField]
-        List<CheckPointData> m_CheckPoints = new()
-        {
-            // new CheckPointData(EState.Loading)
-            // {
-            //     guid = "1",
-            //     dropDownLabelName = EState.Loading.ToString(),
-            // },
-            // new CheckPointData(EState.Loaded)
-            // {
-            //     guid = "2",
-            //     dropDownLabelName = EState.Loaded.ToString(),
-            // },
-            // new CheckPointData(EState.Loaded)
-            // {
-            //     guid = "3",
-            //     dropDownLabelName = EState.Loaded.ToString(),
-            // },
-            // // new CheckPointData()
-            // // {
-            // //     guid = "4",
-            // //     description = EState.New.ToString(),
-            // //     state = EState.New
-            // // },
-            // new CheckPointData(EState.Error)
-            // {
-            //     guid = "5",
-            //     dropDownLabelName = EState.Error.ToString(),
-            // },
-            // new CheckPointData(EState.Training)
-            // {
-            //     guid = "6",
-            //     dropDownLabelName = EState.Training.ToString(),
-            // },
-            // new CheckPointData(EState.Initial)
-            // {
-            //     guid = "7",
-            //     dropDownLabelName = EState.Initial.ToString(),
-            // },
-        };
+        int m_TrainingSteps;
+        [SerializeField]
+        List<CheckPointData> m_CheckPoints = new();
+
+        [SerializeField]
+        List<string> m_SampleOutputPrompts = new();
+        [SerializeField]
+        List<TrainingSetData> m_TrainingSetData = new();
+        [SerializeField]
+        string m_Name;
+        [SerializeField]
+        string m_Description;
+
+        // Arbitrary. Server limits to 256.
+        public const int maxNameLength = 150;
+        public const int maxDescriptionLength = 256;
+        public const int maxPromptLength = 256;
+#pragma warning disable 414
+        CheckPointStatusCheckTask m_CheckPointStatusCheckTask;
+#pragma warning restore 414
 
         public string projectID => m_ProjectID;
+
+        /// <summary>
+        /// Returns true if the style is a built-in fallback style.
+        /// </summary>
+        public bool isFallback => m_IsFallback;
 
         public override void OnDispose()
         {
@@ -71,6 +60,13 @@ namespace Unity.Muse.StyleTrainer
             for (var i = 0; i < m_CheckPoints?.Count; ++i)
                 m_CheckPoints[i]?.OnDispose();
             base.OnDispose();
+        }
+
+        public override void Init()
+        {
+            base.Init();
+            for (var i = 0; i < m_CheckPoints?.Count; ++i)
+                m_CheckPoints[i]?.Init();
         }
 
         public bool InTrainingState()
@@ -95,16 +91,15 @@ namespace Unity.Muse.StyleTrainer
             }
         }
 
-        public StyleData(EState state, string guid, string parentID, string projectId)
+        public StyleData(EState state, string guid, string projectId)
             : base(state)
         {
-            m_CheckPoints.Add(new CheckPointData(EState.New, Utilities.emptyGUID, projectId));
-            m_CheckPoints[0].parent_id = parentID;
-            title = "New Style";
-            description = "Description of style";
+            title = StringConstants.newVersion;
+            description = StringConstants.newVersion;
             this.guid = guid;
-            this.parentID = parentID;
+            parentID = Utilities.emptyGUID;
             m_ProjectID = projectId;
+            m_TrainingSteps = StyleTrainerConfig.config.trainingSteps;
         }
 
         public int SelectedCheckPointIndex()
@@ -119,11 +114,13 @@ namespace Unity.Muse.StyleTrainer
 
         public static StyleData CreateNewStyle(string projectID)
         {
-            var styleData = new StyleData(EState.New, Utilities.emptyGUID, Utilities.emptyGUID, projectID);
+            var styleData = new StyleData(EState.New, Utilities.emptyGUID,  projectID);
             styleData.description = "Set a description here to help you remember what this style is for.";
             styleData.title = "New Style";
             styleData.guid = string.Empty;
             styleData.m_Thumbnail = new ImageArtifact(EState.New);
+            for(int i = 0; i < StyleTrainerConfig.config.minSampleSetSize; ++i)
+                styleData.m_SampleOutputPrompts.Add("");
             return styleData;
         }
 
@@ -131,14 +128,14 @@ namespace Unity.Muse.StyleTrainer
         {
             if (Utilities.ValidStringGUID(favoriteCheckPoint))
                 for (var i = 0; i < m_CheckPoints.Count; ++i)
-                    if (m_CheckPoints[i].guid == favoriteCheckPoint)
+                    if (m_CheckPoints[i].guid == favoriteCheckPoint && m_CheckPoints[i].state == EState.Loaded)
                         return m_CheckPoints[i];
 
             for (var i = m_CheckPoints.Count - 1; i >= 0; --i)
                 if (m_CheckPoints[i].state == EState.Loaded)
                     return m_CheckPoints[i];
 
-            return m_CheckPoints.Count > 0 ? m_CheckPoints[0] : null;
+            return null;
         }
 
         public CheckPointData GetSelectedCheckPoint()
@@ -149,35 +146,78 @@ namespace Unity.Muse.StyleTrainer
             return m_CheckPoints[SelectedCheckPointIndex()];
         }
 
-        public string styleTitle => GetFavouriteOrLatestCheckPoint()?.name ?? "Style has no versions. Something is wrong";
+        public string styleTitle
+        {
+            get
+            {
+                if(string.IsNullOrEmpty(m_Name))
+                    return GetFavouriteOrLatestCheckPoint()?.name ?? "Style has no versions. Something is wrong";
+                return m_Name;
+            }
+        }
 
-        public string styleDescription => GetFavouriteOrLatestCheckPoint()?.description ?? "Style has no versions. Something is wrong";
+        public string styleDescription
+        {
+            get
+            {
+                if(string.IsNullOrEmpty(m_Description))
+                    return GetFavouriteOrLatestCheckPoint()?.description ?? "Style has no versions. Something is wrong";
+                return m_Description;
+            }
+        }
+
+        public string styleDescriptionWithCheckPointDetails
+        {
+            get
+            {
+                if(string.IsNullOrEmpty(m_Description))
+                    return GetFavouriteOrLatestCheckPoint()?.description ?? "Style has no versions. Something is wrong";
+                var s = GetCheckPointDescription(GetFavouriteOrLatestCheckPoint());
+                return $"({s})\n{m_Description}";
+            }
+        }
+
+        public string GetCheckPointDescription(CheckPointData checkPoint)
+        {
+            if (checkPoint == null)
+                return "";
+            var index = m_CheckPoints.FindIndex(x => x.guid == checkPoint.guid);
+            return $"Version {index+1}, Trained with {checkPoint.trainingSteps} steps";
+        }
 
         public string title
         {
-            get => GetSelectedCheckPoint()?.name ?? "Style has no versions. Something is wrong";
+            get
+            {
+                if(string.IsNullOrEmpty(m_Name))
+                    return GetSelectedCheckPoint()?.name ?? "Style has no versions. Something is wrong";
+                return m_Name;
+            }
             set
             {
-                var selectedCheckPoint = GetSelectedCheckPoint();
-                if (selectedCheckPoint != null)
-                {
-                    selectedCheckPoint.name = value;
-                    DataChanged(this);
-                }
+                m_Name = value.Substring(0, Math.Min(value.Length, maxNameLength));
+                DataChanged(this);
             }
+        }
+
+        public int trainingSteps
+        {
+            get => m_TrainingSteps;
+            private set => m_TrainingSteps = value;
         }
 
         public string description
         {
-            get => GetSelectedCheckPoint()?.description ?? "Style has no versions. Something is wrong";
+            get
+            {
+               if(string.IsNullOrEmpty(m_Description))
+                   return GetSelectedCheckPoint()?.description ?? "Style has no versions. Something is wrong";
+               return m_Description;
+            }
             set
             {
-                var selectedCheckPoint = GetSelectedCheckPoint();
-                if (selectedCheckPoint != null)
-                {
-                    selectedCheckPoint.description = value;
-                    DataChanged(this);
-                }
+                m_Description = value.Substring(0, Math.Min(value.Length, maxDescriptionLength));
+                DataChanged(this);
             }
         }
 
@@ -218,7 +258,10 @@ namespace Unity.Muse.StyleTrainer
                             m_CheckPoints[i].GetArtifact(_ => { }, useCache);
                         }
 
-                        OnCheckPointStateChanged(null);
+                        if(m_CheckPoints?.Count > 0)
+                            OnCheckPointStateChanged(null);
+                        else
+                            ArtifactLoaded(this);
                     }
                 }
             }
@@ -254,16 +297,55 @@ namespace Unity.Muse.StyleTrainer
             }
         }
 
+        void ClearCheckPoints()
+        {
+            for (int i = 0; i < m_CheckPoints.Count; ++i)
+            {
+                m_CheckPoints[i]?.OnDispose();
+            }
+            m_CheckPoints.Clear();
+        }
+
+        void ClearTrainingData()
+        {
+            for(int i = 0; i < m_TrainingSetData.Count; ++i)
+            {
+                m_TrainingSetData[i]?.OnDispose();
+            }
+            m_TrainingSetData.Clear();
+        }
+
         void OnGetStyleSuccess(GetStyleRestCall arg1, GetStyleResponse arg2)
         {
-            if (arg2.success)
+            if (arg2.success && !disposing)
             {
                 var oldCheckPoints = m_CheckPoints.ToArray();
-                m_CheckPoints.Clear();
+                ClearCheckPoints();
                 title = arg2.name;
                 description = arg2.desc;
                 favoriteCheckPoint = SetStyleStateRestCall.activeState;
                 visible = arg2.state == "active";
+                //Load Prompts
+                m_SampleOutputPrompts.Clear();
+                for(int i = 0; i < arg2.prompts?.Length; ++i)
+                {
+                    m_SampleOutputPrompts.Add(arg2.prompts[i]);
+                }
+
+                ClearTrainingData();
+                for (int i = 0; i < arg2.trainingsetIDs?.Length; ++i)
+                {
+                    int j = 0;
+                    for (; j < m_TrainingSetData.Count; ++j)
+                    {
+                        if(m_TrainingSetData[j].guid == arg2.trainingsetIDs[i])
+                            break;
+                    }
+
+                    if(j >= m_TrainingSetData.Count)
+                        m_TrainingSetData.Add(new TrainingSetData(EState.Initial, arg2.trainingsetIDs[i], m_ProjectID));
+                }
+
                 if (arg2.checkpointIDs?.Length <= 0)
                 {
                     StyleLoadSuccessNoCheckPoint(arg2.name, arg2.desc, arg2.prompts);
@@ -277,10 +359,18 @@ namespace Unity.Muse.StyleTrainer
                         if (oldCheckPoint != null)
                             checkPoint.trainingSteps = oldCheckPoint.trainingSteps;
                         m_CheckPoints.Add(checkPoint);
-                        checkPoint.dropDownLabelName = string.Format(StringConstants.checkPointDropDownLabel, m_CheckPoints.Count);
                         checkPoint.OnStateChanged += OnCheckPointStateChanged;
-                        checkPoint.GetArtifact(_ => { }, false);
+
+                        //checkPoint.GetArtifact(_ => { }, false);
                     }
+                    for(int i = 0; i < m_CheckPoints.Count; ++i)
+                    {
+                        m_CheckPoints[i].GetArtifact(_ => { }, false);
+                    }
+                    // if(m_CheckPointStatusCheckTask == null)
+                    //     m_CheckPointStatusCheckTask = new CheckPointStatusCheckTask(m_ProjectID);
+                    // if(m_CheckPoints.Count > 0)
+                    //     m_CheckPointStatusCheckTask.AddCheckPoint(m_CheckPoints, OnCheckPointStatusCheckDone);
                 }
             }
             else
@@ -290,26 +380,22 @@ namespace Unity.Muse.StyleTrainer
             }
         }
 
+        void OnCheckPointStatusCheckDone(CheckPointData arg1, string arg2, bool arg3)
+        {
+            arg1.SetCheckPointStatus(arg2, arg3);
+        }
+
         void StyleLoadSuccessNoCheckPoint(string checkpointName, string checkPointDescription, string[] prompts)
         {
-            state = EState.Loaded;
-
-            m_CheckPoints.Clear();
-            m_CheckPoints.Add(new CheckPointData(EState.New, Utilities.emptyGUID, m_ProjectID));
-            m_CheckPoints[0].parent_id = parentID;
-            m_CheckPoints[0].name = checkpointName?? "New Style";
-            m_CheckPoints[0].description =  checkPointDescription ?? "Set a description here to you remember what this style is for.";
-            m_CheckPoints[0].validationImagesData = new List<SampleOutputData>();
-            for (int i = 0; i < prompts?.Length; ++i)
-            {
-                m_CheckPoints[0].validationImagesData.Add(new SampleOutputData(EState.New, prompts[i]));
-            }
+            state = EState.New;
+            ClearCheckPoints();
             ArtifactLoaded(this);
         }
 
         void OnCheckPointStateChanged(CheckPointData obj)
         {
             var hasTraining = false;
+            bool hasLoading = false;
             for (var i = 0; i < m_CheckPoints.Count; ++i)
             {
                 if (m_CheckPoints[i].state == EState.Initial || m_CheckPoints[i].state == EState.Loading)
@@ -317,33 +403,31 @@ namespace Unity.Muse.StyleTrainer
                     m_CheckPoints[i].OnStateChanged -= OnCheckPointStateChanged;
                     m_CheckPoints[i].OnStateChanged += OnCheckPointStateChanged;
                     m_CheckPoints[i].GetArtifact(_ => { }, false);
-                    return;
+                    hasLoading = true;
                 }
-                m_CheckPoints[i].OnStateChanged -= OnCheckPointStateChanged;
-                hasTraining |= m_CheckPoints[i].state == EState.Training;
+                else
+                {
+                    m_CheckPoints[i].OnStateChanged -= OnCheckPointStateChanged;
+                    hasTraining |= m_CheckPoints[i].state == EState.Training;
+                }
             }
 
             state = hasTraining ? EState.Training : EState.Loaded;
-            ArtifactLoaded(this);
-            DataChanged(this);
+            if (!hasLoading)
+            {
+                ArtifactLoaded(this);
+                DataChanged(this);
+            }
         }
 
-        void OnCheckPointLoaded(CheckPointData obj)
-        {
-            for (var i = 0; i < m_CheckPoints.Count; ++i)
-                if (m_CheckPoints[i].state == EState.Initial || m_CheckPoints[i].state == EState.Loading)
-                    return;
-
-            state = EState.Loaded;
-            ArtifactLoaded(this);
-            DataChanged(this);
-        }
 
         public void AddCheckPoint(CheckPointData checkPoint)
         {
+            checkPoint.versionName = $"Version {m_CheckPoints.Count + 1}";
             m_CheckPoints.Add(checkPoint);
             if (checkPoint.guid == Utilities.emptyGUID)
                 checkPoint.OnGUIDChanged += OnCheckPointGUIDChanged;
+            DataChanged(this);
         }
 
         void OnCheckPointGUIDChanged(CheckPointData obj)
@@ -359,19 +443,69 @@ namespace Unity.Muse.StyleTrainer
             DataChanged(this);
         }
 
-        public IList<SampleOutputData> sampleOutputData => GetSelectedCheckPoint()?.validationImagesData;
-        public TrainingSetData trainingSetData => GetSelectedCheckPoint()?.trainingSetData;
+        public IReadOnlyList<TrainingSetData> trainingSetData
+        {
+            get
+            {
+                if (m_TrainingSetData.Count == 0)
+                {
+                    for (int i = 0; i < m_CheckPoints?.Count; ++i)
+                    {
+                        m_TrainingSetData.Add(m_CheckPoints[i].trainingSetData);
+                    }
+                    // still empty means no checkpoints data
+                    if(m_TrainingSetData.Count == 0)
+                        m_TrainingSetData.Add(new TrainingSetData(EState.New, Utilities.emptyGUID, m_ProjectID));
+                }
+                return m_TrainingSetData;
+            }
+        }
 
         public void AddSampleOutput(SampleOutputData sampleOutput)
         {
-            GetSelectedCheckPoint().validationImagesData.Add(sampleOutput);
+            m_SampleOutputPrompts.Add(sampleOutput.prompt);
             DataChanged(this);
         }
 
+        public IReadOnlyList<string> sampleOutputPrompts
+        {
+            get
+            {
+                if (m_SampleOutputPrompts.Count == 0 && GetSelectedCheckPoint()?.validationImageData?.Count > 0)
+                {
+                    for (var i = 0; i < GetSelectedCheckPoint().validationImageData.Count; ++i)
+                        m_SampleOutputPrompts.Add(GetSelectedCheckPoint().validationImageData[i].prompt);
+                }
+
+                return m_SampleOutputPrompts;
+            }
+        }
         public void AddTrainingData(TrainingData trainingData)
         {
-            GetSelectedCheckPoint().trainingSetData.Add(trainingData);
+            if(m_TrainingSetData.Count == 0)
+            {
+                m_TrainingSetData.Add(new TrainingSetData(EState.New, Utilities.emptyGUID, m_ProjectID));
+            }
+
+            m_TrainingSetData[0].Add(trainingData);
             DataChanged(this);
+        }
+
+        public void RemoveTrainingData(int i)
+        {
+            if (m_TrainingSetData.Count > 0 && m_TrainingSetData[0].Count > i)
+            {
+                var e = m_TrainingSetData[0][i];
+                e.Delete();
+                e.OnDispose();
+                m_TrainingSetData[0].RemoveAt(i);
+                DataChanged(this);
+            }
+        }
+
+        public void RemoveSampleOutputPrompt(int i)
+        {
+            m_SampleOutputPrompts.RemoveAt(i);
         }
 
         public void RemoveCheckPointAt(int index)
@@ -388,12 +522,19 @@ namespace Unity.Muse.StyleTrainer
 
         public void Delete()
         {
+            for (int i = 0; i < m_TrainingSetData?.Count; ++i)
+            {
+                m_TrainingSetData[i]?.Delete();
+            }
             for (var i = 0; i < m_CheckPoints?.Count; ++i)
                 m_CheckPoints[i]?.Delete();
         }
 
         public bool HasTraining()
         {
+            if (state == EState.Training)
+                return true;
+
             for (var i = 0; i < m_CheckPoints?.Count; ++i)
             {
                 if (m_CheckPoints[i]?.state == EState.Training)
@@ -401,6 +542,17 @@ namespace Unity.Muse.StyleTrainer
             }
 
             return false;
+        }
+
+        public string UpdateSamplePrompt(int i, string s)
+        {
+            if (m_SampleOutputPrompts.Count > i)
+            {
+                m_SampleOutputPrompts[i] = s.Substring(0, Math.Min(s.Length, maxPromptLength));
+                return m_SampleOutputPrompts[i];
+            }
+
+            return "";
         }
     }
 }

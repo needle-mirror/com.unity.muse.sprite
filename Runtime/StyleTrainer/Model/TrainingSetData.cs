@@ -56,7 +56,7 @@ namespace Unity.Muse.StyleTrainer
                     m_TrainingSet[i].OnDispose();
                 }
 
-                m_TrainingSet.Clear();
+                ClearTrainingSet();
                 var getTrainingSetRequest = new GetTrainingSetRequest
                 {
                     guid = m_ProjectID,
@@ -70,6 +70,16 @@ namespace Unity.Muse.StyleTrainer
             }
         }
 
+        void ClearTrainingSet()
+        {
+            for (int i = 0; i < m_TrainingSet.Count; ++i)
+            {
+                m_TrainingSet[i].OnDispose();
+            }
+
+            m_TrainingSet.Clear();
+        }
+
         void OnGetTrainingSetSuccess(GetTrainingSetRestCall arg1, GetTrainingSetResponse arg2)
         {
             if (arg2.success)
@@ -80,7 +90,7 @@ namespace Unity.Muse.StyleTrainer
                     m_TrainingSet[i].OnDispose();
                 }
 
-                m_TrainingSet.Clear();
+                ClearTrainingSet();
                 for (var i = 0; i < arg2.training_image_guids.Length; ++i) m_TrainingSet.Add(new TrainingData(EState.Initial, arg2.training_image_guids[i]));
                 state = EState.Loaded;
                 ArtifactLoaded(m_TrainingSet);

@@ -1,12 +1,10 @@
 using System;
-using Unity.AppUI.UI;
 using Unity.Muse.Common;
 using Unity.Muse.Sprite.Analytics;
 using Unity.Muse.Sprite.Backend;
 using Unity.Muse.Sprite.Common;
 using Unity.Muse.Sprite.Common.Backend;
 using Unity.Muse.Sprite.Common.DebugConfig;
-using Unity.Muse.Sprite.Common.Events;
 using Unity.Muse.Sprite.Data;
 using Unity.Muse.Sprite.Operators;
 using Unity.Muse.Sprite.UIComponents;
@@ -44,7 +42,7 @@ namespace Unity.Muse.Sprite.Artifacts
 
         public string jobStatus => m_JobStatus;
 
-        Texture2D spriteGeneratorErrorTexture => Resources.Load<Texture2D>("Images/SpriteGenerateError");
+        Texture2D spriteGeneratorErrorTexture => ResourceManager.Load<Texture2D>(PackageResources.generateErrorTexture);
 
         public override void GetArtifact(ArtifactCreationDelegate onReceived, bool useCache)
         {
@@ -61,10 +59,11 @@ namespace Unity.Muse.Sprite.Artifacts
                 return;
             }
 
-            m_ArtifactCreationDelegate = onReceived;
+            m_ArtifactCreationDelegate += onReceived;
+
             var request = new ServerRequest<JobInfoRequest>();
             request.guid = Guid;
-            request.data = new JobInfoRequest() { jobID = Guid };
+            request.data = new JobInfoRequest() { jobID = Guid, assetID = this.GetOperator<SessionOperator>().GetSessionID() };
             request.access_token = serverConfig.accessToken;
             m_GetJobRestCall = new GetJobRestCall(serverConfig, request);
             m_GetJobRestCall.RegisterOnSuccess(OnGetJobSuccess);
@@ -76,7 +75,7 @@ namespace Unity.Muse.Sprite.Artifacts
         {
             if (m_GetJobRestCall.retriesFailed)
             {
-                Debug.LogError($"TextToSpriteController.OnGetJobFailed: Result: {obj.requestResult} Error:{obj.requestError} Retry {m_GetJobRestCall.retries}");
+                Debug.LogError($"TextToSpriteController.OnGetJobFailed: Result: {obj.requestResult} Error:{obj.requestError} Retry {m_GetJobRestCall.retries} Endpoint {obj.info}");
                 NotifyErrorGettingArtifact();
             }
             else if (m_Disposing)
@@ -97,7 +96,7 @@ namespace Unity.Muse.Sprite.Artifacts
             }
             else if (arg2.status == SpriteGenerateRestCall.Status.failed)
             {
-                Debug.LogError($"TextToSpriteController.OnGetJobFailed: Result: {arg1.requestResult} Error:{arg1.requestError} Retry {m_GetJobRestCall.retries}");
+                Debug.LogError($"TextToSpriteController.OnGetJobFailed: Result: {arg1.requestResult} Error:{arg1.requestError} Retry {m_GetJobRestCall.retries} Endpoint: {arg1.info}");
                 NotifyErrorGettingArtifact();
             }
             else if(!m_Disposing)
@@ -108,7 +107,7 @@ namespace Unity.Muse.Sprite.Artifacts
         {
             if (m_GetArtifactRestCall.retriesFailed)
             {
-                Debug.LogError($"TextToSpriteController.OnGetArtifactFailed: Result: {request.requestResult} Error:{request.requestError} Retry {m_GetArtifactRestCall.retries}");
+                Debug.LogError($"TextToSpriteController.OnGetArtifactFailed: Result: {request.requestResult} Error:{request.requestError} Retry {m_GetArtifactRestCall.retries} Endpoint: {request.info}");
                 NotifyErrorGettingArtifact();
             }
             else if (m_Disposing)
@@ -119,6 +118,7 @@ namespace Unity.Muse.Sprite.Artifacts
         {
             var deserializedArtifact = CreateFromData(bytes, true);
             m_ArtifactCreationDelegate?.Invoke(deserializedArtifact, bytes, "");
+            m_ArtifactCreationDelegate = null;
         }
 
         void NotifyErrorGettingArtifact()
@@ -191,7 +191,7 @@ namespace Unity.Muse.Sprite.Artifacts
                 Model.SendAnalytics(new GenerateAnalyticsData
                 {
                     prompt = this.GetOperator<PromptOperator>()?.GetPrompt(),
-                    prompt_negative = this.GetOperator<NegativePromptOperator>()?.GetNegativePrompt(),
+                    prompt_negative = this.GetOperator<PromptOperator>()?.GetNegativePrompt(),
                     inpainting_used = this.GetOperator<SpriteRefiningMaskOperator>()?.Enabled() ?? false,
                     images_generated_nr = m_Operators.GetOperator<GenerateOperator>()?.GetCount() ?? 0,
                     reference_image_used = m_Operators.GetOperator<KeyImageOperator>()?.HasReference() ?? false,
@@ -246,10 +246,7 @@ namespace Unity.Muse.Sprite.Artifacts
                 if (operators[i] is PromptOperator promptOperator)
                 {
                     request.prompt = promptOperator.GetPrompt();
-                }
-                else if (operators[i] is NegativePromptOperator negPromptOperator)
-                {
-                    request.settings.negative_prompt = negPromptOperator.GetNegativePrompt();
+                    request.settings.negative_prompt = promptOperator.GetNegativePrompt();
                 }
                 else if (operators[i] is SpriteGeneratorSettingsOperator sgo)
                 {
@@ -275,7 +272,7 @@ namespace Unity.Muse.Sprite.Artifacts
                 else if (operators[i] is KeyImageOperator keyImageOperator)
                 {
                     request.scribble = !keyImageOperator.isClear && string.IsNullOrEmpty(keyImageOperator.GetReferenceImage());
-                    var srcImage = GetKeyImagerOperatorTexture(keyImageOperator);
+                    var srcImage = GetKeyImageOperatorTexture(keyImageOperator);
                     request.maskStrength = keyImageOperator.maskStrength;
                     if (srcImage != null)
                     {
@@ -329,7 +326,7 @@ namespace Unity.Muse.Sprite.Artifacts
             return new ResultItemVisualElement(this);
         }
 
-        Texture2D GetKeyImagerOperatorTexture(KeyImageOperator opr)
+        Texture2D GetKeyImageOperatorTexture(KeyImageOperator opr)
         {
             Texture2D keyImageTexture = null;
             var referenceImageRaw = opr.GetReferenceImage();
@@ -350,18 +347,12 @@ namespace Unity.Muse.Sprite.Artifacts
                 doodleImage.Apply();
             }
 
-            Color32[] referenceImagePixels = referenceImage?.GetPixels32(0);
-            Color32[] doodlePixels = doodleImage?.GetPixels32(0);
-
-            if (referenceImagePixels?.Length > 0)
+            if (referenceImage != null)
             {
-                for (var j = 0; j < referenceImage.width * referenceImage.height &&
-                     j < doodleImage?.width * doodleImage?.height; ++ j)
-                {
-                    var doodleColor = doodlePixels[j];
-                    if(doodleColor.a > 0)
-                        referenceImagePixels[j] = doodleColor;
-                }
+                var referenceImagePixels = referenceImage.GetPixels32(0);
+                for (var j = 0; j < referenceImage.width * referenceImage.height; ++j)
+                    referenceImagePixels[j] = (referenceImagePixels[j].a < 1) ? new Color32(0, 0, 0, 255) : referenceImagePixels[j];
+
                 keyImageTexture = new Texture2D(referenceImage.width, referenceImage.height, TextureFormat.RGBA32, false);
                 keyImageTexture.SetPixels32(referenceImagePixels);
                 keyImageTexture.Apply();
@@ -395,7 +386,7 @@ namespace Unity.Muse.Sprite.Artifacts
         {
             if (m_SpriteGenerateCall.retries == 1 && obj.requestError.Contains("HTTP/1.1 403 Forbidden") && m_Model != null)
             {
-                m_Model.ForbiddenAccess();
+                m_Model.ServerError(obj.responseCode, obj.requestError);
             }
 
             if (m_SpriteGenerateCall.retriesFailed)

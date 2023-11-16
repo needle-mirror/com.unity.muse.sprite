@@ -7,10 +7,8 @@ uid: generate-from-scribble
 You can generate sprites from a scribble. A scribble is a rough drawing that describes the shape of the sprite you want to generate.
 
 1. In the **Input Image** panel, select the **Scribble** tool.
-1. To change the size of the scribble tool, select **[** or **]**.
-1. Draw a scribble that describes the shape of the sprite you want to generate.
-1. To erase part of the scribble, select the **Eraser** tool and draw over the scribble.
-1. To clear the scribble, select the **Clear** tool.
+1. To change the size of the scribble tool, press **[** or **]**.
+1. Draw a scribble in the shape of the sprite you want to generate. For more information about the scribble tools, refer to [Input Image panel](xref:ui-elements#input-image-panel) reference.
 1. To set the style strength, move the **Style Strength** slider. Higher values result in more closely aligned styles.
 1. To set the likeness between the generated sprites and the scribble, move the **Tightness** slider. Higher values result in more alike sprites.
 1. In the **Prompt** field, write a prompt that describes the sprite you want to generate.

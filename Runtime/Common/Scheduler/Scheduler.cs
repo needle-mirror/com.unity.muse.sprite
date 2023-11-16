@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
@@ -16,6 +15,18 @@ namespace Unity.Muse.Sprite.Common
         }
         static List<ScheduleCallbackObject> s_Schedules = new List<ScheduleCallbackObject>();
         static SchedulerGameObject.SchedulerGO m_SchedulerGO;
+
+        static public bool IsCallScheduled(Action callback)
+        {
+            for (int i = 0; i < s_Schedules.Count; ++i)
+            {
+                if (s_Schedules[i].callback == callback)
+                    return true;
+            }
+
+            return false;
+        }
+
         static public void ScheduleCallback(float timer, Action callback)
         {
 #if UNITY_EDITOR
@@ -63,8 +74,9 @@ namespace Unity.Muse.Sprite.Common
             {
                 if (s_Schedules[i].timer <= (now - s_Schedules[i].startTime).TotalSeconds)
                 {
-                    s_Schedules[i].callback?.Invoke();
+                    var callback = s_Schedules[i];
                     s_Schedules.RemoveAt(i);
+                    callback.callback?.Invoke();
                     --i;
                 }
             }

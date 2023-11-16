@@ -33,6 +33,7 @@ namespace Unity.Muse.StyleTrainer
         string m_Guid = Utilities.emptyGUID;
         [SerializeField]
         EState m_State = EState.New;
+        EState m_TempState = EState.New;
 
         protected abstract void GUIDChanged();
 
@@ -41,6 +42,7 @@ namespace Unity.Muse.StyleTrainer
         protected Artifact(EState state)
         {
             m_State = state;
+            m_TempState = state;
         }
 
         public EState state
@@ -50,10 +52,22 @@ namespace Unity.Muse.StyleTrainer
                 if (m_State != value)
                 {
                     m_State = value;
+                    m_TempState = value;
                     StateChanged();
                 }
             }
-            get => m_State;
+            get
+            {
+                if (m_State == m_TempState)
+                    return m_State;
+                // we could be still loading during the last shut down.
+                // So if are in loading state, we should return to initial state.
+                if (m_State == EState.Loading)
+                {
+                    m_State = EState.Initial;
+                }
+                return m_State;
+            }
         }
 
         public string guid
@@ -77,6 +91,7 @@ namespace Unity.Muse.StyleTrainer
         public event Action<T1> OnDataChanged;
         public event Action<T1> OnStateChanged;
         public event Action<T1> OnGUIDChanged;
+        public bool m_Disposing = false;
 
         protected Artifact(EState state):base(state)
         { }
@@ -91,16 +106,23 @@ namespace Unity.Muse.StyleTrainer
             OnStateChanged?.Invoke(this as T1);
         }
 
+        public bool disposing => m_Disposing;
+
+        public virtual void Init()
+        {
+            m_Disposing = false;
+        }
+
         public virtual void OnDispose()
         {
-            if (state != EState.New && state != EState.Loaded)
-                state = EState.Initial;
-
-            // Set dispose state for call back and remove all callbacks
+            m_Disposing = true;
             OnArtifactLoaded = null;
             OnDataChanged = null;
             OnStateChanged = null;
             OnGUIDChanged = null;
+            // Set dispose state for call back and remove all callbacks
+            if (state != EState.New && state != EState.Loaded)
+                state = EState.Initial;
         }
 
         protected void DataChanged(T1 data)

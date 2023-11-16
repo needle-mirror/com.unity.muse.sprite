@@ -4,6 +4,20 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-pre.1] - 2023-11-16
+
+### Changed
+- Change style trainer flow. Each style now trains a predetermined number of versions.
+
+## Fixed
+
+- Fixed custom seed toggle visual consistency.
+- Clearing printing triggers console warnings.
+- Operator styles.
+- Fix style trainer cache file access error.
+- Swap transparent pixels with black in the reference image.
+
+
 ## [0.4.1] - 2023-10-20
 
 ### Added

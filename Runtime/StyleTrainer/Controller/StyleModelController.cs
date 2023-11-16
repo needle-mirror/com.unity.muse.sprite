@@ -4,7 +4,6 @@ using Unity.AppUI.UI;
 using Unity.Muse.Sprite.Common.Events;
 using Unity.Muse.Sprite.Common.Backend;
 using Unity.Muse.StyleTrainer.Debug;
-using Unity.Muse.StyleTrainer.Events.CheckPointModelEvents;
 using Unity.Muse.StyleTrainer.Events.SampleOutputModelEvents;
 using Unity.Muse.StyleTrainer.Events.SampleOutputUIEvents;
 using Unity.Muse.StyleTrainer.Events.StyleModelEditorUIEvents;
@@ -52,22 +51,33 @@ namespace Unity.Muse.StyleTrainer
 
             m_StyleTrainerMainUI = styleTrainerMainUI;
             m_StyleTrainerMainUI.SetEventBus(eventBus);
+            m_StyleTrainerMainUI.OnStyleTrainerUIEnabled += OnStyleTrainerUIEnabled;
             m_TrainingController = new TrainingController(eventBus);
             m_TrainingController.SetStyleData(m_StyleTrainerData, m_CurrentSelectedStyle);
             m_SignInController = new SignInController();
             m_SignInController.Init(eventBus);
         }
 
+        void OnStyleTrainerUIEnabled()
+        {
+            if(m_StyleTrainerData!= null && m_StyleTrainerMainUI?.styleTrainerUIEnabled == true)
+                OnStyleTrainerDataChanged(m_StyleTrainerData);
+        }
+
         void OnLoadStyleProject(LoadStyleProjectEvent arg0)
         {
-            eventBus.SendEvent(new ShowLoadingScreenEvent
+            var upgrader = new StyleTrainDataUpgrader(m_StyleTrainerData, eventBus);
+            upgrader.Execute(() =>
             {
-                description = "Loading Style Project Data...",
-                show = true
+                eventBus.SendEvent(new ShowLoadingScreenEvent
+                {
+                    description = "Loading Style Project Data...",
+                    show = true
+                });
+                m_StyleTrainerData.OnStateChanged += OnStyleTrainerProjectStateChanged;
+                var loadingTask = new LoadingTask(m_StyleTrainerData, eventBus);
+                loadingTask.Execute();
             });
-            m_StyleTrainerData.OnStateChanged += OnStyleTrainerProjectStateChanged;
-            var loadingTask = new LoadingTask(m_StyleTrainerData, eventBus);
-            loadingTask.Execute();
         }
 
         void OnStyleTrainerProjectStateChanged(StyleTrainerData obj)
@@ -106,31 +116,9 @@ namespace Unity.Muse.StyleTrainer
 
         void OnDuplicateClicked(DuplicateButtonClickEvent arg0)
         {
-            var index = m_CurrentSelectedStyle.SelectedCheckPointIndex();
-            var checkPoint = m_CurrentSelectedStyle.checkPoints[index];
-            if (checkPoint.state == EState.New && m_CurrentSelectedStyle.checkPoints.Count > 1)
+            if (m_CurrentSelectedStyle.state != EState.Loading)
             {
-                var dialog = new AlertDialog
-                {
-                    title = "Style Trainer",
-                    description = $"Are you sure you want to discard the new untrained version?",
-                    variant = AlertSemantic.Destructive
-                };
-                dialog.SetPrimaryAction(730, "Discard", () =>
-                {
-                    m_CurrentSelectedStyle.RemoveCheckPointAt(index);
-                    eventBus.SendEvent(new CheckPointSourceDataChangedEvent
-                    {
-                        styleData = m_CurrentSelectedStyle
-                    });
-                });
-                dialog.SetCancelAction(1, "Cancel");
-                var modal = Modal.Build(m_StyleTrainerMainUI, dialog);
-                modal.Show();
-            }
-            else if (checkPoint.state == EState.Loaded)
-            {
-                DuplicateStyle(checkPoint);
+                DuplicateStyle(m_CurrentSelectedStyle);
             }
             else
             {
@@ -140,31 +128,34 @@ namespace Unity.Muse.StyleTrainer
             SendModifiedEvent();
         }
 
-        void DuplicateStyle(CheckPointData checkPointData)
+        void DuplicateStyle(StyleData style)
         {
             eventBus.SendEvent(new ShowLoadingScreenEvent
             {
                 description = "Duplicating Style...",
                 show = true
             });
-            checkPointData.trainingSetData.DuplicateNew(x => OnDuplicateStyleCheckPointDone(x, checkPointData));
+
+            // in style trainer v2, there should only be 1 training set data.
+            if(style.trainingSetData.Count >0)
+                style.trainingSetData[0].DuplicateNew(x => OnDuplicateTrainingSetDone(x, style));
         }
 
-        void OnDuplicateStyleCheckPointDone(TrainingSetData obj, CheckPointData checkPointData)
+        void OnDuplicateTrainingSetDone(TrainingSetData obj, StyleData style)
         {
-            var styleData = new StyleData(EState.New, Utilities.emptyGUID, checkPointData.guid, m_StyleTrainerData.guid)
+            var styleData = new StyleData(EState.New, Utilities.emptyGUID, m_StyleTrainerData.guid)
             {
-                title = $"{checkPointData.name} (duplicate)",
-                description = checkPointData.description,
+                title = $"{style.title} (duplicate)",
+                description = style.description,
                 visible = true
             };
-            for (var i = 0; i < checkPointData.validationImagesData?.Count; ++i)
+            for (var i = 0; i < style.sampleOutputPrompts?.Count; ++i)
             {
-                var sd = new SampleOutputData(EState.New, checkPointData.validationImagesData[i].prompt);
+                var sd = new SampleOutputData(EState.New, style.sampleOutputPrompts[i]);
                 styleData.AddSampleOutput(sd);
             }
-
-            styleData.GetSelectedCheckPoint().trainingSetData = obj;
+            for(int i = 0; i < obj.Count; ++i)
+                styleData.AddTrainingData(obj[i]);
             AddStyle(styleData);
             eventBus.SendEvent(new ShowLoadingScreenEvent
             {
@@ -177,17 +168,6 @@ namespace Unity.Muse.StyleTrainer
         {
             var checkpoint = arg0.styleData.checkPoints[arg0.index];
             arg0.styleData.selectedCheckPointGUID = checkpoint.guid;
-            UpdateUIActionButtonState(arg0.styleData);
-            eventBus.SendEvent(new SampleOutputDataSourceChangedEvent
-            {
-                sampleOutput = checkpoint.validationImagesData,
-                styleData = arg0.styleData
-            });
-            eventBus.SendEvent(new TrainingSetDataSourceChangedEvent
-            {
-                trainingSetData = checkpoint.trainingSetData,
-                styleData = arg0.styleData
-            });
         }
 
         void OnStyleVisibilityChanged(StyleVisibilityButtonClickedEvent arg0)
@@ -268,10 +248,7 @@ namespace Unity.Muse.StyleTrainer
 
         void OnDeleteTrainingSetEvent(DeleteTrainingSetEvent arg0)
         {
-            var e = m_CurrentSelectedStyle.trainingSetData[arg0.indices[0]];
-            e.Delete();
-            e.OnDispose();
-            m_CurrentSelectedStyle.trainingSetData.RemoveAt(arg0.indices[0]);
+            m_CurrentSelectedStyle.RemoveTrainingData(arg0.indices[0]);
             UpdateUIActionButtonState(arg0.styleData);
             eventBus.SendEvent(new TrainingSetDataSourceChangedEvent
             {
@@ -283,12 +260,12 @@ namespace Unity.Muse.StyleTrainer
 
         void OnDeleteSampleOutputEvent(DeleteSampleOutputEvent arg0)
         {
-            m_CurrentSelectedStyle.sampleOutputData.RemoveAt(arg0.deleteIndex);
+            m_CurrentSelectedStyle.RemoveSampleOutputPrompt(arg0.deleteIndex);
             UpdateUIActionButtonState(arg0.styleData);
             eventBus.SendEvent(new SampleOutputDataSourceChangedEvent
             {
                 styleData = m_CurrentSelectedStyle,
-                sampleOutput = m_CurrentSelectedStyle.sampleOutputData
+                sampleOutput = m_CurrentSelectedStyle.sampleOutputPrompts
             });
             SendModifiedEvent();
         }
@@ -301,7 +278,7 @@ namespace Unity.Muse.StyleTrainer
             {
                 var config = StyleTrainerConfig.config;
                 if (m_CurrentSelectedStyle.trainingSetData?.Count < config.minTrainingSetSize ||
-                    m_CurrentSelectedStyle.sampleOutputData?.Count < config.minSampleSetSize)
+                    m_CurrentSelectedStyle.sampleOutputPrompts?.Count < config.minSampleSetSize)
                 {
                     eventBus.SendEvent(new DuplicateButtonStateUpdateEvent
                     {
@@ -368,7 +345,12 @@ namespace Unity.Muse.StyleTrainer
             eventBus.SendEvent(new SampleOutputDataSourceChangedEvent
             {
                 styleData = arg0.styleData,
-                sampleOutput = arg0.styleData.sampleOutputData
+                sampleOutput = arg0.styleData.sampleOutputPrompts
+            }, true);
+            eventBus.SendEvent(new RequestChangeTabEvent
+            {
+                tabIndex = StyleModelInfoEditor.k_SampleOutputTab,
+                highlightIndices = new [] { arg0.styleData.sampleOutputPrompts.Count - 1}
             }, true);
             UpdateUIActionButtonState(arg0.styleData);
             SendModifiedEvent();
@@ -400,14 +382,26 @@ namespace Unity.Muse.StyleTrainer
         {
             if (asset is not null)
             {
+                if (m_StyleTrainerData != null)
+                    m_StyleTrainerData.OnDataChanged -= OnStyleTrainerDataChanged;
                 m_StyleTrainerData = asset;
+                m_StyleTrainerData.Init();
+                m_StyleTrainerData.OnDataChanged += OnStyleTrainerDataChanged;
+                OnStyleTrainerDataChanged(m_StyleTrainerData);
+            }
+        }
+
+        void OnStyleTrainerDataChanged(StyleTrainerData obj)
+        {
+            if (obj != null && m_StyleTrainerMainUI?.styleTrainerUIEnabled == true)
+            {
                 eventBus.SendEvent(new StyleModelSourceChangedEvent
                 {
                     selectedIndex = 0,
-                    styleModels = asset.styles
+                    styleModels = obj.styles
                 }, true);
-                if (m_StyleTrainerData.version != StyleTrainerData.k_Version
-                    || m_StyleTrainerData.state == EState.Initial)
+                if (obj.version != StyleTrainerData.k_Version
+                    || obj.state == EState.Initial)
                     OnLoadStyleProject(new LoadStyleProjectEvent());
                 else
                 {

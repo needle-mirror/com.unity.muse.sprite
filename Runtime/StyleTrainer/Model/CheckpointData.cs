@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
 using StyleTrainer.Backend;
-using Unity.Muse.Sprite.Common;
 using Unity.Muse.Sprite.Common.Backend;
 using Unity.Muse.StyleTrainer.Debug;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace Unity.Muse.StyleTrainer
 {
@@ -13,56 +13,66 @@ namespace Unity.Muse.StyleTrainer
     {
         [SerializeField]
         string m_ProjectID = Utilities.emptyGUID;
-        public string name = StringConstants.newVersion;
-        public string description = StringConstants.newVersion;
+        [FormerlySerializedAs("name")]
+        [SerializeField]
+        string m_Name = StringConstants.newVersion;
+        [FormerlySerializedAs("description")]
+        [SerializeField]
+        string m_Description = StringConstants.newVersion;
         public string parent_id = Utilities.emptyGUID;
-        public string dropDownLabelName = StringConstants.newVersion;
-        public TrainingSetData trainingSetData;
-        public List<SampleOutputData> validationImagesData = new();
+
+
+        [FormerlySerializedAs("trainingSetData")]
+        [SerializeField]
+        TrainingSetData m_TrainingSetData;
+
+        [FormerlySerializedAs("validationImagesData")]
+        [SerializeField]
+        List<SampleOutputData> m_ValidationImagesData = new();
+
         [SerializeField]
         int m_TrainingSteps;
         GetCheckPointRestCall m_GetCheckPointRestCall;
         GetCheckPointStatusRestCall m_GetCheckPointStatusRestCall;
-
-        // Arbitrary. Server limits to 256.
-        public const int maxNameLength = 150;
-        public const int maxDescriptionLength = 256;
 
         public CheckPointData(EState state, string guid, string projectID)
             : base(state)
         {
             m_ProjectID = projectID;
             this.guid = guid;
-            trainingSetData = new TrainingSetData(state, Utilities.emptyGUID, projectID);
-            m_TrainingSteps = StyleTrainerConfig.config.trainingStepRange.x;
+            m_TrainingSetData = new TrainingSetData(state, Utilities.emptyGUID, projectID);
+            m_TrainingSteps = 0;
+        }
+
+        public override void Init()
+        {
+            base.Init();
+            if (state != EState.New)
+                state = EState.Initial;
         }
 
         public void SetName(string newName)
         {
-            name = newName.Substring(0, Math.Min(newName.Length, maxNameLength));
+            m_Name = newName.Substring(0, Math.Min(newName.Length, StyleData.maxNameLength));
         }
+
+        public void SetDescription(string newDesp)
+        {
+            m_Description = newDesp.Substring(0, Math.Min(newDesp.Length, StyleData.maxDescriptionLength));
+        }
+
+        public string name => m_Name;
+        public string description => m_Description;
+
+        public string versionName { get; set; }
+
+        public IReadOnlyList<SampleOutputData> validationImageData => m_ValidationImagesData;
+        public TrainingSetData trainingSetData => m_TrainingSetData;
 
         public int trainingSteps
         {
-            get
-            {
-                // cap training steps
-                trainingSteps = m_TrainingSteps;
-                return m_TrainingSteps;
-            }
-            set
-            {
-                value = (int)((float)value/StyleTrainerConfig.config.trainingStepsIncrement) * StyleTrainerConfig.config.trainingStepsIncrement;
-                if (value > StyleTrainerConfig.config.trainingStepRange.y)
-                    value = StyleTrainerConfig.config.trainingStepRange.y;
-                if (value < StyleTrainerConfig.config.trainingStepRange.x)
-                    value = StyleTrainerConfig.config.trainingStepRange.x;
-                if (value != m_TrainingSteps)
-                {
-                    m_TrainingSteps = value;
-                    DataChanged(this);
-                }
-            }
+            get => m_TrainingSteps;
+            set => m_TrainingSteps = value;
         }
 
         public override void OnDispose()
@@ -71,10 +81,18 @@ namespace Unity.Muse.StyleTrainer
             m_GetCheckPointRestCall = null;
             m_GetCheckPointStatusRestCall?.Dispose();
             m_GetCheckPointStatusRestCall = null;
-            trainingSetData?.OnDispose();
-            for (var i = 0; i < validationImagesData?.Count; ++i)
-                validationImagesData[i]?.OnDispose();
+            m_TrainingSetData?.OnDispose();
+            for (var i = 0; i < m_ValidationImagesData?.Count; ++i)
+                m_ValidationImagesData[i]?.OnDispose();
             base.OnDispose();
+        }
+
+        public void SetMockData(TrainingSetData trainingSetData, List<SampleOutputData> data, int trainingSteps)
+        {
+            UnityEngine.Debug.LogWarning("THIS SHOULD BE ONLY CALLED FROM MOCK");
+            m_TrainingSetData = trainingSetData;
+            m_ValidationImagesData = data;
+            m_TrainingSteps = trainingSteps;
         }
 
         public override void GetArtifact(Action<CheckPointData> onDoneCallback, bool useCache)
@@ -126,7 +144,10 @@ namespace Unity.Muse.StyleTrainer
 
         void LoadCheckPoint()
         {
-            m_GetCheckPointRestCall?.SendRequest();
+            if (!disposing)
+            {
+                m_GetCheckPointRestCall?.SendRequest();
+            }
         }
 
         void OnGetCheckPointFailure(GetCheckPointRestCall obj)
@@ -154,34 +175,47 @@ namespace Unity.Muse.StyleTrainer
             }
         }
 
+        void ClearValidationImageData()
+        {
+            for (int i = 0; i < m_ValidationImagesData.Count; ++i)
+            {
+                m_ValidationImagesData[i].OnDispose();
+            }
+            m_ValidationImagesData.Clear();
+        }
+
         void ProcessGetCheckPointResponse(GetCheckPointResponse getCheckPointResponse)
         {
-            name = getCheckPointResponse.name;
-            description = getCheckPointResponse.description;
+            bool sendDataChanged = false;
+            m_Name = getCheckPointResponse.name;
+            m_Description = getCheckPointResponse.description;
+            sendDataChanged = m_TrainingSteps != getCheckPointResponse.train_steps;
+            m_TrainingSteps = getCheckPointResponse.train_steps;
 
-            if (trainingSetData == null)
+            if (m_TrainingSetData == null)
             {
-                trainingSetData = new TrainingSetData(EState.Initial, getCheckPointResponse.trainingsetID, m_ProjectID);
+                m_TrainingSetData = new TrainingSetData(EState.Initial, getCheckPointResponse.trainingsetID, m_ProjectID);
             }
-            else if (trainingSetData.guid != getCheckPointResponse.trainingsetID)
+            else if (m_TrainingSetData.guid != getCheckPointResponse.trainingsetID)
             {
-                trainingSetData.guid = getCheckPointResponse.trainingsetID;
-                trainingSetData.state = EState.Initial;
+                m_TrainingSetData.guid = getCheckPointResponse.trainingsetID;
+                m_TrainingSetData.state = EState.Initial;
             }
 
-            if (validationImagesData.Count != getCheckPointResponse.validation_image_prompts.Length)
+            if (m_ValidationImagesData.Count != getCheckPointResponse.validation_image_prompts.Length)
             {
-                validationImagesData.Clear();
+                ClearValidationImageData();
                 for (var i = 0; i < getCheckPointResponse.validation_image_prompts.Length; i++)
-                    validationImagesData.Add(new SampleOutputData(EState.Initial, getCheckPointResponse.validation_image_prompts[i]));
+                    m_ValidationImagesData.Add(new SampleOutputData(EState.Initial, getCheckPointResponse.validation_image_prompts[i]));
+                sendDataChanged = true;
             }
 
-            if (getCheckPointResponse.status == "done")
+            if (getCheckPointResponse.status == GetCheckPointResponse.Status.done)
             {
                 if (getCheckPointResponse.validation_image_guids?.Length != getCheckPointResponse.validation_image_prompts?.Length)
                 {
                     StyleTrainerDebug.Log($"Waiting for validation image {getCheckPointResponse.validation_image_guids?.Length} {getCheckPointResponse.validation_image_prompts?.Length}");
-                    Scheduler.ScheduleCallback(ServerConfig.serverConfig.webRequestPollRate, LoadCheckPoint);
+                    ScheduleCallback(LoadCheckPoint);
                 }
                 else
                 {
@@ -190,28 +224,33 @@ namespace Unity.Muse.StyleTrainer
                     ArtifactLoaded(this);
                 }
             }
-            else if (getCheckPointResponse.status == "working")
+            else if (getCheckPointResponse.status == GetCheckPointResponse.Status.working)
             {
                 if (state != EState.Training)
                 {
                     state = EState.Training;
-                    DataChanged(this);
+                    sendDataChanged = true;
                 }
 
-                Scheduler.ScheduleCallback(ServerConfig.serverConfig.webRequestPollRate, GetCheckPointStatus);
+                ScheduleCallback(GetCheckPointStatus);
             }
-            else if (getCheckPointResponse.status == "failed")
+            else if (getCheckPointResponse.status == GetCheckPointResponse.Status.failed)
             {
                 state = EState.Error;
                 StyleTrainerDebug.LogError($"Checkpoint training failed: assetid:{getCheckPointResponse.asset_id} styleid:{getCheckPointResponse.styleID} checkpointid:{getCheckPointResponse.checkpointID} error:{getCheckPointResponse.error}");
                 StoreSampleOutput(getCheckPointResponse);
                 ArtifactLoaded(this);
             }
+            if(sendDataChanged)
+            {
+                DataChanged(this);
+            }
         }
 
         void GetCheckPointStatus()
         {
-            m_GetCheckPointStatusRestCall?.SendRequest();
+            if (!disposing)
+                m_GetCheckPointStatusRestCall?.SendRequest();
         }
 
         void OnGetCheckPointStatusFailure(GetCheckPointStatusRestCall obj)
@@ -224,26 +263,69 @@ namespace Unity.Muse.StyleTrainer
             }
         }
 
+        EState ConvertCheckPointServerStateResponse(string stateString)
+        {
+            switch (stateString)
+            {
+                case GetCheckPointResponse.Status.failed:
+                    return EState.Error;
+                case GetCheckPointResponse.Status.done:
+                    return EState.Loading;
+                case GetCheckPointResponse.Status.working:
+                    return EState.Training;
+            }
+
+            return EState.Initial;
+        }
+
+        public bool UpdateCheckPointStatus(string status, bool requestSuccess)
+        {
+            if (requestSuccess)
+            {
+                var newState = ConvertCheckPointServerStateResponse(status);
+                state = newState;
+                StyleTrainerDebug.Log($"Loading checkpoint status {guid} {status}");
+                if (status == GetCheckPointResponse.Status.working)
+                    return true;
+            }
+
+            ScheduleCallback(LoadCheckPoint);
+            return false;
+        }
+
         void OnGetCheckPointStatusSuccess(GetCheckPointStatusRestCall arg1, GetCheckPointStatusResponse arg2)
         {
             if (arg2.success)
             {
                 for (var i = 0; i < arg2.results.Length; ++i)
+                {
                     if (arg2.results[i].guid == guid)
                     {
+                        var newState = ConvertCheckPointServerStateResponse(arg2.results[i].status);
+                        state = newState;
+
                         StyleTrainerDebug.Log($"Loading checkpoint status {arg2.results[i].guid} {arg2.results[i].status}");
                         if (arg2.results[i].status != "working")
-                            Scheduler.ScheduleCallback(ServerConfig.serverConfig.webRequestPollRate, LoadCheckPoint);
+                            ScheduleCallback(LoadCheckPoint);
                         else
-                            Scheduler.ScheduleCallback(ServerConfig.serverConfig.webRequestPollRate, GetCheckPointStatus);
+                            ScheduleCallback(GetCheckPointStatus);
                         break;
                     }
+                }
             }
             else
             {
                 StyleTrainerDebug.LogError($"OnGetCheckPointStatusSuccess: Request call success but response failed. {arg2.error} {guid}");
-                Scheduler.ScheduleCallback(ServerConfig.serverConfig.webRequestPollRate, LoadCheckPoint);
+                ScheduleCallback(LoadCheckPoint);
             }
+        }
+
+        void ScheduleCallback(Action callback)
+        {
+            if (!disposing)
+                callback();
+
+            //Scheduler.ScheduleCallback(k_GetCheckPointStatusRetryPollRate, callback);
         }
 
         void StoreSampleOutput(GetCheckPointResponse p0)
@@ -257,22 +339,22 @@ namespace Unity.Muse.StyleTrainer
                 {
                     // check if this guid is already assigned
                     int j;
-                    for (j = 0; j < validationImagesData.Count; ++j)
-                        if (validationImagesData[j].guid == serverGUID)
+                    for (j = 0; j < m_ValidationImagesData.Count; ++j)
+                        if (m_ValidationImagesData[j].guid == serverGUID)
                             break;
 
-                    if (j >= validationImagesData.Count)
+                    if (j >= m_ValidationImagesData.Count)
                     {
                         // not found. Assign to a prompt
-                        for (j = 0; j < validationImagesData.Count; ++j)
-                            if (!Utilities.ValidStringGUID(validationImagesData[j].guid) &&
-                                validationImagesData[j].prompt == serverPrompt)
+                        for (j = 0; j < m_ValidationImagesData.Count; ++j)
+                            if (!Utilities.ValidStringGUID(m_ValidationImagesData[j].guid) &&
+                                m_ValidationImagesData[j].prompt == serverPrompt)
                             {
-                                validationImagesData[j].guid = serverGUID;
+                                m_ValidationImagesData[j].guid = serverGUID;
                                 break;
                             }
 
-                        if (j >= validationImagesData.Count) StyleTrainerDebug.LogWarning($"Prompt on server not found in local data. prompt:{serverPrompt} guid:{serverGUID}");
+                        if (j >= m_ValidationImagesData.Count) StyleTrainerDebug.LogWarning($"Prompt on server not found in local data. prompt:{serverPrompt} guid:{serverGUID}");
                     }
                 }
             }
@@ -280,19 +362,18 @@ namespace Unity.Muse.StyleTrainer
 
         public void DuplicateNew(Action<CheckPointData> onDuplicateDone)
         {
-            trainingSetData.DuplicateNew(x => DuplicateCheckPoint(x, onDuplicateDone));
+            m_TrainingSetData.DuplicateNew(x => DuplicateCheckPoint(x, onDuplicateDone));
         }
 
         void DuplicateCheckPoint(TrainingSetData trainingSetData, Action<CheckPointData> onDuplicateDone)
         {
             var checkPoint = new CheckPointData(EState.New, Utilities.emptyGUID, m_ProjectID)
             {
-                name = $"{name}",
-                description = description,
+                m_Name = m_Name,
+                m_Description = m_Description,
                 parent_id = guid,
-                dropDownLabelName = StringConstants.newVersion,
-                trainingSetData = trainingSetData,
-                validationImagesData = DuplicateNewValidationData()
+                m_TrainingSetData = trainingSetData,
+                m_ValidationImagesData = DuplicateNewValidationData()
             };
 
             onDuplicateDone?.Invoke(checkPoint);
@@ -301,15 +382,25 @@ namespace Unity.Muse.StyleTrainer
         List<SampleOutputData> DuplicateNewValidationData()
         {
             var list = new List<SampleOutputData>();
-            for (var i = 0; i < validationImagesData.Count; ++i) list.Add(validationImagesData[i].Duplicate());
+            for (var i = 0; i < m_ValidationImagesData.Count; ++i) list.Add(m_ValidationImagesData[i].Duplicate());
 
             return list;
         }
 
         public void Delete()
         {
-            trainingSetData?.Delete();
-            for (var i = 0; i < validationImagesData?.Count; ++i) validationImagesData[i]?.Delete();
+            m_TrainingSetData?.Delete();
+            for (var i = 0; i < m_ValidationImagesData?.Count; ++i) m_ValidationImagesData[i]?.Delete();
+        }
+
+        public void SetCheckPointStatus(string status, bool arg3)
+        {
+            var newState = ConvertCheckPointServerStateResponse(status);
+            state = arg3 ? newState : EState.Initial;
+
+            StyleTrainerDebug.Log($"Loading checkpoint status {guid} {status}");
+            if (status != GetCheckPointResponse.Status.working)
+                ScheduleCallback(LoadCheckPoint);
         }
     }
 }

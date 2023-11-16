@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Unity.AppUI.UI;
 using Unity.Muse.Common;
+using Unity.Muse.Common.Baryon.UI.Manipulators;
 using Unity.Muse.Sprite.Artifacts;
 using Unity.Muse.Sprite.Common.Backend;
 using Unity.Muse.Sprite.Operators;
@@ -31,7 +32,7 @@ namespace Unity.Muse.Sprite.UIComponents
             m_ButtonContainer = new VisualElement();
             m_ButtonContainer.AddToClassList("muse-asset-image__control-buttons-container");
 
-            styleSheets.Add(Resources.Load<StyleSheet>("uss/ResultItem"));
+            styleSheets.Add(ResourceManager.Load<StyleSheet>(Muse.Common.PackageResources.resultItemStyleSheet));
 
             m_EditButton = new ActionButton { name = "refine", icon = "pen", tooltip = Muse.Common.TextContent.refineTooltip };
             m_EditButton.AddToClassList("refine-button");
@@ -69,6 +70,7 @@ namespace Unity.Muse.Sprite.UIComponents
             m_LeftVerticalContainer.Add(m_DislikeButton);
 
             m_PreviewImage.OnLoadedPreview += UpdateView;
+            m_PreviewImage.OnDelete += DeleteCurrentModel;
             RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
             RegisterCallback<GeometryChangedEvent>(OnGeometryChangedEvent);
         }
@@ -210,6 +212,13 @@ namespace Unity.Muse.Sprite.UIComponents
 
             if (Artifact is SpriteMuseArtifact spriteMuseArtifact)
             {
+                actions.Add(new ContextMenuAction
+                {
+                    id = (int)Actions.GenerationSettings,
+                    label = "Generation Data",
+                    enabled = !context.isMultiSelect
+                });
+
                 if (CurrentModel.isRefineMode)
                 {
                     actions.Add(new ContextMenuAction
@@ -226,13 +235,6 @@ namespace Unity.Muse.Sprite.UIComponents
                         enabled = !context.isMultiSelect
                     });
                 }
-
-                actions.Add(new ContextMenuAction
-                {
-                    id = (int)Actions.GenerationSettings,
-                    label = "Generation Settings",
-                    enabled = !context.isMultiSelect
-                });
 
                 actions.Add(new ContextMenuAction
                 {

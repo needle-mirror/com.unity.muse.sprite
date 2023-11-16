@@ -5,6 +5,7 @@ using UnityEditor;
 using UnityEditor.Callbacks;
 using UnityEngine;
 using UnityEngine.UIElements;
+using Unity.Muse.StyleTrainer.Events.TrainingControllerEvents;
 
 namespace Unity.Muse.StyleTrainer.Editor
 {
@@ -34,6 +35,13 @@ namespace Unity.Muse.StyleTrainer.Editor
             museRoot.theme = currentEditorTheme;
             m_MainUI.AddToClassList("unity-editor");
             m_Controller.SetModel(m_Asset.data);
+            m_Controller.eventBus.RegisterEvent<SystemEvents>(OnSystemEvent);
+        }
+
+        void OnSystemEvent(SystemEvents arg0)
+        {
+            if(arg0.state == SystemEvents.ESystemState.CloseWindow)
+                this.Close();
         }
 
         static StyleTrainerWindow FindWindow(StyleTrainerProjectData asset)

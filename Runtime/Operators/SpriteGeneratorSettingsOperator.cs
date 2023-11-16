@@ -65,6 +65,7 @@ namespace Unity.Muse.Sprite.Operators
         Dropdown m_StyleSelection;
 
         CircularProgress m_StyleLoading;
+        VisualElement m_StyleLoadingRefresh;
 
         static List<StyleData> s_Styles;
 
@@ -103,7 +104,9 @@ namespace Unity.Muse.Sprite.Operators
 
         public VisualElement GetOperatorView(Model model)
         {
-            var UI = new ExVisualElement { passMask = ExVisualElement.Passes.Clear | ExVisualElement.Passes.OutsetShadows };
+            var UI = new ExVisualElement { passMask = ExVisualElement.Passes.Clear | ExVisualElement.Passes.OutsetShadows | ExVisualElement.Passes.BackgroundColor };
+            UI.styleSheets.Add(ResourceManager.Load<StyleSheet>(PackageResources.settingsOperatorStyleSheet));
+            UI.styleSheets.Add(ResourceManager.Load<StyleSheet>(PackageResources.spriteIcons));
             UI.AddToClassList("muse-node");
             UI.name = "prompt-node";
 
@@ -116,10 +119,10 @@ namespace Unity.Muse.Sprite.Operators
                     flexShrink = 1,
                 }
             };
-            titleContainer.AddToClassList("muse-node__title");
-            titleContainer.AddToClassList("bottom-gap");
             UI.Add(titleContainer);
             var titleText = new Text { text = Label };
+            titleText.AddToClassList("muse-node__title");
+            titleText.AddToClassList("bottom-gap");
             titleContainer.Add(titleText);
             m_StyleLoading = new CircularProgress()
             {
@@ -143,9 +146,35 @@ namespace Unity.Muse.Sprite.Operators
             m_StyleSelection.bindItem += OnBindStyle;
             m_StyleSelection.RegisterValueChangedCallback(OnStyleSelected);
             m_StyleSelection.AddToClassList("bottom-gap");
-            UpdateWithStyleData(GetStylesFromProject());
             UI.Add(m_StyleSelection);
 
+            m_StyleLoadingRefresh = new VisualElement
+            {
+                tooltip = "Styles failed to load. Select the 'Reload' button to retry.",
+                style =
+                {
+                    flexDirection = FlexDirection.Row,
+                    width = new Length(100, LengthUnit.Percent),
+                    flexShrink = 1,
+                    justifyContent = Justify.FlexStart,
+                    alignItems = Align.Center
+                }
+            };
+            var warningIcon = new Icon { iconName = "warning", style = { marginRight = new Length(10, LengthUnit.Pixel) } };
+            m_StyleLoadingRefresh.Add(warningIcon);
+            var failedToLoadLabel = new InputLabel("Styles failed to load") { labelOverflow = TextOverflow.Ellipsis };
+            failedToLoadLabel.AddToClassList("larger-label");
+            m_StyleLoadingRefresh.Add(failedToLoadLabel);
+            var refreshButton = new ActionButton(() =>
+            {
+                m_Model.GetData<DefaultStyleData>().Reset();
+                RefreshStyleList();
+            }) { icon = "refresh", tooltip = "Reload Styles", size = Size.M, style = { marginLeft = new StyleLength(StyleKeyword.Auto) } };
+            m_StyleLoadingRefresh.Add(refreshButton);
+            m_StyleLoadingRefresh.AddToClassList("bottom-gap");
+            UI.Add(m_StyleLoadingRefresh);
+            RefreshStyleList();
+            
             m_StyleStrength = new TouchSliderFloat();
             m_StyleStrength.name = "style-strength-slider";
             m_StyleStrength.AddToClassList("bottom-gap");
@@ -165,6 +194,7 @@ namespace Unity.Muse.Sprite.Operators
             removeBg.labelOverflow = TextOverflow.Ellipsis;
             removeBg.Add(removeBgToggle);
             removeBg.AddToClassList("bottom-gap");
+            removeBg.AddToClassList("larger-label");
             UI.Add(removeBg);
 
             m_SeedField = new SeedField() { name = "seed-field" };
@@ -187,7 +217,7 @@ namespace Unity.Muse.Sprite.Operators
 
         void OnGetDefaultStyleModified()
         {
-            UpdateWithStyleData(GetStylesFromProject());
+            RefreshStyleList();
         }
 
         public CheckPointData GetSelectedStyleCheckpointGuid() => GetStarredCheckpointGuid(selectedStyle);
@@ -203,27 +233,93 @@ namespace Unity.Muse.Sprite.Operators
                     return checkPoint;
             }
 
-            return new CheckPointData(EState.New, Utilities.emptyGUID, Utilities.emptyGUID)
-            {
-                name = "Default No Style",
-                description = "Default No Style"
-            };
+            var defaultCp = new CheckPointData(EState.New, Utilities.emptyGUID, Utilities.emptyGUID);
+            defaultCp.SetName("Default No Style");
+            defaultCp.SetDescription("Default No Style");
+            return defaultCp;
         }
 
         List<StyleData> GetStylesFromProject()
         {
-            var styles = new List<StyleData>(StyleTrainerProjectData.instance.data.styles
-                .Where(styleData => styleData.visible && styleData.checkPoints != null && styleData.checkPoints.Any(c => c.state == EState.Loaded)));
+            var styles = new List<StyleData>();
+            var projectStyles = StyleTrainerProjectData.instance.data.styles;
+            for (int i = 0; i < projectStyles?.Count; ++i)
+            {
+                if (!projectStyles[i].visible)
+                    continue;
+                var checkPoints = projectStyles[i].checkPoints;
+                for (int j = 0; j < checkPoints?.Count; ++j)
+                {
+                    if (checkPoints[j].state == EState.Loaded)
+                    {
+                        styles.Add(projectStyles[i]);
+                        break;
+                    }
+
+                    if (checkPoints[j].state == EState.Loading || checkPoints[j].state == EState.Training)
+                    {
+                        checkPoints[j].OnStateChanged -= OnCheckPointStateChange;
+                        checkPoints[j].OnStateChanged += OnCheckPointStateChange;
+                    }
+                }
+            }
+
             if (m_Model != null)
             {
                 var defaultStyleData = m_Model.GetData<DefaultStyleData>();
+                ToggleStyleLoadError(defaultStyleData.failedToLoad);
+                if (defaultStyleData.failedToLoad)
+                {
+                    if (m_StyleLoading != null)
+                        m_StyleLoading.style.display = DisplayStyle.None;
+
+                    return styles;
+                }
+
                 var defaultStyles = defaultStyleData.GetBuiltInStyle();
+                var defaultCheckpointsLoading = false;
+                foreach (var defaultStyle in defaultStyles)
+                {
+                    foreach (var checkPoint in defaultStyle.checkPoints)
+                    {
+                        if (checkPoint.state == EState.Loading)
+                        {
+                            checkPoint.OnStateChanged -= OnCheckPointStateChange;
+                            checkPoint.OnStateChanged += OnCheckPointStateChange;
+
+                            defaultCheckpointsLoading = true;
+                        }
+                    }
+                }
+
                 if (m_StyleLoading != null)
-                    m_StyleLoading.style.display = defaultStyleData.loading ? DisplayStyle.Flex : DisplayStyle.None;
-                for (var i = 0; i < defaultStyles?.Count; ++i)
+                    m_StyleLoading.style.display = defaultStyleData.loading || defaultCheckpointsLoading ? DisplayStyle.Flex : DisplayStyle.None;
+
+                for (var i = 0; i < defaultStyles.Count; ++i)
                     styles.Insert(i, defaultStyles[i]);
             }
             return styles;
+        }
+
+        void RefreshStyleList()
+        {
+            UpdateWithStyleData(GetStylesFromProject());
+        }
+
+        void ToggleStyleLoadError(bool failedToLoad)
+        {
+            if(m_StyleLoadingRefresh != null)
+                m_StyleLoadingRefresh.style.display = failedToLoad ? DisplayStyle.Flex : DisplayStyle.None;
+        }
+
+        void OnCheckPointStateChange(CheckPointData obj)
+        {
+            if (obj.state != EState.Loading && obj.state != EState.Training)
+            {
+                if(obj.state == EState.Loaded)
+                    RefreshStyleList();
+                obj.OnStateChanged -= OnCheckPointStateChange;
+            }
         }
 
         void OnBindStyle(DropdownItem visualElement, int i)
@@ -236,8 +332,11 @@ namespace Unity.Muse.Sprite.Operators
             {
                 var style = s_Styles[i];
                 visualElement.label = style.styleTitle;
-                visualElement.tooltip = style.styleDescription;
+                visualElement.tooltip = style.styleDescriptionWithCheckPointDetails;
                 visualElement.style.maxWidth = 600;
+                visualElement.labelElement.style.overflow = Overflow.Hidden;
+                visualElement.labelElement.style.whiteSpace = WhiteSpace.NoWrap;
+                visualElement.labelElement.style.textOverflow = UnityEngine.UIElements.TextOverflow.Ellipsis;
             }
         }
 
@@ -279,7 +378,7 @@ namespace Unity.Muse.Sprite.Operators
                 }
 
                 var selectedStyleValue = s_Styles[index];
-                m_StyleSelection.tooltip = selectedStyleValue.styleDescription;
+                m_StyleSelection.tooltip = selectedStyleValue.styleDescriptionWithCheckPointDetails;
                 SetSetting(ESettings.SelectedStyleGuid, selectedStyleValue.guid);
 
                 m_StyleSelection.Refresh();
@@ -298,7 +397,7 @@ namespace Unity.Muse.Sprite.Operators
 
             var selectedStyleValue = s_Styles[selectedIndex];
 
-            m_StyleSelection.tooltip = selectedStyleValue.styleDescription;
+            m_StyleSelection.tooltip = selectedStyleValue.styleDescriptionWithCheckPointDetails;
             SetSetting(ESettings.SelectedStyleGuid, selectedStyleValue.guid);
         }
 
@@ -312,12 +411,12 @@ namespace Unity.Muse.Sprite.Operators
                 StyleTrainerProjectData.instance.data.styles[i].OnDataChanged += OnStyleStateChanged;
             }
 
-            UpdateWithStyleData(GetStylesFromProject());
+            RefreshStyleList();
         }
 
         void OnStyleStateChanged(StyleData obj)
         {
-            UpdateWithStyleData(GetStylesFromProject());
+            RefreshStyleList();
         }
 
         public void RandomSeed(bool userSet = false)
@@ -569,8 +668,11 @@ namespace Unity.Muse.Sprite.Operators
         /// <summary>
         /// Get the settings view for this operator.
         /// </summary>
+        /// <param name="model">Current Model</param>
+        /// <param name="isCustomSection">This VisualElement will override the whole operator section used by the generation settings</param>
+        /// <param name="dismissAction">Action to trigger on dismiss</param>
         /// <returns> UI for the operator. Set to Null if the operator should not be displayed in the settings view. Disable the returned VisualElement if you want it to be displayed but not usable.</returns>
-        public VisualElement GetSettingsView()
+        public VisualElement GetSettingsView(Model model, ref bool isCustomSection, Action dismissAction)
         {
             if (string.IsNullOrWhiteSpace(checkPointName))
             {

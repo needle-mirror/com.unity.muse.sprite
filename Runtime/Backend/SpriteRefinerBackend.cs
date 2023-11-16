@@ -10,16 +10,30 @@ namespace Unity.Muse.Sprite.Backend
             : base(asset, request)
         {
             request.access_token = asset.accessToken;
+            request.organization_id = asset.organizationId;
             request.asset_id = generatorProfile;
             this.request = request;
         }
 
-        public override string endPoint => $"/api/v1/sprite/refine";
-        public override IQuarkEndpoint.EMethod method => IQuarkEndpoint.EMethod.POST;
+        protected override string[] endPoints
+        {
+            get
+            {
+                return new[]
+                {
+                    $"/api/v1/sprite/refine",
+                    $"/api/v2/images/sprites/organizations/{request.organization_id}/projects/{request.asset_id}/refine",
+                };
+            }
+        }
+
+        protected override IQuarkEndpoint.EMethod[] methods => new [] {
+            IQuarkEndpoint.EMethod.POST, IQuarkEndpoint.EMethod.POST,
+        };
 
         protected override string RequestLog()
         {
-            var logRequest = request;
+            var logRequest = request with { };
             logRequest.base64Image = $"Image data removed for logging size:{request.base64Image?.Length}";
             logRequest.mask64Image = $"Image data removed for logging size:{request.mask64Image?.Length}";
             return $"Request:{MakeEndPoint(this)} Payload:{JsonUtility.ToJson(logRequest)}";
@@ -34,12 +48,26 @@ namespace Unity.Muse.Sprite.Backend
             : base(asset, request)
         {
             request.access_token = asset.accessToken;
+            request.organization_id = asset.organizationId;
             request.guid = generatorProfile;
             this.request = request;
         }
 
-        public override string endPoint => $"/api/v1/sprite/refine/jobs";
-        public override IQuarkEndpoint.EMethod method => IQuarkEndpoint.EMethod.POST;
+        protected override string[] endPoints
+        {
+            get
+            {
+                return new[]
+                {
+                    $"/api/v1/sprite/refine/jobs",
+                    $"/api/v2/images/sprites/organizations/{request.organization_id}/projects/{request.guid}/jobs?gentype=refine",
+                };
+            }
+        }
+
+        protected override IQuarkEndpoint.EMethod[] methods => new [] {
+            IQuarkEndpoint.EMethod.POST, IQuarkEndpoint.EMethod.GET,
+        };
     }
 
     [Serializable]
@@ -54,9 +82,8 @@ namespace Unity.Muse.Sprite.Backend
     }
 
     [Serializable]
-    internal struct SpriteRefinerRequest
+    internal record SpriteRefinerRequest : BaseRequest
     {
-        public string access_token;
         public string asset_id;
         public string prompt;
         public string base64Image;

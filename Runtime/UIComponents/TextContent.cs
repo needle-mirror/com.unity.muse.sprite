@@ -2,7 +2,7 @@ namespace Unity.Muse.Sprite.UIComponents
 {
     static class TextContent
     {
-        public static readonly string doodleStartTooltip = "Scribble or Drag & Drop reference image here.";
+        public static readonly string doodleStartTooltip = "Scribble or drag & drop reference image here.";
         public static readonly string doodleBrushTooltip = "Scribble Tool. (B)\n'[' or ']' decreases/increases brush size.";
         public static readonly string doodleEraserTooltip = "Erases the scribbles. (E)\n'[' or ']' decreases/increases brush size.";
         public static readonly string doodleTooltipDisabled = "Clear reference image to use Scribble/Eraser Tools";
@@ -16,8 +16,6 @@ namespace Unity.Muse.Sprite.UIComponents
         public static readonly string operatorRemoveBackgroundTooltip = "Removes the background from the selected image.";
         public static readonly string operatorSeedTooltip = "Sets a seed number used to generate the sprites.";
 
-        public static readonly string controlMaskToolTooltip = "Paints a mask over the area that you want to refine.";
-        public static readonly string controlMaskBrushSizeTooltip = "Adjusts the brush size";
         public static readonly string controlMaskEraserToolTooltip = "Erases parts of the masks.";
         public static readonly string controlMaskClearToolTooltip = "Clears all the masks.";
 

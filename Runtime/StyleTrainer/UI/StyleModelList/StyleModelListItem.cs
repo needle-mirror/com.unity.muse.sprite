@@ -1,4 +1,5 @@
 using Unity.AppUI.UI;
+using Unity.Muse.Common;
 using Unity.Muse.Sprite.Common.Events;
 using Unity.Muse.StyleTrainer.Events.StyleModelListUIEvents;
 using Unity.Muse.StyleTrainer.Events.TrainingControllerEvents;
@@ -97,7 +98,7 @@ namespace Unity.Muse.StyleTrainer
         void UpdateStatusIcon()
         {
             var hasTraining = m_StyleData.state == EState.Training;
-            var notNew = m_StyleData.state != EState.New;
+            var notNew = m_StyleData.state != EState.New || Utilities.ValidStringGUID(m_StyleData.guid);
             for (var i = 0; i < m_StyleData.checkPoints.Count; ++i)
             {
                 if (hasTraining == false && m_StyleData.checkPoints[i].state == EState.Training) hasTraining = true;
@@ -149,9 +150,9 @@ namespace Unity.Muse.StyleTrainer
 
         internal static StyleModelListItem CreateFromUxml()
         {
-            var visualTree = Resources.Load<VisualTreeAsset>("Unity.Muse.StyleTrainer/uxml/StyleModelListItem");
+            var visualTree = ResourceManager.Load<VisualTreeAsset>(PackageResources.styleModelListItemTemplate);
             var ve = (StyleModelListItem)visualTree.CloneTree().Q("StyleModelListItem");
-            ve.styleSheets.Add(Resources.Load<StyleSheet>("Unity.Muse.StyleTrainer/uss/StyleModelListItem"));
+            ve.styleSheets.Add(ResourceManager.Load<StyleSheet>(PackageResources.styleModelListItemStyleSheet));
             ve.BindElements();
             return ve;
         }

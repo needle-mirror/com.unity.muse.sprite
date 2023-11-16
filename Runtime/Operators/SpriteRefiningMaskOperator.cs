@@ -10,7 +10,7 @@ namespace Unity.Muse.Sprite.Operators
 {
     [Preserve]
     [Serializable]
-    internal class SpriteRefiningMaskOperator : IOperator
+    internal class SpriteRefiningMaskOperator : IMaskOperator
     {
         enum ESettings
         {
@@ -18,16 +18,20 @@ namespace Unity.Muse.Sprite.Operators
             SourceJobID,
             SourceArtifactID,
             Refined,
+            IsMaskClear
         }
 
         public SpriteRefiningMaskOperator()
         {
-            m_OperatorData = new OperatorData( OperatorName, "Unity.Muse.Sprite","0.0.1",  new [] { "", "", "", "", "" }, false);
+            m_OperatorData = new OperatorData(OperatorName, "Unity.Muse.Sprite", "0.0.1", new[] { "", "", "", "", "1" }, false);
         }
+
+        public Action onMaskUpdated;
 
         OperatorData m_OperatorData;
         public const string baseUssClassName = "appui-sprite-refining-mask";
         public string OperatorName => "Unity.Muse.Sprite.Operators.SpriteRefiningMaskOperator";
+
         /// <summary>
         /// Human-readable label for the operator.
         /// </summary>
@@ -49,7 +53,7 @@ namespace Unity.Muse.Sprite.Operators
             m_OperatorData.enabled = data.enabled;
             if (data.settings == null || data.settings.Length == 0)
                 return;
-            for(int i = 0; i < m_OperatorData.settings.Length && i < data.settings.Length; i++)
+            for (int i = 0; i < m_OperatorData.settings.Length && i < data.settings.Length; i++)
                 m_OperatorData.settings[i] = data.settings[i];
         }
 
@@ -65,23 +69,24 @@ namespace Unity.Muse.Sprite.Operators
         public void RegisterToEvents(Model model)
         {
             if (!model.CurrentOperators.Contains(this))
-                return;         // Only register to paint event for the current operator and not the selected artifact's operator
+                return; // Only register to paint event for the current operator and not the selected artifact's operator
 
-            if(Enabled())
+            if (Enabled())
                 model.OnMaskPaintDone += OnMaskPaintDone;
         }
 
         public void UnregisterFromEvents(Model model)
         {
-            if(Enabled())
+            if (Enabled())
                 model.OnMaskPaintDone -= OnMaskPaintDone;
         }
 
         public bool IsSavable() => true;
 
-        void OnMaskPaintDone(Texture2D texture)
+        void OnMaskPaintDone(Texture2D texture, bool isClear)
         {
-            m_OperatorData.settings[(int)ESettings.Mask] = Convert.ToBase64String(texture.EncodeToPNG());
+            m_OperatorData.settings[(int)ESettings.IsMaskClear] = isClear ? "1" : "0";
+            SetMask(Convert.ToBase64String(texture.EncodeToPNG()));
         }
 
         public string GetMask()
@@ -89,15 +94,19 @@ namespace Unity.Muse.Sprite.Operators
             return m_OperatorData.settings[(int)ESettings.Mask];
         }
 
-        public string SetMask(string mask)
+        public bool IsClear()
         {
-            return m_OperatorData.settings[(int)ESettings.Mask] = mask;
+            return m_OperatorData.settings[(int)ESettings.IsMaskClear] == "1";
         }
 
-        void ValidateSettings()
+        public void SetMask(string mask)
         {
+            m_OperatorData.settings[(int)ESettings.Mask] = mask;
 
+            onMaskUpdated?.Invoke();
         }
+
+        void ValidateSettings() { }
 
         public string sourceJobID
         {
@@ -131,7 +140,7 @@ namespace Unity.Muse.Sprite.Operators
 
         void OnGetMaskArtifactSuccess(GetArtifactRestCall request, byte[] data)
         {
-            m_OperatorData.settings[(int)ESettings.Mask] = Convert.ToBase64String(data);
+            SetMask(Convert.ToBase64String(data));
         }
 
         void OnGetMaskArtifactFailed(GetArtifactRestCall request)
@@ -158,7 +167,7 @@ namespace Unity.Muse.Sprite.Operators
         /// Get the settings view for this operator.
         /// </summary>
         /// <returns> UI for the operator. Set to Null if the operator should not be displayed in the settings view. Disable the returned VisualElement if you want it to be displayed but not usable.</returns>
-        public VisualElement GetSettingsView()
+        public VisualElement GetSettingsView(Model model, ref bool customSection, Action dismissAction)
         {
             var mask = GetTexture();
             if (mask is null)

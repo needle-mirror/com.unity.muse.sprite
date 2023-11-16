@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using Unity.Muse.Common;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -22,7 +21,17 @@ namespace Unity.Muse.StyleTrainer
             m_ImageArtifact = artifact;
             OnImageArtifactDataChanged(artifact);
             if (!Utilities.ValidStringGUID(m_ImageArtifact.guid))
-                m_ImageArtifact.OnDataChanged += OnImageArtifactDataChanged;
+                m_ImageArtifact.OnGUIDChanged += OnImageArtifactDataChanged;
+        }
+
+        public void ShowLoading()
+        {
+            OnLoading();
+        }
+
+        public void ShowImage()
+        {
+            OnImageArtifactDataChanged(m_ImageArtifact);
         }
 
         void OnImageArtifactDataChanged(ImageArtifact obj)

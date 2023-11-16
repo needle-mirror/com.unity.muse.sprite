@@ -3,6 +3,8 @@ using Unity.AppUI.UI;
 using UnityEngine;
 using UnityEngine.Scripting;
 using UnityEngine.UIElements;
+using TextOverflow = Unity.AppUI.UI.TextOverflow;
+using Toggle = Unity.AppUI.UI.Toggle;
 
 namespace Unity.Muse.Sprite.UIComponents
 {
@@ -36,7 +38,7 @@ namespace Unity.Muse.Sprite.UIComponents
         int m_Value;
 
         readonly IntField m_SeedField;
-        readonly Checkbox m_Checkbox;
+        readonly Toggle m_Checkbox;
         bool m_UserSpecified;
 
         /// <summary>
@@ -48,11 +50,16 @@ namespace Unity.Muse.Sprite.UIComponents
 
             var container = new VisualElement { name = containerUssClassName };
             container.AddToClassList(containerUssClassName);
-
-            m_Checkbox = new Checkbox { size = Size.S, label = TextContent.customSeed };
+            container.style.flexDirection = FlexDirection.Column;
+            var label = new InputLabel(TextContent.customSeed);
+            label.AddToClassList("larger-label");
+            m_Checkbox = new Toggle { size = Size.S};
             m_Checkbox.RegisterValueChangedCallback(OnChangeMode);
-            m_Checkbox.style.marginRight = 8;
-            container.Add(m_Checkbox);
+            label.inputAlignment = Align.FlexEnd;
+            label.labelOverflow = TextOverflow.Ellipsis;
+            label.Add(m_Checkbox);
+            container.Add(label);
+            label.AddToClassList("bottom-gap");
 
             m_SeedField = new IntField { name = xFieldUssClassName };
             m_SeedField.style.flexGrow = 1;
@@ -70,15 +77,15 @@ namespace Unity.Muse.Sprite.UIComponents
             UpdateSeedVisual();
         }
 
-        void OnChangeMode(ChangeEvent<CheckboxState> evt)
+        void OnChangeMode(ChangeEvent<bool> evt)
         {
-            userSpecified = evt.newValue == CheckboxState.Checked;
+            userSpecified = evt.newValue;
             UpdateSeedVisual();
         }
 
         void UpdateSeedVisual()
         {
-            m_Checkbox.SetValueWithoutNotify(userSpecified ? CheckboxState.Checked : CheckboxState.Unchecked);
+            m_Checkbox.SetValueWithoutNotify(userSpecified);
             m_SeedField.style.display = userSpecified ? DisplayStyle.Flex : DisplayStyle.None;
         }
 

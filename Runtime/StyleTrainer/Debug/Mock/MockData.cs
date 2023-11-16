@@ -25,13 +25,28 @@ namespace StyleTrainer.Backend
             public string[] prompts;
         }
 
+        // simulate training time
+        [Serializable]
+        public class VersionTraining
+        {
+            public string guid;
+            public int ticks;
+        }
+
+        // Mock data config section
+        // how much training time to reduce per call
+        public int trainingTickSimulation = 1;
+        // validation mock images
+        public List<Texture2D> mockTextures = new();
+
+        // Mock data section
         public StyleTrainerData project;
         public StyleTrainerData defaultStyleProject;
         public List<TrainingSetData> trainingSetData = new();
         public List<MockImageArtifact> imageArtifacts = new();
         public List<StylePrompt> stylePrompts = new();
+        public List<VersionTraining> versionTrainings = new();
 
-        public List<Texture2D> mockTextures = new();
 
         public void Reset()
         {
@@ -45,25 +60,28 @@ namespace StyleTrainer.Backend
 
         void InitDefaultStyleProjectMockData()
         {
-            defaultStyleProject = new StyleTrainerData(EState.Initial);
+            defaultStyleProject = new StyleTrainerData(EState.Loaded);
             defaultStyleProject.guid = "MOCK-DEFAULT-PROJECT-GUID";
-            var s = new StyleData(EState.Initial, "MOCK-DEFAULT-PROJECT-GUID-Style-1", Utilities.emptyGUID, defaultStyleProject.guid);
+            var s = new StyleData(EState.Loaded, "MOCK-DEFAULT-PROJECT-GUID-Style-1",  defaultStyleProject.guid)
+            {
+                title = "Mock Style 1",
+                description = "Mock Style 1 Description",
+            };
             s.visible = true;
             while(s.checkPoints.Count > 0)
             {
                 s.RemoveCheckPointAt(0);
             }
-            s.AddCheckPoint(new CheckPointData(EState.Initial, "MOCK-DEFAULT-PROJECT-GUID-Style-1-CheckPoint-1", Utilities.emptyGUID)
-            {
-                name = "Mock Checkpoint 1",
-                description = "Mock Checkpoint 1 Description",
-            });
 
-            s.AddCheckPoint(new CheckPointData(EState.Initial, "MOCK-DEFAULT-PROJECT-GUID-Style-1-CheckPoint-2", Utilities.emptyGUID)
-            {
-                name = "Mock Checkpoint 2",
-                description = "Mock Checkpoint 2 Description",
-            });
+            var c = new CheckPointData(EState.Loaded, "MOCK-DEFAULT-PROJECT-GUID-Style-1-CheckPoint-1", defaultStyleProject.guid);
+            c.SetName("Mock Checkpoint 1");
+            c.SetDescription("Mock Checkpoint 1 Description");
+            s.AddCheckPoint(c);
+
+            c = new CheckPointData(EState.Loaded, "MOCK-DEFAULT-PROJECT-GUID-Style-1-CheckPoint-2", defaultStyleProject.guid);
+            c.SetName("Mock Checkpoint 2");
+            c.SetDescription("Mock Checkpoint 2 Description");
+            s.AddCheckPoint(c);
             defaultStyleProject.AddStyle(s);
         }
 
@@ -79,7 +97,7 @@ namespace StyleTrainer.Backend
 
         public CreateStyleResponse CreateStyleRestCallMock(CreateStyleRequest req)
         {
-            var style = new StyleData(EState.New, Guid.NewGuid().ToString(), req.parent_id, Utilities.emptyGUID);
+            var style = new StyleData(EState.New, Guid.NewGuid().ToString(), Utilities.emptyGUID);
             project.AddStyle(style);
             stylePrompts.Add(new StylePrompt
             {
@@ -135,7 +153,7 @@ namespace StyleTrainer.Backend
                     checkpointIDs = d.checkPoints.Select(checkPoint => checkPoint.guid).ToArray(),
                     desc = d.description,
                     name = d.title,
-                    prompts = d.sampleOutputData.Select(sampleOutput => sampleOutput.prompt).ToArray(),
+                    prompts = d.sampleOutputPrompts.ToArray(),
                     success = true,
                     trainingsetIDs = trainingSetData.ConvertAll(x => x.guid).ToArray(),
                     state = d.visible ? SetStyleStateRestCall.activeState : SetStyleStateRestCall.inactiveState
@@ -200,37 +218,6 @@ namespace StyleTrainer.Backend
             };
         }
 
-        public CreateCheckPointResponse CreateCheckPointRestCallMock(CreateCheckPointRequest req)
-        {
-            var style = project.styles.FirstOrDefault(x => x.guid == req.guid);
-            if (style != null)
-            {
-                var prompts = stylePrompts.FirstOrDefault(x => x.guid == req.guid);
-                var checkPoint = new CheckPointData(EState.New, Guid.NewGuid().ToString(), req.asset_id)
-                {
-                    name = req.name,
-                    description = req.description,
-                    parent_id = req.resume_guid,
-                    trainingSetData = trainingSetData.FirstOrDefault(x => x.guid == req.training_guid),
-                    validationImagesData = prompts.prompts.Select(x => new SampleOutputData(EState.New, x)).ToList()
-                };
-
-                style.AddCheckPoint(checkPoint);
-                var res = new CreateCheckPointResponse
-                {
-                    guid = checkPoint.guid,
-                    success = true
-                };
-                return res;
-            }
-
-            return new CreateCheckPointResponse
-            {
-                success = false,
-                error =$"{req.guid} not found"
-            };
-        }
-
         public GetCheckPointResponse GetCheckPointRestCallMock(GetCheckPointRequest req)
         {
             var p = req.guid == defaultStyleProject.guid ? defaultStyleProject : project;
@@ -249,21 +236,27 @@ namespace StyleTrainer.Backend
                         checkpointID = checkpoint.guid,
                         name = checkpoint.name,
                         description = checkpoint.description,
-                        validation_image_prompts = checkpoint.validationImagesData.ConvertAll(x => x.prompt).ToArray(),
-                        validation_image_guids = checkpoint.validationImagesData.Where(x => Utilities.ValidStringGUID(x.imageArtifact.guid)).Select(x => x.imageArtifact.guid).ToArray(),
-                        status = "done"
+                        validation_image_prompts = checkpoint.validationImageData.Select(x => x.prompt).ToArray(),
+                        validation_image_guids = checkpoint.validationImageData.Where(x => Utilities.ValidStringGUID(x.imageArtifact.guid)).Select(x => x.imageArtifact.guid).ToArray(),
+                        status = GetCheckPointStatusAsResponseString(checkpoint),
+                        train_steps = checkpoint.trainingSteps
                     };
 
                     //simulate image generation from each call
-                    for (var j = 0; j < checkpoint.validationImagesData.Count; ++j)
-                        if (!Utilities.ValidStringGUID(checkpoint.validationImagesData[j].imageArtifact.guid))
+                    if (checkpoint.state == EState.Loaded)
+                    {
+                        for (var j = 0; j < checkpoint.validationImageData.Count; ++j)
                         {
-                            checkpoint.validationImagesData[i].imageArtifact.guid = Guid.NewGuid().ToString();
-                            var mockImage = new MockImageArtifact(EState.New);
-                            mockImage.guid = checkpoint.validationImagesData[j].imageArtifact.guid;
-                            imageArtifacts.Add(mockImage);
-                            break;
+                            if (!Utilities.ValidStringGUID(checkpoint.validationImageData[j].imageArtifact.guid))
+                            {
+                                checkpoint.validationImageData[j].imageArtifact.guid = Guid.NewGuid().ToString();
+                                var mockImage = new MockImageArtifact(EState.New);
+                                mockImage.guid = checkpoint.validationImageData[j].imageArtifact.guid;
+                                imageArtifacts.Add(mockImage);
+                                break;
+                            }
                         }
+                    }
 
                     return res;
                 }
@@ -331,6 +324,129 @@ namespace StyleTrainer.Backend
                 guid = defaultStyleProject.guid
             };
             return res;
+        }
+
+        public CreateCheckPointV2Response CreateCheckPointV2RestCallMock(CreateCheckPointV2Request request)
+        {
+            const int k_TrainingSteps = 100;
+            var style = project.styles.FirstOrDefault(x => x.guid == request.guid);
+            if (style != null)
+            {
+                Debug.Log("=====Mock need to set training set and validation images=====");
+                var prompts = stylePrompts.FirstOrDefault(x => x.guid == request.guid);
+                var checkPointCounts = request.training_steps/ k_TrainingSteps;
+                if (checkPointCounts == 0)
+                    checkPointCounts = 1;
+                string[] guids = new string[checkPointCounts];
+                for (int i = 0; i < checkPointCounts; ++i)
+                {
+                    var checkPoint = new CheckPointData(EState.Training, Guid.NewGuid().ToString(), request.asset_id)
+                    {
+                        parent_id = request.resume_guid,
+                        //m_TrainingSetData = trainingSetData.FirstOrDefault(x => x.guid == req.training_guid),
+                        //m_ValidationImagesData = prompts.prompts.Select(x => new SampleOutputData(EState.New, x)).ToList()
+                    };
+                    versionTrainings.Add(new VersionTraining
+                    {
+                        guid = checkPoint.guid,
+                        ticks = (i+1) * k_TrainingSteps
+                    });
+                    checkPoint.SetMockData(new TrainingSetData(EState.New, request.training_guid, request.asset_id),
+                        prompts.prompts.Select(x => new SampleOutputData(EState.New, x)).ToList(),
+                        (i +1) * k_TrainingSteps);
+                    checkPoint.SetName(request.name);
+                    checkPoint.SetDescription(request.description);
+                    style.AddCheckPoint(checkPoint);
+                    guids[i] = checkPoint.guid;
+                }
+                var res = new CreateCheckPointV2Response
+                {
+                    guids = guids,
+                    success = true
+                };
+                return res;
+            }
+
+            return new CreateCheckPointV2Response
+            {
+                success = false,
+                error =$"{request.guid} not found"
+            };
+        }
+
+        string GetCheckPointStatusAsResponseString(CheckPointData cp)
+        {
+            var status = GetCheckPointResponse.Status.done;
+            switch (cp.state)
+            {
+                case EState.Loaded:
+                    status = GetCheckPointResponse.Status.done;
+                    break;
+                case EState.Error:
+                    status = GetCheckPointResponse.Status.failed;
+                    break;
+                case EState.Training:
+                    status = GetCheckPointResponse.Status.working;
+                    break;
+            }
+
+            return status;
+        }
+
+        public GetCheckPointStatusResponse GetCheckPointStatus(GetCheckPointStatusRequest request)
+        {
+            var p = request.guid == defaultStyleProject.guid ? defaultStyleProject : project;
+
+            if (p != null)
+            {
+                List<GetCheckPointStatusResponse.CheckPointStatus> checkPointStatuses = new List<GetCheckPointStatusResponse.CheckPointStatus>();
+                for (int j = 0; j < p.styles.Count; ++j)
+                {
+                    var style = p.styles[j];
+                    for (int i = 0; i < style.checkPoints.Count; ++i)
+                    {
+                        var cp = style.checkPoints[i];
+                        if (request.guids.Contains(cp.guid))
+                        {
+                            if (cp.state == EState.Training)
+                            {
+                                var vt = versionTrainings.FirstOrDefault(x => x.guid == cp.guid);
+                                if (vt == null)
+                                {
+                                    cp.state = EState.Loaded;
+                                }
+                                else
+                                {
+                                    vt.ticks -= trainingTickSimulation;
+                                    if (vt.ticks <= 0)
+                                    {
+                                        cp.state = EState.Loaded;
+                                        versionTrainings.Remove(vt);
+                                    }
+                                }
+                            }
+
+                            checkPointStatuses.Add(new GetCheckPointStatusResponse.CheckPointStatus()
+                            {
+                                guid = cp.guid,
+                                status = GetCheckPointStatusAsResponseString(cp)
+                            });
+                        }
+                    }
+                }
+
+
+                return new GetCheckPointStatusResponse()
+                {
+                    success = true,
+                    results = checkPointStatuses.ToArray()
+                };
+            }
+            return new GetCheckPointStatusResponse
+            {
+                success = false,
+                error =$"{request.guid} not found"
+            };
         }
     }
 }

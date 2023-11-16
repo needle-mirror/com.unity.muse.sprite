@@ -7,7 +7,7 @@ using UnityEngine.UIElements;
 namespace Unity.Muse.Sprite.Common.Events
 {
     [Serializable]
-    internal class EventBus : IModelData
+    class EventBus : IModelData
     {
         Dictionary<Type, UnityEventBase> m_Events = new Dictionary<Type, UnityEventBase>();
         Queue<IEvent> m_QueueEvent = new Queue<IEvent>();

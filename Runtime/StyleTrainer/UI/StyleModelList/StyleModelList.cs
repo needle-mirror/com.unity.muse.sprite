@@ -1,9 +1,12 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using Unity.AppUI.UI;
+using Unity.Muse.Common;
 using Unity.Muse.Sprite.Common.DebugConfig;
 using Unity.Muse.Sprite.Common.Events;
+using Unity.Muse.StyleTrainer.Events.StyleModelEvents;
 using Unity.Muse.StyleTrainer.Events.StyleModelListUIEvents;
 using Unity.Muse.StyleTrainer.Events.StyleTrainerProjectEvents;
 using UnityEngine;
@@ -42,7 +45,7 @@ namespace Unity.Muse.StyleTrainer
             m_ListView = this.Q<ListView>("StyleModelListView");
             m_ListView.reorderable = false;
             m_ListView.makeItem = MakeItem;
-            m_ListView.itemsSource = new List<StyleModelInfo>();
+            m_ListView.itemsSource = new List<StyleModelListItem>();
             m_ListView.bindItem = (element, i) =>
             {
                 var item = (StyleModelListItem)element;
@@ -97,9 +100,9 @@ namespace Unity.Muse.StyleTrainer
 
         internal static StyleModelList CreateFromUxml()
         {
-            var visualTree = Resources.Load<VisualTreeAsset>("Unity.Muse.StyleTrainer/uxml/StyleModelList");
+            var visualTree = ResourceManager.Load<VisualTreeAsset>(PackageResources.styleModelListTemplate);
             var ve = (StyleModelList)visualTree.CloneTree().Q("StyleModelList");
-            ve.styleSheets.Add(Resources.Load<StyleSheet>("Unity.Muse.StyleTrainer/uss/StyleModelList"));
+            ve.styleSheets.Add(ResourceManager.Load<StyleSheet>(PackageResources.styleModelListStyleSheet));
             ve.BindElements();
             return ve;
         }

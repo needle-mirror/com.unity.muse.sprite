@@ -1,5 +1,6 @@
 using System;
 using Unity.AppUI.UI;
+using Unity.Muse.Common;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -14,9 +15,9 @@ namespace Unity.Muse.StyleTrainer
 
         internal static TrainingItemGridItem CreateFromUxml()
         {
-            var visualTree = Resources.Load<VisualTreeAsset>("Unity.Muse.StyleTrainer/uxml/TrainingItemGridItem");
+            var visualTree = ResourceManager.Load<VisualTreeAsset>(PackageResources.trainingItemGridItemTemplate);
             var ve = (TrainingItemGridItem)visualTree.CloneTree().Q("TrainingItemGridItem");
-            ve.styleSheets.Add(Resources.Load<StyleSheet>("Unity.Muse.StyleTrainer/uss/TrainingItemGridItem"));
+            ve.styleSheets.Add(ResourceManager.Load<StyleSheet>(PackageResources.trainingItemGridItemStyleSheet));
             ve.BindElements();
             return ve;
         }

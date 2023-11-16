@@ -6,7 +6,7 @@ namespace Unity.Muse.StyleTrainer.Events.SampleOutputModelEvents
 {
     class SampleOutputDataSourceChangedEvent : BaseEvent<SampleOutputDataSourceChangedEvent>
     {
-        public IList<SampleOutputData> sampleOutput;
+        public IReadOnlyList<string> sampleOutput;
         public StyleData styleData;
     }
 }

@@ -6,6 +6,7 @@ using Unity.Muse.StyleTrainer.EditorMockClass;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using StyleTrainer.Backend;
 using Unity.Muse.StyleTrainer.Debug;
 using UnityEngine;
 using UnityEngine.Scripting;
@@ -58,21 +59,24 @@ namespace Unity.Muse.StyleTrainer
         public StyleTrainerData data => m_StyleTrainerData;
 
 
-        public IReadOnlyList<StyleData> GetDefaultStyles(Action<IReadOnlyList<StyleData>> onDone, bool cache)
+        public IReadOnlyList<StyleData> GetDefaultStyles(Action<IReadOnlyList<StyleData>> onDone, Action onFailed, bool cache)
         {
             if (m_DefaultStyleData.state == EState.Loaded && cache)
             {
                 var buildStyleList = GetDefaultStyles();
                 onDone(buildStyleList);
             }
-            else if(m_DefaultStyleData.state != EState.Loading || m_RetrieveDefaultStyleTask == null)
+            else if (m_DefaultStyleData.state != EState.Loading || m_RetrieveDefaultStyleTask == null)
             {
                 m_RetrieveDefaultStyleTask = new RetrieveDefaultStyleTask();
                 m_RetrieveDefaultStyleTask.Execute(m_DefaultStyleData, () =>
                 {
                     m_RetrieveDefaultStyleTask = null;
-                    var buildStyleList = GetDefaultStyles();
-                    onDone(buildStyleList);
+
+                    if (m_DefaultStyleData.state == EState.Error)
+                        onFailed?.Invoke();
+                    else
+                        onDone(GetDefaultStyles());
                 });
             }
 
@@ -81,7 +85,7 @@ namespace Unity.Muse.StyleTrainer
 
         IReadOnlyList<StyleData> GetDefaultStyles()
         {
-            IReadOnlyList<StyleData> serverDefaultStyles = m_DefaultStyleData.styles.Where(s => s.state == EState.Loaded && s.visible && s.checkPoints != null && s.checkPoints.Any(c => c.state == EState.Loaded)).ToList();
+            IReadOnlyList<StyleData> serverDefaultStyles = m_DefaultStyleData.styles.Where(s => s.state == EState.Loaded && s.visible && s.checkPoints != null && s.checkPoints.Any()).ToList();
             if (serverDefaultStyles.Count == 0)
                 return builtInStyles;
 
@@ -109,12 +113,15 @@ namespace Unity.Muse.StyleTrainer
 
         void OnEnable()
         {
+            m_StyleTrainerData.Init();
             StyleTrainerDebug.Log("Asset enabled");
         }
 
         void OnDisable()
         {
             Save();
+            StyleTrainerConfig.config.artifactCache.Prune();
+            StyleTrainerConfig.config.artifactCache.Dispose();
             StyleTrainerDebug.Log("Asset disabled");
             m_StyleTrainerData?.OnDispose();
         }
@@ -128,10 +135,17 @@ namespace Unity.Muse.StyleTrainer
         public void Reset()
         {
             if (Utilities.ValidStringGUID(guid))
-                m_PreviousProjectIDs.Add(guid);
+            {
+                if (m_PreviousProjectIDs.FindIndex(x => x == guid) < 0)
+                    m_PreviousProjectIDs.Add(guid);
+            }
+            StyleTrainerConfig.config.artifactCache.Clear();
             m_StyleTrainerData?.OnDispose();
             m_StyleTrainerData?.Delete();
             m_StyleTrainerData = new StyleTrainerData(EState.New);
+#if UNITY_EDITOR
+            MockData.instance.Reset();
+#endif
             Save();
             onDataChanged.Invoke(this);
         }

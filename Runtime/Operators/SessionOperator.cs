@@ -62,7 +62,10 @@ namespace Unity.Muse.Sprite.Operators
             m_Model = model;
             var sessionData = m_Model.GetData<SessionData>();
             m_OperatorData.settings[0] = sessionData.activeSession;
-            var m_UI = new ExVisualElement { passMask = ExVisualElement.Passes.Clear | ExVisualElement.Passes.OutsetShadows };
+            var m_UI = new ExVisualElement
+            {
+                passMask = ExVisualElement.Passes.Clear | ExVisualElement.Passes.OutsetShadows | ExVisualElement.Passes.BackgroundColor
+            };
             m_UI.AddToClassList("muse-node");
             m_UI.name = "prompt-node";
 
@@ -79,8 +82,9 @@ namespace Unity.Muse.Sprite.Operators
             var sessionButton = new Button();
             sessionButton.name = "generate-button";
             sessionButton.title = "Load Session";
+            sessionButton.AddToClassList("muse-theme");
             sessionButton.AddToClassList("muse-node__button");
-            sessionButton.primary = true;
+            sessionButton.variant = ButtonVariant.Accent;
             sessionButton.clicked += SetSession;
             m_UI.Add(sessionButton);
             if(!string.IsNullOrEmpty(m_OperatorData.settings[0]))
@@ -141,8 +145,7 @@ namespace Unity.Muse.Sprite.Operators
             {
                 var request = new ServerRequest<JobInfoRequest>();
                 request.guid = jobID;
-                request.data = new JobInfoRequest() { jobID = jobID };
-                request.access_token = serverConfig.accessToken;
+                request.data = new JobInfoRequest() { jobID = jobID, assetID = GetSessionID() };
                 var getJob = new GetJobRestCall(serverConfig, request);
                 getJob.RegisterOnSuccess(OnGetSpriteRefineJobSuccess);
                 getJob.RegisterOnFailure(OnGetJobFailed);
@@ -163,7 +166,7 @@ namespace Unity.Muse.Sprite.Operators
             {
                 var request = new ServerRequest<JobInfoRequest>();
                 request.guid = jobID;
-                request.data = new JobInfoRequest() { jobID = jobID };
+                request.data = new JobInfoRequest() { jobID = jobID, assetID = GetSessionID() };
                 request.access_token = serverConfig.accessToken;
                 var getJob = new GetJobRestCall(serverConfig, request);
                 getJob.RegisterOnSuccess(OnGetSpriteGeneratorJobSuccess);
@@ -190,15 +193,8 @@ namespace Unity.Muse.Sprite.Operators
             {
                 var opData = promptOperator.GetOperatorData();
                 opData.settings[0] = jir.request.prompt;
+                opData.settings[1] = jir.request.settings.negative_prompt;
                 promptOperator.SetOperatorData(opData);
-            }
-
-            var negativePrompt = artifact.GetOperator<NegativePromptOperator>();
-            if (negativePrompt != null)
-            {
-                var opData = negativePrompt.GetOperatorData();
-                opData.settings[0] = jir.request.settings.negative_prompt;
-                negativePrompt.SetOperatorData(opData);
             }
 
             var sgso = artifact.GetOperator<SpriteGeneratorSettingsOperator>();
@@ -285,8 +281,11 @@ namespace Unity.Muse.Sprite.Operators
         /// <summary>
         /// Get the settings view for this operator.
         /// </summary>
+        /// <param name="model">Current Model</param>
+        /// <param name="isCustomSection">This VisualElement will override the whole operator section used by the generation settings</param>
+        /// <param name="dismissAction">Action to trigger on dismiss</param>
         /// <returns> UI for the operator. Set to Null if the operator should not be displayed in the settings view. Disable the returned VisualElement if you want it to be displayed but not usable.</returns>
-        public VisualElement GetSettingsView()
+        public VisualElement GetSettingsView(Model model, ref bool isCustomSection, Action dismissAction)
         {
             return null;
         }

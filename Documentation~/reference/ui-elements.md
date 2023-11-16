@@ -21,8 +21,10 @@ This page describes the UI elements of the **Muse Sprite** tool.
 
 | **Property** | **Description** |
 | --- | --- |
-| **Inpaint** | Activates the painting brush to create and edit a mask. |
-| **Eraser** | Toggles between brush and eraser modes. |
+| **Hand** | Deselects a refine tool. |
+| **Paint** | Activates the painting brush you can use to create and edit a mask. |
+| **Erase** | Erases the mask.|
+| **Clear** | Clears the canvas. |
 | **Radius** | Sets the size of the brush or eraser. |
 
 ## Parameters panel
@@ -39,8 +41,8 @@ This page describes the UI elements of the **Muse Sprite** tool.
 | --- | --- |
 | **Scribble tool** | Draws on the canvas. Only works when there is no reference image. |
 | **Eraser tool** | Erases the scribbles. Only works when there is no reference image. |
-| **Clear tool** | Clears the scribbles or the reference image. |
 | **Sprite picker** | Selects a sprite from the **Scene** view, **Hierarchy** panel or the **Project** window to use as the reference image. |
+| **Clear tool** | Clears the scribbles or the reference image. |
 | **Tightness** | Determines the likeness between the generated sprites and the referenced image. Higher values result in more alike sprites.|
 
 ## Image context menu items
@@ -51,6 +53,13 @@ The following table describes the context menu (&#8230;) items of a generated sp
 | --- | --- |
 | **Generation Settings** | Displays and reuses the prompt, negative prompt, seed number, and style used in the generation. |
 | **Export** | Exports the sprite to the project's `Assets` folder. |
+
+## Unity Muse bar
+
+| **Property** | **Description** |
+| --- | --- |
+| **Muse Points Used** | Displays the number of [Muse points you have used and the total points you have](https://unity.com/ai/faq). |
+| **Go to Muse account** | Opens the [Muse account](https://id.unity.com/en/account/edit) page in your browser. |
 
 ## Additional resources
 

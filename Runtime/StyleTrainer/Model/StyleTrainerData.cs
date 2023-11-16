@@ -12,7 +12,7 @@ namespace Unity.Muse.StyleTrainer
     class StyleTrainerData : Artifact<StyleTrainerData, StyleTrainerData>
     {
         // Unity version + XXXXX
-        public const string k_Version = "202230001";
+        public const string k_Version = "202231001";
 
         [SerializeReference]
         List<StyleData> m_Styles = new();
@@ -72,7 +72,7 @@ namespace Unity.Muse.StyleTrainer
 
         void OnGetStylesSuccess(GetStylesRestCall arg1, GetStylesResponse arg2)
         {
-            if (arg2.success)
+            if (arg2.success && !disposing)
             {
                 ClearStyles();
                 state = EState.Loaded;
@@ -85,7 +85,7 @@ namespace Unity.Muse.StyleTrainer
                 {
                     foreach (var id in arg2.styleIDs)
                     {
-                        var styleData = new StyleData(EState.Initial, id, Utilities.emptyGUID, guid);
+                        var styleData = new StyleData(EState.Initial, id, guid);
                         AddStyle(styleData);
                         styleData.GetArtifact(OnGetStyleDone, false);
                     }
@@ -135,12 +135,20 @@ namespace Unity.Muse.StyleTrainer
 
         public void ClearStyles()
         {
+            for (int i = 0; i < m_Styles.Count; ++i)
+            {
+                m_Styles[i].OnDispose();
+                m_Styles[i].Delete();
+            }
             m_Styles.Clear();
             DataChanged(this);
         }
 
-        internal void Init()
+        public override void Init()
         {
+            base.Init();
+            for (var i = 0; i < m_Styles?.Count; ++i)
+                m_Styles[i]?.Init();
             if (!Utilities.ValidStringGUID(guid)) guid = Guid.NewGuid().ToString();
         }
 

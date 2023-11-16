@@ -17,12 +17,23 @@ namespace Unity.Muse.StyleTrainer
         bool? m_LoggedIn;
         EventBus m_EventBus;
 
+        public static Action<bool> ForceSignInTokenRefresh = _ => { };
+
         public void Init(EventBus evtBus)
         {
             if (m_Initialized) return;
             m_Initialized = true;
             m_EventBus = evtBus;
             m_Info.eventDelegate = UnityConnectUtils.RegisterConnectStateChangedEvent(_ => StateSignOnChange());
+            ForceSignInTokenRefresh += ForceSignInTokenRefreshCallback;
+        }
+
+        void ForceSignInTokenRefreshCallback(bool obj)
+        {
+            m_EventBus.SendEvent(new SignInEvent
+            {
+                signIn = obj
+            });
         }
 
         void RefreshSignIn()
@@ -48,6 +59,7 @@ namespace Unity.Muse.StyleTrainer
         {
 #if UNITY_EDITOR
             m_Info.eventDelegate = null;
+            ForceSignInTokenRefresh -= ForceSignInTokenRefreshCallback;
 #endif
         }
     }

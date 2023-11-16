@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using Unity.AppUI.UI;
 using Unity.Muse.Common;
+using Unity.Muse.Common.Tools;
 using Unity.Muse.Sprite.Backend;
 using Unity.Muse.Sprite.Common.Backend;
 using Unity.Muse.Sprite.UIComponents;
@@ -122,11 +123,14 @@ namespace Unity.Muse.Sprite.Operators
 
         public VisualElement GetOperatorView(Model model)
         {
-            var UI = new ExVisualElement { passMask = ExVisualElement.Passes.Clear | ExVisualElement.Passes.OutsetShadows };
+            var UI = new ExVisualElement
+            {
+                passMask = ExVisualElement.Passes.Clear | ExVisualElement.Passes.OutsetShadows | ExVisualElement.Passes.BackgroundColor
+            };
             UI.AddToClassList(baseUssClassName);
             UI.AddToClassList("muse-node");
             UI.AddToClassList("appui-elevation-8");
-            UI.styleSheets.Add(Resources.Load<StyleSheet>("UI/KeyImage"));
+            UI.styleSheets.Add(ResourceManager.Load<StyleSheet>(PackageResources.keyImageStyleSheet));
             UI.name = "key-image-node";
 
             var titleText = new Text();
@@ -162,7 +166,7 @@ namespace Unity.Muse.Sprite.Operators
             controlButtonsRight.AddToClassList(controlButtonsContainerRightClassName);
             controlButtons.Add(controlButtonsRight);
 
-            m_DeleteButton = new Button(OnDeleteClicked) { leadingIcon = "x", tooltip = TextContent.doodleClearTooltip };
+            m_DeleteButton = new Button(OnDeleteClicked) { leadingIcon = "delete", tooltip = TextContent.doodleClearTooltip };
             controlButtonsRight.Add(m_DeleteButton);
 
             m_ImageContainer = new VisualElement();
@@ -192,7 +196,7 @@ namespace Unity.Muse.Sprite.Operators
             }
 
             m_DoodlePadManipulator = new DoodlePadManipulator(doodleSize);
-            m_DoodlePadManipulator.onModifierStateChanged += OnDoodleModifierChanged;
+            m_DoodlePadManipulator.onModifierStateChanged += _ => UpdateVisibility();
             m_DoodlePadManipulator.onDoodleUpdate += UpdateVisibility;
             m_ImageContainer.AddManipulator(m_DoodlePadManipulator);
             m_DoodlePadManipulator.SetValueWithoutNotify(Convert.FromBase64String(GetDoodle()));
@@ -217,10 +221,10 @@ namespace Unity.Muse.Sprite.Operators
             m_MaskTightness.RegisterValueChangedCallback(OnMaskTightnessChanged);
             UI.Add(m_MaskTightness);
 
+            UpdateVisibility();
+
             UI.RegisterCallback<AttachToPanelEvent>(OnAttach);
             UI.RegisterCallback<DetachFromPanelEvent>(OnDetach);
-
-            UpdateVisibility();
             return UI;
         }
 
@@ -231,8 +235,11 @@ namespace Unity.Muse.Sprite.Operators
         /// <summary>
         /// Get the settings view for this operator.
         /// </summary>
+        /// <param name="model">Current Model</param>
+        /// <param name="isCustomSection">This VisualElement will override the whole operator section used by the generation settings</param>
+        /// <param name="dismissAction">Action to trigger on dismiss</param>
         /// <returns> UI for the operator. Set to Null if the operator should not be displayed in the settings view. Disable the returned VisualElement if you want it to be displayed but not usable.</returns>
-        public VisualElement GetSettingsView()
+        public VisualElement GetSettingsView(Model model, ref bool isCustomSection, Action dismissAction)
         {
             var result = new VisualElement();
 
@@ -251,6 +258,10 @@ namespace Unity.Muse.Sprite.Operators
             result.Add(new Text($"Tightness: {tightness}"));
 
             return result;
+        }
+                
+        public void AddCustomGenerationSettingsSubviews(VisualElement container, Model model)
+        {
         }
 
         void OnMaskTightnessChanging(ChangingEvent<float> evt)
@@ -274,6 +285,8 @@ namespace Unity.Muse.Sprite.Operators
 
             foreach (var shortcut in m_Shortcuts)
                 MuseShortcuts.AddShortcut(shortcut);
+
+            ((VisualElement)evt.target).schedule.Execute(UpdateVisibility);
         }
 
         void OnDetach(DetachFromPanelEvent evt)
@@ -340,14 +353,6 @@ namespace Unity.Muse.Sprite.Operators
             m_OperatorData.settings[(int)ESettings.IsClear] = m_DoodlePadManipulator.isClear.ToString();
 
             RecordUndo(doodleValue, isClear, null);
-
-            UpdateVisibility();
-        }
-
-        void OnDoodleModifierChanged(DoodleModifierState newModifierState)
-        {
-            m_BrushButton.selected = newModifierState == DoodleModifierState.Brush;
-            m_EraserButton.selected = newModifierState == DoodleModifierState.Erase;
 
             UpdateVisibility();
         }
@@ -473,6 +478,11 @@ namespace Unity.Muse.Sprite.Operators
 
             if (!isDoodling && m_DoodlePadManipulator.currentState != DoodleModifierState.None)
                 m_DoodlePadManipulator.SetNone();
+
+            m_BrushButton.selected = m_DoodlePadManipulator.currentState == DoodleModifierState.Brush;
+            m_EraserButton.selected = m_DoodlePadManipulator.currentState == DoodleModifierState.Erase;
+
+            m_DeleteButton.SetEnabled(m_ReferenceImage.image != null || !m_DoodlePadManipulator.isClear);
         }
 
         public void InitFromJobInfo(JobInfoResponse jobInfoResponse)

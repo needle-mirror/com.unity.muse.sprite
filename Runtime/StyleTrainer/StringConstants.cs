@@ -13,8 +13,9 @@ namespace Unity.Muse.StyleTrainer
 
         public const string sampleOutputTab = "Sample Output";
         public const string trainingSetTab = "Training Set";
-        public const string versionNotTrained = "(Version is not trained)";
-        public const string versionTrainedError = "(Error when training version)";
+        public const string styleNotTrained = "(Style is not trained)";
+        public const string styleTrainedError = "(Style encountered error while training)";
         public const string styleError = "(Error loading Style)";
+        public const string styleTraining = "(Style is training)";
     }
 }

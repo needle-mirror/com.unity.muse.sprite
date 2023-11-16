@@ -4,8 +4,6 @@ using System.IO;
 using System.Text;
 using Unity.Muse.Common;
 using UnityEngine;
-using UnityEngine.Experimental.Rendering;
-using UnityEngine.Networking;
 using UnityEngine.Rendering;
 using UnityEngine.U2D;
 
@@ -20,70 +18,100 @@ namespace Unity.Muse.Sprite.Common.Backend
     {
         struct RequestQueue
         {
-            public UnityWebRequest request;
-            public Action<UnityWebRequest> onDone;
+            public IWebRequest request;
+            public Action<IWebRequest> onDone;
         }
         static Queue<RequestQueue> s_Requests = new Queue<RequestQueue>();
         static int s_RequestCount = 0;
         const int k_MaxRequest = 10;
-        public static UnityWebRequest SendRequest<T>(string url, T data, Action<UnityWebRequest> onDone, string method = "POST")
+        const int k_TrottleIncrease = 5;
+        const int k_TrottleDecrease = 1;
+        static float s_Trottle = 0;
+        public static IWebRequest SendRequest<T>(string url, string accessToken, T data, Action<IWebRequest> onDone, string method = "POST")
         {
-            var request = new UnityWebRequest(url, method);
-            if (method == "POST")
+            var request = WebRequestFactory.CreateWebRequest(url, method);
+            if (!String.IsNullOrEmpty(accessToken))
+                request.SetRequestHeader("authorization", $"Bearer {accessToken}");
+            if (method == "POST" || method == "PUT")
             {
                 string requestJSON = JsonUtility.ToJson(data);
                 request.SetRequestHeader("content-type", "application/json; charset=UTF-8");
-                request.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(requestJSON));
-                request.uploadHandler.contentType = "application/json";
+                request.SetPayload(Encoding.UTF8.GetBytes(requestJSON), "application/json");
             }
 
-            request.downloadHandler = new DownloadHandlerBuffer();
             SendRequest(request, onDone);
             return request;
         }
 
-        static void SendRequest(UnityWebRequest request, Action<UnityWebRequest> onDone)
+        static void SendRequest(IWebRequest request, Action<IWebRequest> onDone)
         {
-            if(s_RequestCount >= k_MaxRequest)
+            if(s_RequestCount != 0 && (s_RequestCount >= k_MaxRequest || s_Trottle > 0))
             {
                 s_Requests.Enqueue(new RequestQueue
                 {
                     request = request,
                     onDone = onDone
                 });
+                if(!Scheduler.IsCallScheduled(SendNextRequest))
+                    Scheduler.ScheduleCallback(ServerConfig.serverConfig.webRequestPollRate, SendNextRequest);
             }
             else
             {
                 ++s_RequestCount;
-                AsyncOperation operation = request.SendWebRequest();
-                operation.completed += _ =>
+                // we are sending all calls 1 second later in case there is a domain reload during startup.
+                Scheduler.ScheduleCallback(1, () =>
                 {
-                    try
+                    request.SendWebRequest(x =>
                     {
-                        --s_RequestCount;
-                        onDone(request);
-                    }
-                    finally
-                    {
-                        request.uploadHandler?.Dispose();
-                        request.downloadHandler?.Dispose();
-                        request.Dispose();
-                        if (s_Requests.Count > 0 && s_RequestCount < k_MaxRequest)
+                        bool dispose = false;
+                        try
                         {
-                            var newRequest = s_Requests.Dequeue();
-                            SendRequest(newRequest.request, newRequest.onDone);
+                            --s_RequestCount;
+                            if (x.responseCode == 429)
+                            {
+                                // we need to wait for a while and try again.
+                                s_Requests.Enqueue(new RequestQueue()
+                                {
+                                    request = request.Recreate(),
+                                    onDone = onDone
+                                });
+                                s_Trottle += k_TrottleIncrease;
+                            }
+                            else
+                            {
+                                s_Trottle = Mathf.Max(0, s_Trottle - k_TrottleDecrease);
+                                dispose = true;
+                                onDone(request);
+                            }
                         }
-                    }
-                };
+                        finally
+                        {
+                            if (dispose)
+                                request.Dispose();
+                            Scheduler.ScheduleCallback(ServerConfig.serverConfig.webRequestPollRate, SendNextRequest);
+                        }
+                    });
+                });
+
             }
         }
+
+        static void SendNextRequest()
+        {
+            if (s_Requests.Count > 0 && s_RequestCount < k_MaxRequest)
+            {
+                var newRequest = s_Requests.Dequeue();
+                SendRequest(newRequest.request, newRequest.onDone);
+            }
+        }
+
         public static Texture2D CreateTemporaryDuplicate(Texture2D original, int width, int height, TextureFormat format = TextureFormat.RGBA32)
         {
             //if (!ShaderUtil.hardwareSupportsRectRenderTexture || !(bool)(UnityEngine.Object)original)
             if (original == null)
                 return (Texture2D)null;
             RenderTexture active = RenderTexture.active;
-            RenderTexture temporary = RenderTexture.GetTemporary(width, height, 0, SystemInfo.GetGraphicsFormat(DefaultFormat.LDR));
+            RenderTexture temporary = RenderTexture.GetTemporary(width, height, 0, RenderTextureFormat.ARGB32);
             Graphics.Blit((UnityEngine.Texture)original, temporary);
             RenderTexture.active = temporary;
             bool flag = width >= SystemInfo.maxTextureSize || height >= SystemInfo.maxTextureSize;

@@ -6,12 +6,6 @@ uid: style-trainer
 
 When you generate sprites, you can use a style to influence the look of the generated sprites. The Muse Sprite tool provides several default styles to generate sprites based on them. You can also train your own styles.
 
-You can use the Style Trainer to train your own styles by setting the sample output prompts, training images, and training steps:
-
-- Sample output prompts serve as a validation to show what is the result of the prompt. At least three and no more than five prompts are required.
-- Training images are reference images to indicate the style that you want. To train a style, at least five and no more than 15 reference images are required.
-- Training steps indicate how many iterations the trainer runs through the training set images to capture the intended style of the image. The higher the number of iterations, the longer the training takes.
-
 ## Create a style
 
 1. In Unity, from the menu, select **Muse** > **Style Trainer**.
@@ -20,46 +14,49 @@ You can use the Style Trainer to train your own styles by setting the sample out
 
 ## Train a style
 
-1. In the **Style** panel, select the style you want to train.
-1. Move the **Training Steps** slider to set the number of iterations.
+To train your own styles, use Style Trainer to set the sample output prompts and training images:
 
-    > [!NOTE]
-    > A higher number of iterations doesn't give better results.
-1. Select the **Sample Output** tab.
-1. Select the **Add (+)** button to create a new sample output.
-1. Enter a sample output prompt. This is the text that will be used to generate the sample output.
+- Sample output prompts serve as a validation to showcase the result of the prompt. At least three and no more than five prompts are required.
+- Training images are reference images to indicate the style that you want. To train a style, at least five and no more than 15 reference images are required.
+
+1. In the **Style** panel, select the style you want to train.
+1. In the **Sample Output** tab, enter the sample output prompts.
 
     > [!NOTE]
     > You can't enter duplicated prompts for sample output.
 
     ![Example prompts for sample output](images/sample-output.png)
+1. To add a new sample prompt field, select the **Add (+)** button.
+1. To delete a sample prompt field, hover over a field and select the **Delete** icon.
 1. Select the **Training Set** tab.
-1. Select the **Add (+)** button to add a reference image. You can also drag and drop images.
+1. To add reference images, select the **Add (+)** button.
 
     > [!NOTE]
     > <ul><li>You can't add duplicated images. </li><li> Image size must be between `128 x 128` and `512 x 512` pixels. Images that are smaller or larger than the value are resized automatically.</li><li> Use of an alpha channel in an image isn't supported. Any alpha channel information are automatically removed.</li></ul>
 
-    ![Style Trainer](images/training-set.png)
-1. Select **Generate Style** to start training. After training, it generates a Style Version and creates images from Sample Output prompts. You can validate if the Style Version is good for style generation.
+    ![Example reference images for the training](images/training-set.png)
+1. Select **Generate Style**. 
 
-    ![Style Trainer](images/style-results.png)
+## Validate a style
 
-## Create a new version
+After training, the style trainer generates eight versions of the trained style, each generated with 100 training step increments. In this sequence, version 1 is trained for 100 steps, version 2 for 200 steps, and version 8 for 800 steps.
 
-If you aren't happy with the training results, you can create a new version by selecting **New Version**. You can then change the training set to influence the style.
+Each version is generated with the sample output images for the sample prompts. You can validate if the style is good for style generation.
+
+![Training results with three sample images](images/style-results.png)
 
 > [!NOTE]
 > You can't change the sample output prompts or the reference images once a style version is trained.
 
 ## Use a style in Muse Sprite Generator
 
-To use a style, when you generate sprites in Muse Sprite Generator, select the style from the **Style** list.
+To use a style, when you generate sprites in Muse Sprite Generator, select the style from the **Style and Parameters** list.
 
 ## Use a specific version of a style
 
-If a style has multiple versions, it uses the latest version by default. To use a specific version of the style, star the version in the **Style Trainer** window.
+By default, the latest version is used. To use a specific version of the style, select **Set As Default Version**.
 
-![Star a style](images/star-style.png)
+![Set version 5 as the default style](images/star-style.png)
 
 ## Duplicate a style
 

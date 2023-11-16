@@ -46,59 +46,17 @@ namespace Unity.Muse.StyleTrainer
 
         void OnGenerateClicked(GenerateButtonClickEvent arg0)
         {
-            // are we generating or creating a new checkpoint?
-            var index = m_StyleData.SelectedCheckPointIndex();
-            var checkPoint = m_StyleData.checkPoints[index];
-            if (checkPoint.state == EState.New)
+            if (m_StyleData.state == EState.New)
             {
-                GenerateStyle(checkPoint);
-            }
-            else if (checkPoint.state == EState.Loaded || checkPoint.state == EState.Error)
-            {
-                // if there is a new checkpoint, we switch to that checkpoint
-                int i;
-                for (i = 0; i < m_StyleData.checkPoints.Count; ++i)
-                    if (m_StyleData.checkPoints[i].state == EState.New)
-                    {
-                        m_StyleData.selectedCheckPointGUID = m_StyleData.checkPoints[i].guid;
-                        m_EventBus.SendEvent(new CheckPointSourceDataChangedEvent
-                        {
-                            styleData = m_StyleData
-                        });
-                        break;
-                    }
-
-                m_EventBus.SendEvent(new ShowLoadingScreenEvent
-                {
-                    description = "Duplicating Version...",
-                    show = true
-                });
-                checkPoint.DuplicateNew(OnDuplicateCheckPointDone);
+                GenerateStyle();
             }
             else
             {
-                StyleTrainerDebug.Log("Generate button clicked on a weird state");
+                StyleTrainerDebug.Log($"Generate button clicked when not in new state. {m_StyleData.state}");
             }
         }
 
-        void OnDuplicateCheckPointDone(CheckPointData newCheckPoint)
-        {
-            newCheckPoint.parent_id = m_StyleData.checkPoints[^1].guid;
-            newCheckPoint.SetName($"{newCheckPoint.name} (new)");
-            m_StyleData.AddCheckPoint(newCheckPoint);
-            m_StyleData.selectedCheckPointGUID = newCheckPoint.guid;
-            m_EventBus.SendEvent(new CheckPointSourceDataChangedEvent
-            {
-                styleData = m_StyleData
-            });
-            m_EventBus.SendEvent(new ShowLoadingScreenEvent
-            {
-                description = "Duplicating Version...",
-                show = false
-            });
-        }
-
-        void GenerateStyle(CheckPointData checkpoint)
+        void GenerateStyle()
         {
             // validate if there is already training going on. If so, we don't allow training.
             if (m_ProjectData.HasTraining())
@@ -148,8 +106,9 @@ namespace Unity.Muse.StyleTrainer
                     state = false
                 });
 
-                var trainingTask = new TrainingTask(m_StyleData, m_ContextGUID, checkpoint, m_EventBus);
+                var trainingTask = new TrainingTask(m_StyleData, m_ContextGUID, m_EventBus);
                 trainingTask.Execute();
+                m_EventBus.SendEvent(new RequestChangeTabEvent { tabIndex = StyleModelInfoEditor.k_SampleOutputTab });
             });
         }
 

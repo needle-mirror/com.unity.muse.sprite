@@ -10,6 +10,7 @@ namespace Unity.Muse.StyleTrainer.Events.StyleTrainerMainUIEvents
         public string title;
         public string description;
         public Action confirmAction = () => { };
+        public Action cancelAction = () => { };
         public AlertSemantic semantic;
     }
 

@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using Unity.Muse.Common;
 using Unity.Muse.Sprite.Common.Backend;
 using UnityEngine;
 
@@ -19,7 +20,8 @@ namespace Unity.Muse.Sprite.Common.DebugConfig
         const string k_DebugDirectory = "Assets/SpriteMuseDebug";
         const string k_LogFilePath = "Logs/MuseSpriteWeb.log";
         const string k_LogStringFormat = "[{0}] {1}\n";
-        static public DebugConfig instance => Resources.Load<DebugConfig>("Data/DebugConfig");
+        static public DebugConfig instance => 
+            ResourceManager.Load<DebugConfig>(PackageResources.spriteGeneratorDebugConfig);
 
         static void CheckDirectory()
         {

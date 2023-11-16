@@ -1,0 +1,54 @@
+.styletrainer-sampleoutputview {
+    flex: 1;
+    flex-grow: 1;
+    flex-shrink: 1;
+}
+
+.styletrainer-sampleoutputview-gridview {
+    flex: 1;
+    flex-grow: 1;
+    flex-shrink: 1;
+    padding: 10px;
+}
+
+.styletrainer-sampleoutputview-gridview-disable {
+
+}
+
+.styletrainer-sampleoutputview-listview {
+    flex: 1;
+    flex-grow: 1;
+    flex-shrink: 1;
+    padding: 10px;
+    margin-top: var(--appui-spacing-100);
+}
+
+.styletrainer-sampleoutputview__hintext {
+    flex: 1;
+    flex-grow: 1;
+    flex-shrink: 1;
+    -unity-text-align: middle-center;
+    font-size: 15px;
+}
+
+.styletrainer-sampleoutputview-gridview_container {
+    flex-grow: 1;
+    flex-shrink: 1;
+}
+
+.styletrainer-sampleoutputview-tooltip_container {
+    flex-direction: row;
+    width: 100%;
+    margin-top: var(--appui-sizing-60);
+    border-bottom-width: var(--appui-sizing-60);
+    border-bottom-color: var(--appui-backgrounds-300);
+}
+
+.styletrainer-sampleoutputview-tooltip_icon {
+
+}
+
+.styletrainer-sampleoutputview-tooltip_text {
+    font-size: 12px;
+    -unity-text-align: middle-center;
+}

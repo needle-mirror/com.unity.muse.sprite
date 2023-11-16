@@ -11,12 +11,13 @@ namespace Unity.Muse.Sprite.Data
         public event Action OnModified;
         IReadOnlyList<StyleData> m_DefaultStyles;
         bool m_Loading = false;
+        bool m_Failed = false;
 
         public IReadOnlyList<StyleData> GetBuiltInStyle()
         {
-            if (!m_Loading && m_DefaultStyles == null)
+            if (!m_Loading && (m_DefaultStyles == null || m_Failed))
             {
-                m_DefaultStyles = StyleTrainerProjectData.instance.GetDefaultStyles(OnGetDefaultStyleDone, false);
+                m_DefaultStyles = StyleTrainerProjectData.instance.GetDefaultStyles(OnGetDefaultStyleDone, OnGetDefaultStyleFailed, false);
                 m_Loading = true;
             }
 
@@ -24,12 +25,21 @@ namespace Unity.Muse.Sprite.Data
         }
 
         public bool loading => m_Loading;
+        public bool failedToLoad => m_Failed;
 
         void OnGetDefaultStyleDone(IReadOnlyList<StyleData> obj)
         {
-            var newDefaultStyles = new List<StyleData>(obj.Where(s => s.state == EState.Loaded && s.visible && s.checkPoints != null && s.checkPoints.Any(c => c.state == EState.Loaded)));
+            var newDefaultStyles = new List<StyleData>(obj.Where(s => s.state == EState.Loaded && s.visible && s.checkPoints is { Count: > 0 }));
             m_DefaultStyles = newDefaultStyles.Count == 0 ? m_DefaultStyles : newDefaultStyles;
             m_Loading = false;
+            m_Failed = obj.Any(s => s.state == EState.Error || s.checkPoints.Any(c => c.state == EState.Error));
+            OnModified?.Invoke();
+        }
+        
+        void OnGetDefaultStyleFailed()
+        {
+            m_Loading = false;
+            m_Failed = true;
             OnModified?.Invoke();
         }
 
@@ -37,6 +47,7 @@ namespace Unity.Muse.Sprite.Data
         {
             m_DefaultStyles = null;
             m_Loading = false;
+            m_Failed = false;
         }
     }
 }

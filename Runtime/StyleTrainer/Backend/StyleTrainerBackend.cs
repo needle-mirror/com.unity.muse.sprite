@@ -1,14 +1,17 @@
 using System;
+using System.Text;
+using Unity.Muse.Common;
 using Unity.Muse.Sprite.Common;
 using Unity.Muse.Sprite.Common.Backend;
 using Unity.Muse.StyleTrainer;
 using Unity.Muse.StyleTrainer.Debug;
 using UnityEngine;
-using UnityEngine.Networking;
 
 namespace StyleTrainer.Backend
 {
-    abstract class StyleTrainerRestCall<T1, T2, T3> : QuarkRestCall<T1, T2, T3> where T3 : QuarkRestCall
+    abstract class StyleTrainerRestCall<T1, T2, T3> : QuarkRestCall<T1, T2, T3>
+        where T1 : BaseRequest
+        where T3 : QuarkRestCall
     {
         readonly ServerConfig m_ServerConfig;
         readonly MockData m_MockData;
@@ -35,7 +38,6 @@ namespace StyleTrainer.Backend
         protected MockData mockData => m_MockData;
 
         public override string server => m_ServerConfig.server;
-        public override IQuarkEndpoint.EMethod method => IQuarkEndpoint.EMethod.POST;
 
         protected override void MakeServerRequest()
         {
@@ -58,6 +60,47 @@ namespace StyleTrainer.Backend
         }
 
         protected virtual void OnMockResponse() { }
+
+        protected override void OnError()
+        {
+            if (responseCode == 401)
+            {
+#if UNITY_EDITOR
+                // when access token failed, we try to refresh it, then signal the original error so the caller will send the request again.
+                StyleTrainerDebug.LogError($"Are you logged in? Attempt to refresh token.\nerror:{errorMessage}\nIsLoggedIn:{UnityConnectUtils.GetIsLoggedIn()}");
+                UnityEditor.CloudProjectSettings.RefreshAccessToken(refreshed =>
+                {
+                    if (!refreshed)
+                    {
+                        var task = UnityConnectUtils.GetUserAccessTokenAsync();
+                        StyleTrainerDebug.LogWarning($"Refreshing token...");
+                        if (!task.IsCompleted)
+                        {
+                            task.Start();
+                            task.Wait();
+                        }
+
+                        SignInController.ForceSignInTokenRefresh(false);
+                    }
+                    StyleTrainerDebug.LogWarning($"Token refreshed. If error continues, try signing out and back in again.");
+                    base.OnError();
+                });
+
+                StyleTrainerDebug.LogError($"Attempt to refresh token. If error continues, try signing out and back in again.");
+                var task = UnityConnectUtils.GetUserAccessTokenAsync();
+                if (!task.IsCompleted)
+                {
+                    task.Start();
+                    task.Wait();
+                }
+                base.OnError();
+#endif
+            }
+            else
+            {
+                base.OnError();
+            }
+        }
     }
 
     class CreateStyleRestCall : StyleTrainerRestCall<CreateStyleRequest, CreateStyleResponse, CreateStyleRestCall>
@@ -66,10 +109,25 @@ namespace StyleTrainer.Backend
             : base(asset, request)
         {
             request.access_token = asset.accessToken;
+            request.organization_id = asset.organizationId;
             this.request = request;
         }
 
-        public override string endPoint => "/api/v1/sprite/style/create";
+        protected override string[] endPoints
+        {
+            get
+            {
+                return new[]
+                {
+                    $"/api/v1/sprite/style/create",
+                    $"/api/v2/images/sprites/organizations/{request.organization_id}/projects/{request.asset_id}/style/create",
+                };
+            }
+        }
+
+        protected override IQuarkEndpoint.EMethod[] methods => new [] {
+            IQuarkEndpoint.EMethod.POST, IQuarkEndpoint.EMethod.POST,
+        };
 
         protected override void OnMockResponse()
         {
@@ -83,10 +141,25 @@ namespace StyleTrainer.Backend
             : base(asset, request)
         {
             request.access_token = asset.accessToken;
+            request.organization_id = asset.organizationId;
             this.request = request;
         }
 
-        public override string endPoint => "/api/v1/sprite/style/getlist";
+        protected override string[] endPoints
+        {
+            get
+            {
+                return new[]
+                {
+                    $"/api/v1/sprite/style/getlist",
+                    $"/api/v2/images/sprites/organizations/{request.organization_id}/projects/{request.guid}/style/list",
+                };
+            }
+        }
+
+        protected override IQuarkEndpoint.EMethod[] methods => new [] {
+            IQuarkEndpoint.EMethod.POST, IQuarkEndpoint.EMethod.GET,
+        };
 
         protected override void OnMockResponse()
         {
@@ -103,10 +176,25 @@ namespace StyleTrainer.Backend
             : base(asset, request)
         {
             request.access_token = asset.accessToken;
+            request.organization_id = asset.organizationId;
             this.request = request;
         }
 
-        public override string endPoint => "/api/v1/sprite/style/setstate";
+        protected override string[] endPoints
+        {
+            get
+            {
+                return new[]
+                {
+                    $"/api/v1/sprite/style/setstate",
+                    $"/api/v2/images/sprites/organizations/{request.organization_id}/projects/{request.guid}/style/{request.style_guid}/state",
+                };
+            }
+        }
+
+        protected override IQuarkEndpoint.EMethod[] methods => new [] {
+            IQuarkEndpoint.EMethod.POST, IQuarkEndpoint.EMethod.PUT,
+        };
 
         protected override void OnMockResponse()
         {
@@ -120,10 +208,25 @@ namespace StyleTrainer.Backend
             : base(asset, request)
         {
             request.access_token = asset.accessToken;
+            request.organization_id = asset.organizationId;
             this.request = request;
         }
 
-        public override string endPoint => "/api/v1/sprite/style/getinfo";
+        protected override string[] endPoints
+        {
+            get
+            {
+                return new[]
+                {
+                    $"/api/v1/sprite/style/getinfo",
+                    $"/api/v2/images/sprites/organizations/{request.organization_id}/projects/{request.guid}/style/{request.style_guid}/info",
+                };
+            }
+        }
+
+        protected override IQuarkEndpoint.EMethod[] methods => new [] {
+            IQuarkEndpoint.EMethod.POST, IQuarkEndpoint.EMethod.GET,
+        };
 
         protected override void OnMockResponse()
         {
@@ -137,10 +240,25 @@ namespace StyleTrainer.Backend
             : base(asset, request)
         {
             request.access_token = asset.accessToken;
+            request.organization_id = asset.organizationId;
             this.request = request;
         }
 
-        public override string endPoint => "/api/v1/sprite/style/trainingset";
+        protected override string[] endPoints
+        {
+            get
+            {
+                return new[]
+                {
+                    $"/api/v1/sprite/style/trainingset",
+                    $"/api/v2/images/sprites/organizations/{request.organization_id}/projects/{request.asset_id}/style/{request.guid}/trainingset",
+                };
+            }
+        }
+
+        protected override IQuarkEndpoint.EMethod[] methods => new [] {
+            IQuarkEndpoint.EMethod.POST, IQuarkEndpoint.EMethod.POST,
+        };
 
         protected override void OnMockResponse()
         {
@@ -170,10 +288,25 @@ namespace StyleTrainer.Backend
             : base(asset, request)
         {
             request.access_token = asset.accessToken;
+            request.organization_id = asset.organizationId;
             this.request = request;
         }
 
-        public override string endPoint => "/api/v1/sprite/style/trainingsetinfo";
+        protected override string[] endPoints
+        {
+            get
+            {
+                return new[]
+                {
+                    $"/api/v1/sprite/style/trainingsetinfo",
+                    $"/api/v2/images/sprites/organizations/{request.organization_id}/projects/{request.guid}/style/trainingset/{request.training_set_guid}",
+                };
+            }
+        }
+
+        protected override IQuarkEndpoint.EMethod[] methods => new [] {
+            IQuarkEndpoint.EMethod.POST, IQuarkEndpoint.EMethod.GET,
+        };
 
         protected override void OnMockResponse()
         {
@@ -181,22 +314,35 @@ namespace StyleTrainer.Backend
         }
     }
 
-    class CreateCheckPointRestCall : StyleTrainerRestCall<CreateCheckPointRequest, CreateCheckPointResponse, CreateCheckPointRestCall>
+    class CreateCheckPointV2RestCall : StyleTrainerRestCall<CreateCheckPointV2Request, CreateCheckPointV2Response, CreateCheckPointV2RestCall>
     {
-        public CreateCheckPointRestCall(ServerConfig asset, CreateCheckPointRequest request)
+        public CreateCheckPointV2RestCall(ServerConfig asset, CreateCheckPointV2Request request)
             : base(asset, request)
         {
             request.access_token = asset.accessToken;
-            request.training_steps = Math.Max(request.training_steps, StyleTrainerConfig.config.trainingStepRange.x);
-            request.training_steps = Math.Min(request.training_steps, StyleTrainerConfig.config.trainingStepRange.y);
+            request.organization_id = asset.organizationId;
             this.request = request;
         }
 
-        public override string endPoint => "/api/v1/sprite/style/checkpoint";
+        protected override string[] endPoints
+        {
+            get
+            {
+                return new[]
+                {
+                    $"/api/v1/sprite/v2/style/checkpoint",
+                    $"/api/v2/images/sprites/organizations/{request.organization_id}/projects/{request.asset_id}/style/{request.guid}/checkpoint",
+                };
+            }
+        }
+
+        protected override IQuarkEndpoint.EMethod[] methods => new [] {
+            IQuarkEndpoint.EMethod.POST, IQuarkEndpoint.EMethod.POST,
+        };
 
         protected override void OnMockResponse()
         {
-            OnSuccess(mockData.CreateCheckPointRestCallMock(request));
+            OnSuccess(mockData.CreateCheckPointV2RestCallMock(request));
         }
     }
 
@@ -206,10 +352,25 @@ namespace StyleTrainer.Backend
             : base(asset, request)
         {
             request.access_token = asset.accessToken;
+            request.organization_id = asset.organizationId;
             this.request = request;
         }
 
-        public override string endPoint => "/api/v1/sprite/style/checkpointinfo";
+        protected override string[] endPoints
+        {
+            get
+            {
+                return new[]
+                {
+                    $"/api/v1/sprite/style/checkpointinfo",
+                    $"/api/v2/images/sprites/organizations/{request.organization_id}/projects/{request.guid}/style/checkpoint/{request.checkpoint_guid}/info",
+                };
+            }
+        }
+
+        protected override IQuarkEndpoint.EMethod[] methods => new [] {
+            IQuarkEndpoint.EMethod.POST, IQuarkEndpoint.EMethod.GET,
+        };
 
         protected override void OnMockResponse()
         {
@@ -223,10 +384,25 @@ namespace StyleTrainer.Backend
             : base(asset, request)
         {
             request.access_token = asset.accessToken;
+            request.organization_id = asset.organizationId;
             this.request = request;
         }
 
-        public override string endPoint => "/api/v1/sprite/style/setcheckpoint";
+        protected override string[] endPoints
+        {
+            get
+            {
+                return new[]
+                {
+                    $"/api/v1/sprite/style/setcheckpoint",
+                    $"/api/v2/images/sprites/organizations/{request.organization_id}/projects/{request.guid}/style/{request.style_guid}/checkpoint/{request.checkpoint_guid}/set",
+                };
+            }
+        }
+
+        protected override IQuarkEndpoint.EMethod[] methods => new [] {
+            IQuarkEndpoint.EMethod.POST, IQuarkEndpoint.EMethod.PUT,
+        };
 
         protected override void OnMockResponse()
         {
@@ -242,6 +418,10 @@ namespace StyleTrainer.Backend
         public GetImageFromURLRestCall(ServerConfig serverConfig, GetImageRequest request)
             : base(serverConfig, request)
         {
+            this.request = new GetImageRequest();
+            this.request.access_token = String.Empty;
+            this.request.guid = request.guid;
+
             m_GetImageURL = new GetImageURLRestCall(serverConfig, request);
             DependOn(m_GetImageURL);
             m_GetImageURL.RegisterOnSuccess(OnGetImageURLSuccess);
@@ -273,14 +453,22 @@ namespace StyleTrainer.Backend
         }
 
         public override string server => m_ImageDownloadURL;
-        public override string endPoint => "";
-
-        protected override byte[] ParseResponse(UnityWebRequest response)
+        protected override string[] endPoints
         {
-            return response.downloadHandler.data;
+            get
+            {
+                return new [] { "" };
+            }
         }
 
-        public override IQuarkEndpoint.EMethod method => IQuarkEndpoint.EMethod.GET;
+        protected override byte[] ParseResponse(IWebRequest response)
+        {
+            return response.responseByte;
+        }
+
+        protected override IQuarkEndpoint.EMethod[] methods => new [] {
+            IQuarkEndpoint.EMethod.GET,
+        };
 
         protected override void OnMockResponse()
         {
@@ -294,12 +482,25 @@ namespace StyleTrainer.Backend
             : base(asset, request)
         {
             request.access_token = asset.accessToken;
+            request.organization_id = asset.organizationId;
             this.request = request;
         }
 
-        public override string endPoint => $"/api/v1/sprite/download_url";
+        protected override string[] endPoints
+        {
+            get
+            {
+                return new[]
+                {
+                    $"/api/v1/sprite/download_url",
+                    $"/api/v2/assets/images/sprites/organizations/{request.organization_id}/assets/{request.guid}",
+                };
+            }
+        }
 
-        public override IQuarkEndpoint.EMethod method => IQuarkEndpoint.EMethod.POST;
+        protected override IQuarkEndpoint.EMethod[] methods => new [] {
+            IQuarkEndpoint.EMethod.POST, IQuarkEndpoint.EMethod.GET,
+        };
 
         protected override void OnMockResponse()
         {
@@ -307,6 +508,7 @@ namespace StyleTrainer.Backend
         }
     }
 
+    // TODO: Deprecated call in v2
     class GetImageRestCall : StyleTrainerRestCall<GetImageRequest, byte[], GetImageRestCall>
     {
         public GetImageRestCall(ServerConfig asset, GetImageRequest request)
@@ -316,13 +518,21 @@ namespace StyleTrainer.Backend
             this.request = request;
         }
 
-        public override string endPoint => $"/api/v1/sprite/download_image";
-
-        public override IQuarkEndpoint.EMethod method => IQuarkEndpoint.EMethod.POST;
-
-        protected override byte[] ParseResponse(UnityWebRequest response)
+        protected override string[] endPoints
         {
-            return response.downloadHandler.data;
+            get
+            {
+                return new[] {$"/api/v1/sprite/download_image" };
+            }
+        }
+
+        protected override IQuarkEndpoint.EMethod[] methods => new [] {
+            IQuarkEndpoint.EMethod.POST,
+        };
+
+        protected override byte[] ParseResponse(IWebRequest response)
+        {
+            return response.responseByte;
         }
 
         protected override string RequestLog()
@@ -351,16 +561,41 @@ namespace StyleTrainer.Backend
             : base(asset, request)
         {
             request.access_token = asset.accessToken;
+            request.organization_id = asset.organizationId;
             this.request = request;
         }
 
-        public override string endPoint => $"/api/v1/sprite/style/checkpointstatus";
+        protected override string[] endPoints
+        {
+            get
+            {
+                var guids = String.Empty;
+                if (request.guids.Length > 0)
+                {
+                    var sb = new StringBuilder("?", 42*8);
+                    for (var i = 0; i < request.guids.Length; ++i)
+                    {
+                        sb.Append($"guids={request.guids[i]}");
+                        if (i < request.guids.Length - 1)
+                            sb.Append("&");
+                    }
+                    guids = sb.ToString();
+                }
+                return new[]
+                {
+                    $"/api/v1/sprite/style/checkpointstatus",
+                    $"/api/v2/images/sprites/organizations/{request.organization_id}/projects/{request.guid}/style/checkpointstatus{guids}"
+                };
+            }
+        }
 
-        public override IQuarkEndpoint.EMethod method => IQuarkEndpoint.EMethod.POST;
+        protected override IQuarkEndpoint.EMethod[] methods => new [] {
+            IQuarkEndpoint.EMethod.POST, IQuarkEndpoint.EMethod.GET,
+        };
 
         protected override void OnMockResponse()
         {
-            throw new NotImplementedException();
+            OnSuccess(mockData.GetCheckPointStatus(request));
         }
     }
 
@@ -370,12 +605,28 @@ namespace StyleTrainer.Backend
             : base(asset, request)
         {
             request.access_token = asset.accessToken;
+            request.organization_id = asset.organizationId;
             this.request = request;
         }
 
-        public override string endPoint => "/api/v1/sprite/default_project";
+        protected override string[] endPoints
+        {
+            get
+            {
+                if (ServerConfig.serverConfig.apiVersion == -1)
+                    return new[] { $"/api/v2/images/sprites/organizations/{request.organization_id}/default_project" };
 
-        public override IQuarkEndpoint.EMethod method => IQuarkEndpoint.EMethod.POST;
+                return new[]
+                {
+                    $"/api/v1/sprite/default_project",
+                    $"/api/v2/images/sprites/organizations/{request.organization_id}/default_project",
+                };
+            }
+        }
+
+        protected override IQuarkEndpoint.EMethod[] methods => new [] {
+            IQuarkEndpoint.EMethod.POST, IQuarkEndpoint.EMethod.GET,
+        };
 
         protected override void OnMockResponse()
         {
@@ -391,11 +642,9 @@ namespace StyleTrainer.Backend
     }
 
     [Serializable]
-    record GetDefaultStyleProjectRequest
+    record GetDefaultStyleProjectRequest : BaseRequest
     {
-        public string access_token;
     }
-
 
     [Serializable]
     record GetCheckPointStatusResponse
@@ -413,17 +662,15 @@ namespace StyleTrainer.Backend
     }
 
     [Serializable]
-    record GetCheckPointStatusRequest
+    record GetCheckPointStatusRequest : BaseRequest
     {
-        public string access_token;
         public string guid; // asset guid
         public string[] guids; // checkpoint guids
     }
 
     [Serializable]
-    record GetImageRequest
+    record GetImageRequest : BaseRequest
     {
-        public string access_token;
         public string guid;
     }
 
@@ -441,9 +688,8 @@ namespace StyleTrainer.Backend
     }
 
     [Serializable]
-    record SetStyleStateRequest
+    record SetStyleStateRequest : BaseRequest
     {
-        public string access_token;
         public string guid;
         public string style_guid;
         public string state;
@@ -457,9 +703,8 @@ namespace StyleTrainer.Backend
     }
 
     [Serializable]
-    record SetCheckPointFavouriteRequest
+    record SetCheckPointFavouriteRequest : BaseRequest
     {
-        public string access_token;
         public string guid;
         public string style_guid;
         public string checkpoint_guid;
@@ -468,6 +713,12 @@ namespace StyleTrainer.Backend
     [Serializable]
     record GetCheckPointResponse
     {
+        public record Status
+        {
+            public const string failed = "failed";
+            public const string done = "done";
+            public const string working = "working";
+        }
         public bool success;
         public string asset_id;
         public string styleID;
@@ -477,30 +728,29 @@ namespace StyleTrainer.Backend
         public string description;
         public string[] validation_image_prompts;
         public string[] validation_image_guids;
+        public int train_steps;
         public string status;
         public string error;
     }
 
     [Serializable]
-    record GetCheckPointRequest
+    record GetCheckPointRequest : BaseRequest
     {
-        public string access_token;
         public string guid;
         public string checkpoint_guid;
     }
 
     [Serializable]
-    record CreateCheckPointResponse
+    record CreateCheckPointV2Response
     {
-        public string guid;
+        public string[] guids;
         public bool success;
         public string error;
     }
 
     [Serializable]
-    record CreateCheckPointRequest
+    record CreateCheckPointV2Request : BaseRequest
     {
-        public string access_token;
         public string asset_id;
         public string guid;
         public string training_guid;
@@ -522,9 +772,8 @@ namespace StyleTrainer.Backend
     }
 
     [Serializable]
-    record GetTrainingSetRequest
+    record GetTrainingSetRequest : BaseRequest
     {
-        public string access_token;
         public string guid;
         public string training_set_guid;
     }
@@ -544,9 +793,8 @@ namespace StyleTrainer.Backend
     }
 
     [Serializable]
-    record GetStyleRequest
+    record GetStyleRequest : BaseRequest
     {
-        public string access_token;
         public string guid;
         public string style_guid;
     }
@@ -560,18 +808,16 @@ namespace StyleTrainer.Backend
     }
 
     [Serializable]
-    record CreateTrainingSetRequest
+    record CreateTrainingSetRequest : BaseRequest
     {
-        public string access_token;
         public string asset_id;
         public string guid;
         public string[] images;
     }
 
     [Serializable]
-    record GetStylesRequest
+    record GetStylesRequest : BaseRequest
     {
-        public string access_token;
         public string guid;
     }
 
@@ -592,9 +838,8 @@ namespace StyleTrainer.Backend
     }
 
     [Serializable]
-    record CreateStyleRequest
+    record CreateStyleRequest : BaseRequest
     {
-        public string access_token;
         public string asset_id;
         public string name;
         public string desc;

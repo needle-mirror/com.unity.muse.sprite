@@ -41,7 +41,7 @@ namespace Unity.Muse.StyleTrainer
             }
 
             // validate sample output
-            if (m_StyleData.sampleOutputData?.Count < config.minSampleSetSize)
+            if (m_StyleData.sampleOutputPrompts?.Count < config.minSampleSetSize)
             {
                 showDialogEvent.description = $"Sample output must have at least {config.minSampleSetSize} samples";
                 showDialogEvent.confirmAction = () =>
@@ -53,7 +53,7 @@ namespace Unity.Muse.StyleTrainer
                 return;
             }
 
-            if (m_StyleData.sampleOutputData?.Count > config.maxSampleSetSize)
+            if (m_StyleData.sampleOutputPrompts?.Count > config.maxSampleSetSize)
             {
                 showDialogEvent.description = $"Sample output must have at most {config.maxSampleSetSize} samples";
                 showDialogEvent.confirmAction = () =>
@@ -65,7 +65,7 @@ namespace Unity.Muse.StyleTrainer
                 return;
             }
 
-            if (m_StyleData.trainingSetData?.Count < config.minTrainingSetSize)
+            if (m_StyleData.trainingSetData?.Count < 1 || m_StyleData.trainingSetData[0]?.Count < config.minTrainingSetSize)
             {
                 showDialogEvent.description = $"Training set must have at least {config.minTrainingSetSize} samples";
                 showDialogEvent.confirmAction = () =>
@@ -77,7 +77,7 @@ namespace Unity.Muse.StyleTrainer
                 return;
             }
 
-            if (m_StyleData.trainingSetData?.Count > config.maxTrainingSetSize)
+            if (m_StyleData.trainingSetData?.Count < 1 || m_StyleData.trainingSetData[0]?.Count > config.maxTrainingSetSize)
             {
                 showDialogEvent.description = $"Training set must have at most {config.maxTrainingSetSize} samples";
                 showDialogEvent.confirmAction = () =>
@@ -92,9 +92,9 @@ namespace Unity.Muse.StyleTrainer
             var duplicatedItem = new List<int>();
 
             // check if any of the samples are empty
-            for (var i = 0; i < m_StyleData.sampleOutputData?.Count; ++i)
+            for (var i = 0; i < m_StyleData.sampleOutputPrompts?.Count; ++i)
             {
-                var prompt1 = m_StyleData.sampleOutputData[i].prompt;
+                var prompt1 = m_StyleData.sampleOutputPrompts[i];
                 if (string.IsNullOrWhiteSpace(prompt1))
                 {
                     showDialogEvent.description = $"Sample output cannot have empty prompts.";
@@ -108,8 +108,8 @@ namespace Unity.Muse.StyleTrainer
                 }
 
                 duplicatedItem.Clear();
-                for (var j = i + 1; j < m_StyleData.sampleOutputData?.Count; ++j)
-                    if (prompt1 == m_StyleData.sampleOutputData[j].prompt)
+                for (var j = i + 1; j < m_StyleData.sampleOutputPrompts?.Count; ++j)
+                    if (prompt1 == m_StyleData.sampleOutputPrompts[j])
                         duplicatedItem.Add(j);
 
                 if (duplicatedItem.Count > 0)
@@ -132,13 +132,14 @@ namespace Unity.Muse.StyleTrainer
 
             //validate training are all unique
             m_TrainingImagesLoaded = 0;
-            for (var i = 0; i < m_StyleData.trainingSetData?.Count; ++i) m_StyleData.trainingSetData[i].imageArtifact.GetArtifact(_ => ValidateTrainingSetImages(), true);
+            for (var i = 0; i < m_StyleData.trainingSetData[0]?.Count; ++i) m_StyleData.trainingSetData[0][i].imageArtifact.GetArtifact(_ => ValidateTrainingSetImages(), true);
         }
 
         void ValidateTrainingSetImages()
         {
             ++m_TrainingImagesLoaded;
-            if (m_TrainingImagesLoaded < m_StyleData.trainingSetData?.Count)
+            var trainingSetData = m_StyleData.trainingSetData[0];
+            if (trainingSetData == null || m_TrainingImagesLoaded < trainingSetData.Count)
                 return;
 
             var duplicatedItem = new List<int>();
@@ -149,13 +150,13 @@ namespace Unity.Muse.StyleTrainer
                 semantic = AlertSemantic.Error
             };
 
-            for (var i = 0; i < m_StyleData.trainingSetData?.Count; ++i)
+            for (var i = 0; i < trainingSetData.Count; ++i)
             {
-                var data = m_StyleData.trainingSetData[i].imageArtifact.GetRawData();
+                var data = trainingSetData[i].imageArtifact.GetRawData();
                 duplicatedItem.Clear();
-                for (var j = i + 1; j < m_StyleData.trainingSetData?.Count; ++j)
+                for (var j = i + 1; j < trainingSetData.Count; ++j)
                 {
-                    var data1 = m_StyleData.trainingSetData[j].imageArtifact.GetRawData();
+                    var data1 = trainingSetData[j].imageArtifact.GetRawData();
                     if (data?.Length == data1?.Length &&
                         Utilities.ByteArraysEqual(data, data1))
                         duplicatedItem.Add(j);

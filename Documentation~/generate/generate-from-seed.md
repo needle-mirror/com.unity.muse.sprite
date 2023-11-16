@@ -8,7 +8,7 @@ Every sprite you generate comes with a seed. A seed is a number that either you 
 
 ## Specify a custom seed
 
-To specify a custom seed when you generate a sprite from [a prompt](xref:get-started), [a scribble](xref:generate-from-scribble), or [a reference image](xref:generate-from-reference), in the **Parameters** section, enable **Custom Seed** and enter a seed number.
+To specify a custom seed when you generate a sprite from [a prompt](xref:get-started), [a scribble](xref:generate-from-scribble), or [a reference image](xref:generate-from-reference), in the **Style and Parameters** section, enable **Custom Seed** and enter a seed number.
 
 ## Generate the same sprite
 

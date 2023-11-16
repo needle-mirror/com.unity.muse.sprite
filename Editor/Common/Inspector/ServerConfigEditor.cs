@@ -25,10 +25,16 @@ namespace Unity.Muse.Sprite.Common.Editor.Inspector
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
+            EditorGUI.BeginChangeCheck();
             base.OnInspectorGUI();
             if(m_DebugMode.intValue > 0 && !Unsupported.IsDeveloperMode())
                 EditorGUILayout.HelpBox("Debug mode is enabled but you are not in developer mode.", MessageType.Warning);
+            var hasModifiedProperties = EditorGUI.EndChangeCheck();            
             serializedObject.ApplyModifiedProperties();
+            if (hasModifiedProperties)
+            {
+                Startup.VersionCheck();
+            }
         }
     }
 }

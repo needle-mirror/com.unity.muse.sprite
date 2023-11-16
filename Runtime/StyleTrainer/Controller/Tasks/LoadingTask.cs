@@ -17,8 +17,10 @@ namespace Unity.Muse.StyleTrainer
     {
         StyleTrainerData m_Project;
         EventBus m_EventBus;
+        EState m_State;
         public LoadingTask(StyleTrainerData styleData, EventBus eventBus)
         {
+            m_State = EState.Initial;
             m_Project = styleData;
             m_EventBus = eventBus;
         }
@@ -31,11 +33,16 @@ namespace Unity.Muse.StyleTrainer
                 return;
             }
 
-            m_Project.GetArtifact(OnLoadStyleProjectDone, false);
+            if (m_State != EState.Loading)
+            {
+                m_State = EState.Loading;
+                m_Project.GetArtifact(OnLoadStyleProjectDone, false);
+            }
         }
 
         void OnLoadStyleProjectDone(StyleTrainerData project)
         {
+            m_State = EState.Loaded;
             m_EventBus.SendEvent(new SystemEvents
             {
                 state = SystemEvents.ESystemState.RequestSave
@@ -59,11 +66,10 @@ namespace Unity.Muse.StyleTrainer
                     m_EventBus.SendEvent(new SampleOutputDataSourceChangedEvent
                     {
                         styleData = obj,
-                        sampleOutput = obj.sampleOutputData
+                        sampleOutput = obj.sampleOutputPrompts
                     });
                 }
             }
-
         }
     }
 }

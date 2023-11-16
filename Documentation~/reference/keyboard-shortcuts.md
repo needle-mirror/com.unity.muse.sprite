@@ -13,7 +13,7 @@ The following table describes the keyboard shortcuts for the **Muse Sprite** too
 | <kbd>E</kbd> | Activates the eraser tool in the **Input Image** panel. |
 | <kbd>[</kbd> | Decreases the size of the scribble and eraser tools.|
 | <kbd>]</kbd> | Increases the size of the scribble and eraser tools.|
-
+| <kbd>Ctrl</kbd> (macOS:<kbd>Cmd</kbd>) + z | Undoes the last action made when you are painting on the **Refinements** canvas. |
 
 ## Additional resources
 

@@ -62,7 +62,6 @@ namespace Unity.Muse.StyleTrainer.Editor
             m_Foldout = EditorGUILayout.Foldout(m_Foldout, "Style Trainer Project Data");
             if (m_Foldout)
             {
-                base.OnInspectorGUI();
                 GUILayout.BeginHorizontal();
                 if (GUILayout.Button("Open Editor")) StyleTrainerWindow.OpenAsset(target as StyleTrainerProjectData);
 
@@ -90,6 +89,8 @@ namespace Unity.Muse.StyleTrainer.Editor
                 GUILayout.EndHorizontal();
 
                 if (GUILayout.Button("Test Get Styles")) GetStyles();
+
+                base.OnInspectorGUI();
             }
 
             serializedObject.ApplyModifiedProperties();

@@ -1,18 +1,18 @@
 {
-  "name": "Unity.Muse.StyleTrainer",
-  "rootNamespace": "",
-  "references": [
-    "GUID:2f101f87087d58f4ba92ca00188e763d",
-    "GUID:e0205eb74dc764cf6ab9891355857e49",
-    "GUID:f08ec87d51ea43e5af49132fc416ddfc"
-  ],
-  "includePlatforms": [],
-  "excludePlatforms": [],
-  "allowUnsafeCode": false,
-  "overrideReferences": false,
-  "precompiledReferences": [],
-  "autoReferenced": true,
-  "defineConstraints": [],
-  "versionDefines": [],
-  "noEngineReferences": false
+    "name": "Unity.Muse.StyleTrainer",
+    "rootNamespace": "",
+    "references": [
+        "GUID:2f101f87087d58f4ba92ca00188e763d",
+        "GUID:e0205eb74dc764cf6ab9891355857e49",
+        "GUID:f08ec87d51ea43e5af49132fc416ddfc"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
 }

@@ -14,7 +14,7 @@ namespace Unity.Muse.StyleTrainer
         public const string k_PlaceHolderGUID = "StyleTrainer-PlaceHolder-Cache-GUID";
         public const string k_ForbiddenTextureGUID = "StyleTrainer-Forbidden-Texture-GUID";
         public const string k_ErrorTextureGUID = "StyleTrainer-Error-Texture-GUID";
-
+        bool m_NoPlaceholder = false;
         public ImageArtifact(EState state)
             : base(state)
         {
@@ -44,6 +44,12 @@ namespace Unity.Muse.StyleTrainer
             return texture;
         }
 
+        public bool disablePlaceHolder
+        {
+            set => m_NoPlaceholder = value;
+            get => m_NoPlaceholder;
+        }
+
         public (bool cached, Texture2D texture) GetLoaded()
         {
             if (Utilities.ValidStringGUID(guid) && m_Cache != null && m_Cache.Guid == guid && m_Cache.IsLoaded())
@@ -63,8 +69,8 @@ namespace Unity.Muse.StyleTrainer
                     DisposeCache();
                     m_Cache = new StyleTrainerImageArtifactCache(k_PlaceHolderGUID, 0);
                 }
-
-                onDoneCallback?.Invoke(SetPlaceHolderTexture());
+                if(!disablePlaceHolder)
+                    onDoneCallback?.Invoke(SetPlaceHolderTexture());
             }
             else if (Utilities.IsTempGuid(guid))
             {

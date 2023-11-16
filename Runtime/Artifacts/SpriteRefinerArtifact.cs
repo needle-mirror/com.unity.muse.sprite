@@ -31,10 +31,7 @@ namespace Unity.Muse.Sprite.Artifacts
                 if (operators[i] is PromptOperator promptOperator)
                 {
                     request.prompt = promptOperator.GetPrompt();
-                }
-                else if (operators[i] is NegativePromptOperator negPromptOperator)
-                {
-                    request.settings.negative_prompt = negPromptOperator.GetNegativePrompt();
+                    request.settings.negative_prompt = promptOperator.GetNegativePrompt();
                 }
                 else if (operators[i] is SpriteGeneratorSettingsOperator sgo)
                 {

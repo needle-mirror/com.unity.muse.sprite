@@ -1,5 +1,7 @@
 using System;
 using Unity.Muse.Common;
+using Unity.Muse.Common.Account;
+using UnityEditor;
 using UnityEngine;
 
 namespace Unity.Muse.Sprite.Common.Backend
@@ -29,6 +31,10 @@ namespace Unity.Muse.Sprite.Common.Backend
         [HideInInspector]
         public bool simulate;
 
+        [NonSerialized] public bool callApiVersion = false;
+        public int apiVersion = -1;
+        [NonSerialized] public string lastApiServer = null;
+
         [SerializeField]
         EDebugMode m_DebugMode;
         public EDebugMode debugMode =>
@@ -41,17 +47,27 @@ namespace Unity.Muse.Sprite.Common.Backend
 
         public string accessToken =>
 #if UNITY_EDITOR
-            (debugMode & EDebugMode.ForceUseSecretKey) > 0 ? secretToken : UnityConnectProxy.instance.GetAccessToken();
+            (debugMode & EDebugMode.ForceUseSecretKey) > 0 ? secretToken : CloudProjectSettings.accessToken;
 #else
             secretToken;
 #endif
 
+        public string organizationId
+        {
+            get
+            {
+#if UNITY_EDITOR
+                return AccountInfo.Instance.Organization?.Id;
+#else
+                return secretToken;
+#endif
+            }
+        }
         public static ServerConfig serverConfig =>
 #if UNITY_EDITOR
             GetServerConfigEditor();
-
 #else
-            Resources.Load<ServerConfig>("Data/SpriteGeneratorServerConfig");
+            ResourceManager.Load<ServerConfig>(PackageResources.spriteGeneratorServerConfig);
 #endif
 
 #if UNITY_EDITOR
@@ -59,7 +75,7 @@ namespace Unity.Muse.Sprite.Common.Backend
         {
             var objs = UnityEditorInternal.InternalEditorUtility.LoadSerializedFileAndForget("ProjectSettings/SpriteMuseServerConfig.asset");
             ServerConfig config = (objs.Length > 0 ? objs[0] : null) as ServerConfig;
-            return config != null ? config : Resources.Load<ServerConfig>("Data/SpriteGeneratorServerConfig");
+            return config != null ? config : ResourceManager.Load<ServerConfig>(PackageResources.spriteGeneratorServerConfig);
         }
 #endif
     }

@@ -1,11 +1,14 @@
 using System;
+using System.Collections.Generic;
 using Unity.Muse.Sprite.Common.Backend;
 using UnityEngine;
 using UnityEngine.Networking;
 
 namespace Unity.Muse.Sprite.Backend
 {
-    internal abstract class SpriteGeneratorRestCall<T1, T2, T3> : QuarkRestCall<T1, T2, T3> where T3 : QuarkRestCall
+    internal abstract class SpriteGeneratorRestCall<T1, T2, T3> : QuarkRestCall<T1, T2, T3>
+        where T1 : BaseRequest
+        where T3 : QuarkRestCall
     {
         ServerConfig m_ServerConfig;
         public SpriteGeneratorRestCall(ServerConfig serverConfig, T1 request)
@@ -32,12 +35,26 @@ namespace Unity.Muse.Sprite.Backend
             : base(asset, request)
         {
             request.access_token = asset.accessToken;
+            request.organization_id = asset.organizationId;
             request.asset_id = generatorProfile;
             this.request = request;
         }
 
-        public override string endPoint => $"/api/v1/sprite/generate";
-        public override IQuarkEndpoint.EMethod method => IQuarkEndpoint.EMethod.POST;
+        protected override string[] endPoints
+        {
+            get
+            {
+                return new[]
+                {
+                    $"/api/v1/sprite/generate",
+                    $"/api/v2/images/sprites/organizations/{request.organization_id}/projects/{request.asset_id}/generate",
+                };
+            }
+        }
+
+        protected override IQuarkEndpoint.EMethod[] methods => new [] {
+            IQuarkEndpoint.EMethod.POST, IQuarkEndpoint.EMethod.POST,
+        };
 
         protected override string RequestLog()
         {
@@ -52,8 +69,21 @@ namespace Unity.Muse.Sprite.Backend
         {
         }
 
-        public override string endPoint => $"/api/v1/sprite/variation";
-        public override IQuarkEndpoint.EMethod method => IQuarkEndpoint.EMethod.POST;
+        protected override string[] endPoints
+        {
+            get
+            {
+                return new[]
+                {
+                    $"/api/v1/sprite/variation",
+                    $"/api/v2/images/sprites/organizations/{request.organization_id}/projects/{request.asset_id}/variation",
+                };
+            }
+        }
+
+        protected override IQuarkEndpoint.EMethod[] methods => new [] {
+            IQuarkEndpoint.EMethod.POST, IQuarkEndpoint.EMethod.POST,
+        };
 
         protected override string RequestLog()
         {
@@ -68,8 +98,21 @@ namespace Unity.Muse.Sprite.Backend
         {
         }
 
-        public override string endPoint => $"/api/v1/sprite/scribble";
-        public override IQuarkEndpoint.EMethod method => IQuarkEndpoint.EMethod.POST;
+        protected override string[] endPoints
+        {
+            get
+            {
+                return new[]
+                {
+                    $"/api/v1/sprite/scribble",
+                    $"/api/v2/images/sprites/organizations/{request.organization_id}/projects/{request.asset_id}/scribble",
+                };
+            }
+        }
+
+        protected override IQuarkEndpoint.EMethod[] methods => new [] {
+            IQuarkEndpoint.EMethod.POST, IQuarkEndpoint.EMethod.POST,
+        };
 
         protected override string RequestLog()
         {
@@ -85,12 +128,26 @@ namespace Unity.Muse.Sprite.Backend
             : base(asset, request)
         {
             request.access_token = asset.accessToken;
+            request.organization_id = asset.organizationId;
             request.guid = generatorProfile;
             this.request = request;
         }
 
-        public override string endPoint => $"/api/v1/sprite/jobs";
-        public override IQuarkEndpoint.EMethod method => IQuarkEndpoint.EMethod.POST;
+        protected override string[] endPoints
+        {
+            get
+            {
+                return new[]
+                {
+                    $"/api/v1/sprite/jobs",
+                    $"/api/v2/images/sprites/organizations/{request.organization_id}/projects/{request.guid}/jobs",
+                };
+            }
+        }
+
+        protected override IQuarkEndpoint.EMethod[] methods => new [] {
+            IQuarkEndpoint.EMethod.POST, IQuarkEndpoint.EMethod.GET,
+        };
     }
 
     internal class GetJobRestCall : SpriteGeneratorRestCall<ServerRequest<JobInfoRequest>, JobInfoResponse, GetJobRestCall>
@@ -99,17 +156,32 @@ namespace Unity.Muse.Sprite.Backend
             : base(asset, request)
         {
             request.access_token = asset.accessToken;
+            request.organization_id = asset.organizationId;
             this.request = request;
         }
 
         public string jobID => request.data.jobID;
-        public override string endPoint => $"/api/v1/sprite/job";
-        public override IQuarkEndpoint.EMethod method => IQuarkEndpoint.EMethod.POST;
+
+        protected override string[] endPoints
+        {
+            get
+            {
+                return new[]
+                {
+                    $"/api/v1/sprite/job",
+                    $"/api/v2/images/sprites/organizations/{request.organization_id}/projects/{request.data.assetID}/jobs/{jobID}/info",
+                };
+            }
+        }
+
+        protected override IQuarkEndpoint.EMethod[] methods => new [] {
+            IQuarkEndpoint.EMethod.POST, IQuarkEndpoint.EMethod.GET,
+        };
 
         protected override string ResponseLog()
         {
             var log = base.RequestLog();
-            log += $"\n JobID:{jobID} {webRequest.downloadHandler.text}";
+            log += $"\n JobID:{jobID} {webRequest.responseText}";
             return log;
         }
     }
@@ -121,12 +193,26 @@ namespace Unity.Muse.Sprite.Backend
         {
             var r = request;
             r.access_token = asset.accessToken;
+            r.organization_id = asset.organizationId;
             r.guid = guid;
             request = r;
         }
 
-        public override string endPoint => $"/api/v1/sprite/download_url";
-        public override IQuarkEndpoint.EMethod method => IQuarkEndpoint.EMethod.POST;
+        protected override string[] endPoints
+        {
+            get
+            {
+                return new[]
+                {
+                    $"/api/v1/sprite/download_url",
+                    $"/api/v2/assets/images/sprites/organizations/{request.organization_id}/assets/{request.guid}",
+                };
+            }
+        }
+
+        protected override IQuarkEndpoint.EMethod[] methods => new [] {
+            IQuarkEndpoint.EMethod.POST, IQuarkEndpoint.EMethod.GET,
+        };
     }
 
     class GetArtifactRestCall : SpriteGeneratorRestCall<ServerRequest<EmptyPayload>, byte[], GetArtifactRestCall>
@@ -138,7 +224,7 @@ namespace Unity.Muse.Sprite.Backend
             : base(serverConfig, new ServerRequest<EmptyPayload>())
         {
             var r = request;
-            r.access_token = serverConfig.accessToken;
+            r.access_token = String.Empty;
             r.guid = guid;
             request = r;
 
@@ -165,14 +251,23 @@ namespace Unity.Muse.Sprite.Backend
         }
 
         public override string server => m_ImageDownloadURL;
-        public override string endPoint => "";
 
-        protected override byte[] ParseResponse(UnityWebRequest response)
+        protected override string[] endPoints
         {
-            return response.downloadHandler.data;
+            get
+            {
+                return new[] { "" };
+            }
         }
 
-        public override IQuarkEndpoint.EMethod method => IQuarkEndpoint.EMethod.GET;
+        protected override byte[] ParseResponse(IWebRequest response)
+        {
+            return response.responseByte;
+        }
+
+        protected override IQuarkEndpoint.EMethod[] methods => new [] {
+            IQuarkEndpoint.EMethod.GET
+        };
     }
 
     // enum EArtifactStatus
@@ -247,9 +342,8 @@ namespace Unity.Muse.Sprite.Backend
     }
 
     [Serializable]
-    struct GeneratorRequest
+    record GeneratorRequest : BaseRequest
     {
-        public string access_token;
         public string asset_id;
         public string prompt;
         public string base64Image;
@@ -267,7 +361,7 @@ namespace Unity.Muse.Sprite.Backend
 
         public string GetRequestLog()
         {
-            var logRequest = this;
+            var logRequest = this with { };
             logRequest.base64Image = $"Image data removed for logging size:{logRequest.base64Image?.Length}";
             logRequest.mask64Image = $"Image data removed for logging size:{logRequest.mask64Image?.Length}";
             return JsonUtility.ToJson(logRequest);
@@ -293,6 +387,7 @@ namespace Unity.Muse.Sprite.Backend
     struct JobInfoRequest
     {
         public string jobID;
+        public string assetID;
         public string[] fields;
     }
 
@@ -308,9 +403,8 @@ namespace Unity.Muse.Sprite.Backend
     struct EmptyPayload { }
 
     [Serializable]
-    class ServerRequest<T>
+    record ServerRequest<T> : BaseRequest
     {
-        public string access_token;
         public string guid;
         public T data;
     }

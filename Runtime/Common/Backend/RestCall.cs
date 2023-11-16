@@ -5,12 +5,19 @@ using UnityEngine.Networking;
 
 namespace Unity.Muse.Sprite.Common.Backend
 {
+    internal record BaseRequest
+    {
+        public string access_token;
+        public string organization_id;
+    }
+
     internal interface IQuarkEndpoint
     {
         public enum EMethod
         {
             GET,
             POST,
+            PUT,
             DELETE,
             PATCH
         }
@@ -171,13 +178,15 @@ namespace Unity.Muse.Sprite.Common.Backend
         }
     }
 
-    internal abstract class QuarkRestCall<TRequest, TResponse, TImplementorType> : QuarkRestCall, IQuarkEndpoint where TImplementorType : QuarkRestCall
+    internal abstract class QuarkRestCall<TRequest, TResponse, TImplementorType> : QuarkRestCall, IQuarkEndpoint
+        where TRequest : BaseRequest
+        where TImplementorType : QuarkRestCall
     {
         UnityWebRequest.Result m_RequestResult;
         string m_RequestError;
         string m_ErrorMessage;
         TRequest m_Request;
-        UnityWebRequest m_WebRequest;
+        IWebRequest m_WebRequest;
         int m_Retries = 0;
         int m_MaxRetries = 1;
         float m_RetryDelay = 0.5f;
@@ -211,7 +220,7 @@ namespace Unity.Muse.Sprite.Common.Backend
         public string requestError => m_RequestError;
         public string errorMessage => m_ErrorMessage;
         public UnityWebRequest.Result requestResult => m_RequestResult;
-        protected UnityWebRequest webRequest => m_WebRequest;
+        protected IWebRequest webRequest => m_WebRequest;
 
         event Action<TImplementorType, TResponse> onSuccess = (_, __) => { };
         event Action<TImplementorType> onFailure = _ => { };
@@ -235,7 +244,7 @@ namespace Unity.Muse.Sprite.Common.Backend
         protected override void MakeServerRequest()
         {
             DebugConfig.DebugConfig.LogRequest(RequestLog);
-            m_WebRequest = BackendUtilities.SendRequest(MakeEndPoint(this), request, OnRequestComplete, this.method.ToString());
+            m_WebRequest = BackendUtilities.SendRequest(MakeEndPoint(this), request.access_token, request, OnRequestComplete, this.method.ToString());
         }
 
         public override void Dispose()
@@ -254,12 +263,12 @@ namespace Unity.Muse.Sprite.Common.Backend
             base.Dispose();
         }
 
-        protected virtual TResponse ParseResponse(UnityWebRequest response)
+        protected virtual TResponse ParseResponse(IWebRequest response)
         {
-            return JsonUtility.FromJson<TResponse>(response.downloadHandler.text);
+            return JsonUtility.FromJson<TResponse>(response.responseText);
         }
 
-        protected void OnRequestComplete(UnityWebRequest r)
+        protected void OnRequestComplete(IWebRequest r)
         {
             try
             {
@@ -267,7 +276,7 @@ namespace Unity.Muse.Sprite.Common.Backend
                 if (r.result != UnityWebRequest.Result.Success)
                 {
                     m_RequestError = r.error;
-                    m_ErrorMessage = r.downloadHandler?.text;
+                    m_ErrorMessage = r.errorMessage;
                     m_ResponseCode = r.responseCode;
                     m_Retries++;
 
@@ -350,7 +359,41 @@ namespace Unity.Muse.Sprite.Common.Backend
         }
 
         public abstract string server { get; }
-        public abstract string endPoint { get; }
-        public abstract IQuarkEndpoint.EMethod method { get; }
+
+        public string endPoint
+        {
+            get
+            {
+                var version = ServerConfig.serverConfig.apiVersion;
+                var endPointsList = endPoints;
+                var endPointToUse = endPointsList[0];
+                if (version > 0 && (version - 1) < endPoints.Length)
+                {
+                    endPointToUse = endPointsList[version - 1];
+                }
+                return endPointToUse;
+            }
+        }
+
+        protected abstract string[] endPoints { get; }
+
+        public IQuarkEndpoint.EMethod method
+        {
+            get
+            {
+                var version = ServerConfig.serverConfig.apiVersion;
+                var methodsList = methods;
+                var methodToUse = methodsList[0];
+                if (version > 0 && (version - 1) < methods.Length)
+                {
+                    methodToUse = methodsList[version - 1];
+                }
+                return methodToUse;
+            }
+        }
+
+        protected abstract IQuarkEndpoint.EMethod[] methods { get; }
+
+        public string info => m_WebRequest.info;
     }
 }

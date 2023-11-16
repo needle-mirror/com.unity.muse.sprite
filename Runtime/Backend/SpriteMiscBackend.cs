@@ -4,9 +4,8 @@ using Unity.Muse.Sprite.Common.Backend;
 namespace Unity.Muse.Sprite.Backend
 {
     [Serializable]
-    struct FeedbackRequest
+    record FeedbackRequest : BaseRequest
     {
-        public string access_token;
         public string guid;
         public int feedback_flags;
         public string feedback_comment;
@@ -25,10 +24,24 @@ namespace Unity.Muse.Sprite.Backend
             : base(asset, request)
         {
             request.access_token = asset.accessToken;
+            request.organization_id = asset.organizationId;
             this.request = request;
         }
 
-        public override string endPoint => $"/api/v1/sprite/feedback";
-        public override IQuarkEndpoint.EMethod method => IQuarkEndpoint.EMethod.POST;
+        protected override string[] endPoints
+        {
+            get
+            {
+                return new[]
+                {
+                    $"/api/v1/sprite/feedback",
+                    $"/api/v2/images/sprites/organizations/{request.organization_id}/assets/{request.guid}/feedback",
+                };
+            }
+        }
+
+        protected override IQuarkEndpoint.EMethod[] methods => new [] {
+            IQuarkEndpoint.EMethod.POST, IQuarkEndpoint.EMethod.PUT,
+        };
     }
 }

@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using Unity.AppUI.UI;
+using Unity.Muse.Common;
 using Unity.Muse.Sprite.Common.Events;
 using Unity.Muse.StyleTrainer.Events.StyleModelEditorUIEvents;
 using Unity.Muse.StyleTrainer.Events.TrainingSetModelEvents;
@@ -98,9 +99,9 @@ namespace Unity.Muse.StyleTrainer
             {
                 if (m_StyleData.trainingSetData != null)
                 {
-                    var context = m_StyleData.trainingSetData.guid;
+                    var context = m_StyleData.trainingSetData[0].guid;
                     m_CurrentContext = context;
-                    m_StyleData.trainingSetData.GetArtifact(x =>
+                    m_StyleData.trainingSetData[0].GetArtifact(x =>
                         OnGetTrainingSetDone(context, x), true);
                 }
             }
@@ -111,9 +112,9 @@ namespace Unity.Muse.StyleTrainer
             obj.OnStateChanged -= OnStyleStateChange;
             if (obj == m_StyleData && m_StyleData.trainingSetData != null)
             {
-                m_CurrentContext = m_StyleData.trainingSetData.guid;
-                m_StyleData.trainingSetData.GetArtifact(x =>
-                    OnGetTrainingSetDone(m_StyleData.trainingSetData.guid, x), true);
+                m_CurrentContext = m_StyleData.trainingSetData[0].guid;
+                m_StyleData.trainingSetData[0].GetArtifact(x =>
+                    OnGetTrainingSetDone(m_StyleData.trainingSetData[0].guid, x), true);
             }
         }
 
@@ -203,16 +204,16 @@ namespace Unity.Muse.StyleTrainer
 
         internal static TrainingSetView CreateFromUxml()
         {
-            var visualTree = Resources.Load<VisualTreeAsset>("Unity.Muse.StyleTrainer/uxml/TrainingSetView");
+            var visualTree = ResourceManager.Load<VisualTreeAsset>(PackageResources.trainingSetViewTemplate);
             var ve = (TrainingSetView)visualTree.CloneTree().Q("TrainingSetView");
-            ve.styleSheets.Add(Resources.Load<StyleSheet>("Unity.Muse.StyleTrainer/uss/TrainingSetView"));
+            ve.styleSheets.Add(ResourceManager.Load<StyleSheet>(PackageResources.trainingSetViewStyleSheet));
             ve.BindElements();
             return ve;
         }
 
         void BindElements()
         {
-            styleSheets.Add(Resources.Load<StyleSheet>("Unity.Muse.StyleTrainer/uss/TrainingSetView"));
+            styleSheets.Add(ResourceManager.Load<StyleSheet>(PackageResources.trainingSetViewStyleSheet));
             m_GridView = this.Q<GridView>("TrainingSetViewGridView");
             m_GridView.makeItem = MakeGridItem;
             m_GridView.bindItem = BindItem;

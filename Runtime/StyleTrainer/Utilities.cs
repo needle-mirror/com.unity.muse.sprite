@@ -1,4 +1,5 @@
 using System;
+using Unity.Muse.Common;
 using Unity.Muse.Sprite.Common.Backend;
 using UnityEngine;
 
@@ -24,13 +25,13 @@ namespace Unity.Muse.StyleTrainer
             return guid.StartsWith(k_TempGUIDPrefix);
         }
 
-        public static Texture2D placeHolderTexture => DuplicateResourceTexture("Unity.Muse.StyleTrainer/Images/placeholder");
-        public static Texture2D errorTexture => DuplicateResourceTexture("Images/SpriteGenerateError");
-        public static Texture2D forbiddenTexture => DuplicateResourceTexture("Unity.Muse.StyleTrainer/Images/forbidden");
+        public static Texture2D placeHolderTexture => DuplicateResourceTexture(PackageResources.placeholderTexture);
+        public static Texture2D errorTexture => DuplicateResourceTexture(Sprite.PackageResources.generateErrorTexture);
+        public static Texture2D forbiddenTexture => DuplicateResourceTexture(PackageResources.forbiddenTexture);
 
         static Texture2D DuplicateResourceTexture(string path)
         {
-            var t = Resources.Load<Texture2D>(path);
+            var t = ResourceManager.Load<Texture2D>(path);
             return BackendUtilities.CreateTemporaryDuplicate(t, t.width, t.height);
         }
 
