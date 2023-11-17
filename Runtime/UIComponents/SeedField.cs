@@ -3,7 +3,6 @@ using Unity.AppUI.UI;
 using UnityEngine;
 using UnityEngine.Scripting;
 using UnityEngine.UIElements;
-using TextOverflow = Unity.AppUI.UI.TextOverflow;
 using Toggle = Unity.AppUI.UI.Toggle;
 
 namespace Unity.Muse.Sprite.UIComponents
@@ -48,26 +47,26 @@ namespace Unity.Muse.Sprite.UIComponents
         {
             AddToClassList(ussClassName);
 
+            var mainContainer = new VisualElement { };
             var container = new VisualElement { name = containerUssClassName };
+            mainContainer.Add(container);
             container.AddToClassList(containerUssClassName);
-            container.style.flexDirection = FlexDirection.Column;
-            var label = new InputLabel(TextContent.customSeed);
+            container.style.flexDirection = FlexDirection.Row;
+            var label = new Label(TextContent.customSeed) { style = { flexGrow = 1 } };
             label.AddToClassList("larger-label");
-            m_Checkbox = new Toggle { size = Size.S};
+            m_Checkbox = new Toggle { size = Size.S };
             m_Checkbox.RegisterValueChangedCallback(OnChangeMode);
-            label.inputAlignment = Align.FlexEnd;
-            label.labelOverflow = TextOverflow.Ellipsis;
-            label.Add(m_Checkbox);
             container.Add(label);
-            label.AddToClassList("bottom-gap");
+            container.Add(m_Checkbox);
+            container.AddToClassList("bottom-gap");
 
             m_SeedField = new IntField { name = xFieldUssClassName };
             m_SeedField.style.flexGrow = 1;
             m_SeedField.lowValue = ushort.MinValue;
             m_SeedField.highValue = ushort.MaxValue;
-            container.Add(m_SeedField);
+            mainContainer.Add(m_SeedField);
 
-            hierarchy.Add(container);
+            hierarchy.Add(mainContainer);
 
             size = Size.M;
             SetValueWithoutNotify(0);

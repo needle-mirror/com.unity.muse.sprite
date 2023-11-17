@@ -174,7 +174,7 @@ namespace Unity.Muse.Sprite.Operators
             m_StyleLoadingRefresh.AddToClassList("bottom-gap");
             UI.Add(m_StyleLoadingRefresh);
             RefreshStyleList();
-            
+
             m_StyleStrength = new TouchSliderFloat();
             m_StyleStrength.name = "style-strength-slider";
             m_StyleStrength.AddToClassList("bottom-gap");
@@ -186,18 +186,18 @@ namespace Unity.Muse.Sprite.Operators
             m_StyleStrength.SetValueWithoutNotify(GetStyleStrengthFromOperatorData());
             UI.Add(m_StyleStrength);
 
-            var removeBgToggle = new Toggle() { name = "remove-bg-toggle" };
+            var removeBg = new VisualElement { style = { flexDirection = FlexDirection.Row } };
+            UI.Add(removeBg);
+            var removeBgLabel = new Label("Remove Background") { style = { flexGrow = 1 } };
+            removeBgLabel.AddToClassList("larger-label");
+            removeBg.Add(removeBgLabel);
+
+            var removeBgToggle = new Toggle { name = "remove-bg-toggle" };
             removeBgToggle.RegisterValueChangedCallback(OnRemoveBGChanged);
             removeBgToggle.SetValueWithoutNotify(GetRemoveBgFromOperatorData());
-            var removeBg = new InputLabel("Remove Background");
-            removeBg.inputAlignment = Align.FlexEnd;
-            removeBg.labelOverflow = TextOverflow.Ellipsis;
             removeBg.Add(removeBgToggle);
-            removeBg.AddToClassList("bottom-gap");
-            removeBg.AddToClassList("larger-label");
-            UI.Add(removeBg);
 
-            m_SeedField = new SeedField() { name = "seed-field" };
+            m_SeedField = new SeedField { name = "seed-field" };
             m_SeedField.RegisterValueChangedCallback(OnSeedChanged);
             m_SeedField.SetValueWithoutNotify(GetSeedFromOperatorData());
             m_SeedField.userSpecified = seedUserSpecified;
@@ -308,7 +308,7 @@ namespace Unity.Muse.Sprite.Operators
 
         void ToggleStyleLoadError(bool failedToLoad)
         {
-            if(m_StyleLoadingRefresh != null)
+            if (m_StyleLoadingRefresh != null)
                 m_StyleLoadingRefresh.style.display = failedToLoad ? DisplayStyle.Flex : DisplayStyle.None;
         }
 
@@ -316,7 +316,7 @@ namespace Unity.Muse.Sprite.Operators
         {
             if (obj.state != EState.Loading && obj.state != EState.Training)
             {
-                if(obj.state == EState.Loaded)
+                if (obj.state == EState.Loaded)
                     RefreshStyleList();
                 obj.OnStateChanged -= OnCheckPointStateChange;
             }
@@ -347,6 +347,7 @@ namespace Unity.Muse.Sprite.Operators
                 s_Styles = styles;
 
                 var titles = new List<string>(s_Styles.Select(s => s.styleTitle));
+                m_StyleSelection.value = Array.Empty<int>();
                 m_StyleSelection.sourceItems = titles;
 
                 for (var i = 0; i < s_Styles.Count; i++)

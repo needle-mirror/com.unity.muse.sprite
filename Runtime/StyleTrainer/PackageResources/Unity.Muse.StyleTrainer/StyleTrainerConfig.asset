@@ -21,7 +21,7 @@ MonoBehaviour:
   maxTrainingImageSize: {x: 512, y: 512}
   debugLog: 0
   logToFile: 0
-  defaultStyleVersion: 2023090802
+  defaultStyleVersion: 2023111600
   defaultStyles:
   - m_Guid: 00000000-0000-0000-0000-000000000000
     m_State: 1
@@ -50,7 +50,7 @@ MonoBehaviour:
         m_TrainingSet: []
         m_ProjectID: 
       m_ValidationImagesData: []
-      m_TrainingSteps: 0
+      m_TrainingSteps: 2000
     m_SampleOutputPrompts: []
     m_TrainingSetData: []
     m_Name: Default

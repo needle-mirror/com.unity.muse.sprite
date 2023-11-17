@@ -17,7 +17,7 @@ namespace Unity.Muse.StyleTrainer
         {
             m_ArtifactCachePath = artifactCachePath;
 
-            m_Mutex = new Mutex(true, m_ArtifactCachePath);
+            m_Mutex = new Mutex(true);
 
             CreateCache();
         }

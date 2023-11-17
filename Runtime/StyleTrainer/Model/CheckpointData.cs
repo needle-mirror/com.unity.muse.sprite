@@ -47,7 +47,7 @@ namespace Unity.Muse.StyleTrainer
         public override void Init()
         {
             base.Init();
-            if (state != EState.New)
+            if (state != EState.New && state != EState.Loaded)
                 state = EState.Initial;
         }
 

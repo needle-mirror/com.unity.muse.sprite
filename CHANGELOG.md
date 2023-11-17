@@ -4,6 +4,18 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-pre.3] - 2023-11-17
+
+### Fixed
+
+- Opening Style Trainers in multiple editors results in errors.
+- Sprite's Style Selection dropdown shows an out of range warning when toggling style visibility.
+- Styles not available in the Style Selection dropdown after editor restart.
+
+### Changed
+
+- Update built-in style version number.
+
 ## [1.0.0-pre.2] - 2023-11-16
 
 ### Fixed
