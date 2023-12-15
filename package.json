@@ -1,27 +1,27 @@
 {
   "name": "com.unity.muse.sprite",
   "displayName": "Muse Sprite Tool",
-  "version": "1.0.0-pre.3",
+  "version": "1.0.0-pre.4",
   "unity": "2022.3",
   "description": "Muse Sprite Tool is a package that provides a set of tools to help create AI-generated 2D asset content from text input in Unity",
   "dependencies": {
     "com.unity.modules.uielements": "1.0.0",
-    "com.unity.muse.common": "1.0.0-pre.2"
+    "com.unity.muse.common": "1.0.0-pre.3"
   },
   "relatedPackages": {
-    "com.unity.muse.sprite.tests": "1.0.0-pre.3",
-    "com.unity.muse.common.tests": "1.0.0-pre.2"
+    "com.unity.muse.sprite.tests": "1.0.0-pre.4",
+    "com.unity.muse.common.tests": "1.0.0-pre.3"
   },
   "_upm": {
-    "changelog": "### Fixed\n\n- Opening Style Trainers in multiple editors results in errors.\n- Sprite's Style Selection dropdown shows an out of range warning when toggling style visibility.\n- Styles not available in the Style Selection dropdown after editor restart.\n\n### Changed\n\n- Update built-in style version number."
+    "changelog": "### Fixed\n\n- Fix error when trying to build a Unity Project."
   },
   "upmCi": {
-    "footprint": "3dc520e3441508f45d9c0d23773d039e8b8a802a"
+    "footprint": "50ba1e78c3b61a9c1a4692d8479057a161f40d90"
   },
   "documentationUrl": "https://docs.unity3d.com/Packages/com.unity.muse.sprite@1.0/manual/index.html",
   "repository": {
     "url": "https://github.cds.internal.unity3d.com/unity/UnityMuseAITools.git",
     "type": "git",
-    "revision": "61b3e6d771c048488efc7260fb1863daca3e897a"
+    "revision": "83ba6fb85af0e596caf735c7b37ff0ae5f137392"
   }
 }
