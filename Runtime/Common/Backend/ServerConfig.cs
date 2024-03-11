@@ -1,5 +1,4 @@
 using System;
-using Unity.Muse.Common;
 using Unity.Muse.Common.Account;
 using UnityEditor;
 using UnityEngine;
@@ -9,6 +8,26 @@ namespace Unity.Muse.Sprite.Common.Backend
     //[CreateAssetMenu(fileName = "ServerConfig.asset", menuName = "Muse/Sprite/ServerConfig")]
     internal class ServerConfig : ScriptableObject
     {
+        internal class Server : IServer
+        {
+            public void Reset()
+            {
+                // nothing to do
+            }
+
+            public void Init()
+            {
+                // nothing to do
+            }
+
+            public IWebRequest CreateWebRequest(string url, string method)
+            {
+                return new WebRequest(url, method);
+            }
+
+            public string organisationID => AccountInfo.Instance.Organization?.Id;
+        }
+
         [Flags]
         public enum EDebugMode
         {
@@ -24,7 +43,7 @@ namespace Unity.Muse.Sprite.Common.Backend
         string secretToken;
         public float webRequestPollRate = 1.0f;
         public int maxRetries = 3;
-        public string server => serverList[serverIndex];
+        public string serverURL => serverList[serverIndex];
 
         [HideInInspector]
         public int model;
@@ -57,7 +76,7 @@ namespace Unity.Muse.Sprite.Common.Backend
             get
             {
 #if UNITY_EDITOR
-                return AccountInfo.Instance.Organization?.Id;
+                return server.organisationID;
 #else
                 return secretToken;
 #endif
@@ -71,17 +90,51 @@ namespace Unity.Muse.Sprite.Common.Backend
 #endif
 
 #if UNITY_EDITOR
+        static ServerConfig s_ServerConfig = null;
         static ServerConfig GetServerConfigEditor()
         {
-            var objs = UnityEditorInternal.InternalEditorUtility.LoadSerializedFileAndForget("ProjectSettings/SpriteMuseServerConfig.asset");
-            var config = (objs.Length > 0 ? objs[0] : null) as ServerConfig;
-            if (config == null)
+            if (s_ServerConfig == null)
             {
-                objs = UnityEditorInternal.InternalEditorUtility.LoadSerializedFileAndForget(PackageResources.spriteGeneratorServerConfig);
-                config = (objs.Length > 0 ? objs[0] : null) as ServerConfig;
+                var objs = UnityEditorInternal.InternalEditorUtility.LoadSerializedFileAndForget("ProjectSettings/SpriteMuseServerConfig.asset");
+                s_ServerConfig = (objs.Length > 0 ? objs[0] : null) as ServerConfig;
+                if (s_ServerConfig == null)
+                {
+                    objs = UnityEditorInternal.InternalEditorUtility.LoadSerializedFileAndForget(PackageResources.spriteGeneratorServerConfig);
+                    s_ServerConfig = (objs.Length > 0 ? objs[0] : null) as ServerConfig;
+                }
             }
-            return config;
+            return s_ServerConfig;
         }
 #endif
+
+#if UNITY_EDITOR
+
+        internal void SaveConfig()
+        {
+            if(System.IO.File.Exists("ProjectSettings/SpriteMuseServerConfig.asset"))
+                UnityEditorInternal.InternalEditorUtility.SaveToSerializedFileAndForget(new []{this}, "ProjectSettings/SpriteMuseServerConfig.asset", true);
+            else
+                UnityEditorInternal.InternalEditorUtility.SaveToSerializedFileAndForget(new []{this}, PackageResources.spriteGeneratorServerConfig, true);
+        }
+
+        internal void ResetConfig()
+        {
+            s_ServerConfig = null;
+        }
+
+        [HideInInspector]
+        [SerializeReference]
+        IServer m_Server;
+
+        public void SetServer(IServer server)
+        {
+            m_Server = server;
+        }
+        public IServer server => m_Server ?? (m_Server = new Server());
+#else
+        public IServer server => m_Server ?? (m_Server = new Server());
+#endif
+
+
     }
 }

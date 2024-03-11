@@ -21,14 +21,13 @@ namespace Unity.Muse.Sprite.Backend
             {
                 return new[]
                 {
-                    $"/api/v1/sprite/refine",
                     $"/api/v2/images/sprites/organizations/{request.organization_id}/projects/{request.asset_id}/refine",
                 };
             }
         }
 
         protected override IQuarkEndpoint.EMethod[] methods => new [] {
-            IQuarkEndpoint.EMethod.POST, IQuarkEndpoint.EMethod.POST,
+            IQuarkEndpoint.EMethod.POST,
         };
 
         protected override string RequestLog()
@@ -59,14 +58,13 @@ namespace Unity.Muse.Sprite.Backend
             {
                 return new[]
                 {
-                    $"/api/v1/sprite/refine/jobs",
                     $"/api/v2/images/sprites/organizations/{request.organization_id}/projects/{request.guid}/jobs?gentype=refine",
                 };
             }
         }
 
         protected override IQuarkEndpoint.EMethod[] methods => new [] {
-            IQuarkEndpoint.EMethod.POST, IQuarkEndpoint.EMethod.GET,
+            IQuarkEndpoint.EMethod.GET,
         };
     }
 

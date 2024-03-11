@@ -14,16 +14,19 @@ using UnityEngine.UIElements;
 
 namespace Unity.Muse.StyleTrainer
 {
-    class StyleModelList : ExVisualElement
+#if ENABLE_UXML_SERIALIZED_DATA
+    [UxmlElement]
+#endif
+    partial class StyleModelList : ExVisualElement
     {
         ListView m_ListView;
-        ActionButton m_AddStyleButton;
+        FloatingActionButton m_AddStyleButton;
         EventBus m_EventBus;
         ContextualMenuManipulator m_DebugMenu;
 
         void BindElements()
         {
-            m_AddStyleButton = this.Q<ActionButton>("AddStyleButton");
+            m_AddStyleButton = this.Q<FloatingActionButton>("AddStyleButton");
             m_AddStyleButton.clicked += OnAddStyleClicked;
             if (DebugConfig.developerMode) m_DebugMenu = new ContextualMenuManipulator(DebugMenuBuilder);
             this.AddManipulator(m_DebugMenu);
@@ -107,6 +110,8 @@ namespace Unity.Muse.StyleTrainer
             return ve;
         }
 
+#if ENABLE_UXML_TRAITS
         public new class UxmlFactory : UxmlFactory<StyleModelList, UxmlTraits> { }
+#endif
     }
 }

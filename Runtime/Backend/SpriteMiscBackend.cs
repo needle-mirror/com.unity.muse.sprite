@@ -34,14 +34,13 @@ namespace Unity.Muse.Sprite.Backend
             {
                 return new[]
                 {
-                    $"/api/v1/sprite/feedback",
                     $"/api/v2/images/sprites/organizations/{request.organization_id}/assets/{request.guid}/feedback",
                 };
             }
         }
 
         protected override IQuarkEndpoint.EMethod[] methods => new [] {
-            IQuarkEndpoint.EMethod.POST, IQuarkEndpoint.EMethod.PUT,
+            IQuarkEndpoint.EMethod.PUT,
         };
     }
 }

@@ -1,7 +1,6 @@
 using System;
 using Unity.AppUI.UI;
 using UnityEngine;
-using UnityEngine.Scripting;
 using UnityEngine.UIElements;
 using Toggle = Unity.AppUI.UI.Toggle;
 
@@ -10,27 +9,17 @@ namespace Unity.Muse.Sprite.UIComponents
     /// <summary>
     /// Seed Field UI element.
     /// </summary>
-    internal class SeedField : VisualElement, IValidatableElement<int>, ISizeableElement
+    internal class SeedField : VisualElement, IValidatableElement<int>
     {
         /// <summary>
         /// The SeedField main styling class.
         /// </summary>
-        public static readonly string ussClassName = "appui-vector2field";
-
-        /// <summary>
-        /// The SeedField size styling class.
-        /// </summary>
-        public static readonly string sizeUssClassName = ussClassName + "--size-";
-
-        /// <summary>
-        /// The SeedField container styling class.
-        /// </summary>
-        public static readonly string containerUssClassName = ussClassName + "__container";
+        public static readonly string ussClassName = "muse-seedfield";
 
         /// <summary>
         /// The SeedField X NumericalField styling class.
         /// </summary>
-        public static readonly string xFieldUssClassName = ussClassName + "__x-field";
+        public static readonly string seedFieldUssClassName = ussClassName + "__seed-field";
 
         Size m_Size;
 
@@ -48,19 +37,18 @@ namespace Unity.Muse.Sprite.UIComponents
             AddToClassList(ussClassName);
 
             var mainContainer = new VisualElement { };
-            var container = new VisualElement { name = containerUssClassName };
+            var container = new InputLabel(TextContent.customSeed)
+            {
+                inputAlignment = Align.FlexEnd
+            };
+            container.AddToClassList("muse-input-label--toggle-flexend");
             mainContainer.Add(container);
-            container.AddToClassList(containerUssClassName);
-            container.style.flexDirection = FlexDirection.Row;
-            var label = new Label(TextContent.customSeed) { style = { flexGrow = 1 } };
-            label.AddToClassList("larger-label");
-            m_Checkbox = new Toggle { size = Size.S };
+            m_Checkbox = new Toggle {label = null};
             m_Checkbox.RegisterValueChangedCallback(OnChangeMode);
-            container.Add(label);
             container.Add(m_Checkbox);
             container.AddToClassList("bottom-gap");
 
-            m_SeedField = new IntField { name = xFieldUssClassName };
+            m_SeedField = new IntField { name = seedFieldUssClassName };
             m_SeedField.style.flexGrow = 1;
             m_SeedField.lowValue = ushort.MinValue;
             m_SeedField.highValue = ushort.MaxValue;
@@ -68,7 +56,6 @@ namespace Unity.Muse.Sprite.UIComponents
 
             hierarchy.Add(mainContainer);
 
-            size = Size.M;
             SetValueWithoutNotify(0);
 
             m_SeedField.RegisterCallback<ChangingEvent<int>>(OnIntFieldChanged);
@@ -92,22 +79,6 @@ namespace Unity.Muse.Sprite.UIComponents
         /// The content container of the SeedField.
         /// </summary>
         public override VisualElement contentContainer => null;
-
-        /// <summary>
-        /// The size of the SeedField.
-        /// </summary>
-        public Size size
-        {
-            get => m_Size;
-            set
-            {
-                RemoveFromClassList(sizeUssClassName + m_Size.ToString().ToLower());
-                m_Size = value;
-                AddToClassList(sizeUssClassName + m_Size.ToString().ToLower());
-                m_SeedField.size = m_Size;
-                m_Checkbox.size = m_Size;
-            }
-        }
 
         /// <summary>
         /// Set the value of the SeedField without notifying the change.
@@ -175,46 +146,6 @@ namespace Unity.Muse.Sprite.UIComponents
                 using var evt = ChangeEvent<int>.GetPooled(m_Value, m_Value);
                 evt.target = this;
                 SendEvent(evt);
-            }
-        }
-
-        /// <summary>
-        /// Factory class to instantiate a <see cref="UnityEngine.UIElements.Vector2IntField"/> using the data read from a UXML file.
-        /// </summary>
-        [Preserve]
-        public new class UxmlFactory : UxmlFactory<SizeIntField, UxmlTraits> { }
-
-        /// <summary>
-        /// Class containing the <see cref="UxmlTraits"/> for the <see cref="SeedField"/>.
-        /// </summary>
-        public new class UxmlTraits : VisualElementExtendedUxmlTraits
-        {
-            readonly UxmlBoolAttributeDescription m_Disabled = new UxmlBoolAttributeDescription
-            {
-                name = "disabled",
-                defaultValue = false
-            };
-
-            readonly UxmlEnumAttributeDescription<Size> m_Size = new UxmlEnumAttributeDescription<Size>
-            {
-                name = "size",
-                defaultValue = Size.M,
-            };
-
-            /// <summary>
-            /// Initializes the VisualElement from the UXML attributes.
-            /// </summary>
-            /// <param name="ve"> The <see cref="VisualElement"/> to initialize.</param>
-            /// <param name="bag"> The <see cref="IUxmlAttributes"/> bag to use to initialize the <see cref="VisualElement"/>.</param>
-            /// <param name="cc"> The <see cref="CreationContext"/> to use to initialize the <see cref="VisualElement"/>.</param>
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-
-                var element = (SizeIntField)ve;
-                element.size = m_Size.GetValueFromBag(bag, cc);
-
-                element.SetEnabled(!m_Disabled.GetValueFromBag(bag, cc));
             }
         }
     }

@@ -5,7 +5,10 @@ using UnityEngine.UIElements;
 
 namespace Unity.Muse.StyleTrainer
 {
-    class PreviewImage : LoadableImage
+#if ENABLE_UXML_SERIALIZED_DATA
+    [UxmlElement]
+#endif
+    partial class PreviewImage : LoadableImage
     {
         ImageArtifact m_ImageArtifact;
         static int s_ImageCount = 0;
@@ -81,6 +84,8 @@ namespace Unity.Muse.StyleTrainer
             OnLoaded(obj);
         }
 
+#if ENABLE_UXML_TRAITS
         public new class UxmlFactory : UxmlFactory<PreviewImage, UxmlTraits> { }
+#endif
     }
 }

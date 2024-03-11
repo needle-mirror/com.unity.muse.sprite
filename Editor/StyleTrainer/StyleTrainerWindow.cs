@@ -1,6 +1,7 @@
 using System;
 using Unity.AppUI.UI;
 using Unity.Muse.Common;
+using Unity.Muse.Common.Account;
 using UnityEditor;
 using UnityEditor.Callbacks;
 using UnityEngine;
@@ -29,13 +30,14 @@ namespace Unity.Muse.StyleTrainer.Editor
         void CreateGUI()
         {
             m_Controller = new StyleModelController();
-            var currentEditorTheme = EditorGUIUtility.isProSkin ? "dark" : "light";
+            var currentEditorTheme = EditorGUIUtility.isProSkin ? "editor-dark" : "editor-light";
             m_MainUI = StyleTrainerMainUI.CreateFromUxml(m_Controller, rootVisualElement);
             var museRoot = rootVisualElement.Q<Panel>("muse-root");
             museRoot.theme = currentEditorTheme;
             m_MainUI.AddToClassList("unity-editor");
             m_Controller.SetModel(m_Asset.data);
             m_Controller.eventBus.RegisterEvent<SystemEvents>(OnSystemEvent);
+            AccountController.Register(this);
         }
 
         void OnSystemEvent(SystemEvents arg0)

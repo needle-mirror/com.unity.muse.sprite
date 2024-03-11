@@ -5,7 +5,10 @@ using UnityEngine.UIElements;
 
 namespace Unity.Muse.StyleTrainer
 {
-    class SampleOutputVersionFoldoutHeader : ExVisualElement
+#if ENABLE_UXML_SERIALIZED_DATA
+    [UxmlElement]
+#endif
+    partial class SampleOutputVersionFoldoutHeader : ExVisualElement
     {
         internal static SampleOutputVersionFoldoutHeader CreateFromUxml()
         {
@@ -15,6 +18,8 @@ namespace Unity.Muse.StyleTrainer
             return ve;
         }
 
+#if ENABLE_UXML_TRAITS
         public new class UxmlFactory : UxmlFactory<SampleOutputVersionFoldoutHeader, UxmlTraits> { }
+#endif
     }
 }

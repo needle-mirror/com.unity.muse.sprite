@@ -1,7 +1,5 @@
 using System;
-using System.IO;
 using Unity.Muse.Common;
-using Unity.Muse.Sprite.Common.DebugConfig;
 using UnityEngine;
 using MuseArtifact = Unity.Muse.Common.Artifact;
 
@@ -21,17 +19,6 @@ namespace Unity.Muse.StyleTrainer
         public bool logToFile;
         public ulong defaultStyleVersion = 1;
         public StyleData[] defaultStyles;
-#if UNITY_EDITOR
-        [SerializeField]
-        bool m_UseMockData = false;
-#endif
-
-        public bool useMockData =>
-#if UNITY_EDITOR
-            DebugConfig.developerMode && m_UseMockData;
-#else
-            false;
-#endif
         public static StyleTrainerConfig config => ResourceManager.Load<StyleTrainerConfig>(PackageResources.styleTrainerConfig);
 
         StyleTrainerArtifactCache m_ArtifactCache;

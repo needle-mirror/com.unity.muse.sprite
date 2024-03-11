@@ -12,7 +12,10 @@ namespace Unity.Muse.StyleTrainer
         public bool foldout;
     }
 
-    class SampleOutputVersionRow : ExVisualElement, ISampleOutputRow
+#if ENABLE_UXML_SERIALIZED_DATA
+    [UxmlElement]
+#endif
+    partial class SampleOutputVersionRow : ExVisualElement, ISampleOutputRow
     {
         Text m_VersionName;
         Text m_Status;
@@ -317,6 +320,9 @@ namespace Unity.Muse.StyleTrainer
             ve.BindElements(checkPoint, rowHeight, rowData);
             return ve;
         }
-        public new class UxmlFactory : UxmlFactory<SampleOutputVersionRow, UxmlTraits> { }
+        
+#if ENABLE_UXML_TRAITS
+        public new class UxmlFactory : UxmlFactory<SampleOutputVersionRow, UxmlTraits> { } 
+#endif
     }
 }

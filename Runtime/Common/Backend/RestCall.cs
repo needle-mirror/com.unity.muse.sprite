@@ -360,20 +360,7 @@ namespace Unity.Muse.Sprite.Common.Backend
 
         public abstract string server { get; }
 
-        public string endPoint
-        {
-            get
-            {
-                var version = ServerConfig.serverConfig.apiVersion;
-                var endPointsList = endPoints;
-                var endPointToUse = endPointsList[0];
-                if (version > 0 && (version - 1) < endPoints.Length)
-                {
-                    endPointToUse = endPointsList[version - 1];
-                }
-                return endPointToUse;
-            }
-        }
+        public string endPoint => endPoints[0];
 
         protected abstract string[] endPoints { get; }
 
@@ -394,6 +381,6 @@ namespace Unity.Muse.Sprite.Common.Backend
 
         protected abstract IQuarkEndpoint.EMethod[] methods { get; }
 
-        public string info => m_WebRequest.info;
+        public string info => m_WebRequest?.info;
     }
 }

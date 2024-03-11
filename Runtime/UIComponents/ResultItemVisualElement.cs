@@ -20,8 +20,10 @@ namespace Unity.Muse.Sprite.UIComponents
         ActionButton m_DislikeButton;
         VisualElement m_LeftVerticalContainer;
 
-        const float k_LeftSideWidthVisible = 107f;
-        const float k_EditIconWidthVisible = 70f;
+        float m_ButtonWidth = 0f;
+        float m_ButtonContainerWidth = 0f;
+        const int k_MaxButtonColumnsEdit = 2;
+        const int k_MaxButtonColumnsLeftSide = 3;
 
         public SpriteMuseArtifactResultView(Artifact artifact)
             : base(artifact)
@@ -37,6 +39,7 @@ namespace Unity.Muse.Sprite.UIComponents
             m_EditButton.AddToClassList("refine-button");
             m_EditButton.AddToClassList("refine-button-item");
             m_EditButton.clicked += OnRefineClicked;
+            m_EditButton.RegisterCallback<GeometryChangedEvent>(OnEditButtonGeometryChangedEvent);
             m_ActionButton = new ActionButton { name = "more", icon = "ellipsis", tooltip = "More options" };
             m_ActionButton.AddToClassList("refine-button");
             m_ActionButton.AddToClassList("refine-button-item");
@@ -49,6 +52,7 @@ namespace Unity.Muse.Sprite.UIComponents
             m_LeftVerticalContainer = new VisualElement();
             m_LeftVerticalContainer.AddToClassList("left-vertical-container");
             m_ButtonContainer.Add(m_LeftVerticalContainer);
+            m_ButtonContainer.RegisterCallback<GeometryChangedEvent>(OnGeometryChangedEvent);
             m_BookmarkButton = new ActionButton
             {
                 tooltip = Muse.Common.TextContent.bookmarkButtonTooltip,
@@ -76,9 +80,19 @@ namespace Unity.Muse.Sprite.UIComponents
 
         void OnGeometryChangedEvent(GeometryChangedEvent evt)
         {
-            UpdateEditButton();
-            UpdateLeftSideButtons();
-            UpdateBookmark();
+            m_ButtonContainerWidth = m_ButtonContainer.resolvedStyle.width - m_ButtonContainer.resolvedStyle.paddingLeft;
+            UpdateButtons();
+        }
+
+        void OnEditButtonGeometryChangedEvent(GeometryChangedEvent evt)
+        {
+            if (Mathf.Approximately(m_ButtonWidth, 0f) && !Mathf.Approximately(0f, m_EditButton.resolvedStyle.width))
+            {
+                m_ButtonWidth = m_EditButton.resolvedStyle.width + m_EditButton.resolvedStyle.marginLeft
+                    + m_EditButton.resolvedStyle.marginRight;
+
+                UpdateButtons();
+            }
         }
 
         void OnMenuTriggerClicked()
@@ -123,7 +137,10 @@ namespace Unity.Muse.Sprite.UIComponents
         {
             var bookmark = CurrentModel.GetData<BookmarkManager>();
             bookmark.Bookmark(m_Artifact, !bookmark.IsBookmarked(m_Artifact));
+        }
 
+        protected override void OnBookmarkChanged()
+        {
             UpdateBookmark();
         }
 
@@ -149,6 +166,13 @@ namespace Unity.Muse.Sprite.UIComponents
             m_DislikeButton.icon = isDisliked ? "dislike-filled" : "dislike";
         }
 
+        void UpdateButtons()
+        {
+            UpdateEditButton();
+            UpdateLeftSideButtons();
+            UpdateBookmark();
+        }
+
         void UpdateEditButton()
         {
             m_EditButton.EnableInClassList("refine-button-hidden", !ShouldEditButtonBeVisible());
@@ -162,12 +186,12 @@ namespace Unity.Muse.Sprite.UIComponents
 
         internal bool ShouldLeftSideButtonBeVisible()
         {
-            return resolvedStyle.width >= k_LeftSideWidthVisible && resolvedStyle.height >= k_LeftSideWidthVisible;
+            return (m_ButtonContainerWidth >= m_ButtonWidth * k_MaxButtonColumnsLeftSide);
         }
 
         internal bool ShouldEditButtonBeVisible()
         {
-            return resolvedStyle.width >= k_EditIconWidthVisible;
+            return (m_ButtonContainerWidth >= m_ButtonWidth * k_MaxButtonColumnsEdit);
         }
 
         internal bool IsBookmarked()

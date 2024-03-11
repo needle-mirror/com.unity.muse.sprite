@@ -18,7 +18,7 @@
             <appui:ExVisualElement name="GridViewContainer" class="styletrainer-trainingsetview__gridview_container">
                 <appui:Text name="HintText" class="styletrainer-trainingsetview__hinttext"
                             text="Drag and drop training images here."/>
-                <styleTrainer:GridView name="TrainingSetViewGridView" class="styletrainer-trainingsetview-gridview"/>
+                <appui:GridView name="TrainingSetViewGridView" class="styletrainer-trainingsetview-gridview"/>
                 <ui:VisualElement name="DragAndDropContainer"
                                   class="styletrainer-trainingsetview__draganddropcontainer"/>
             </appui:ExVisualElement>

@@ -1,5 +1,4 @@
 .styletrainer-stylemodellist {
-
     right: var(--appui-spacing-125);
     width: 538px;
     min-width: 300px;
@@ -47,21 +46,10 @@
 
 .styletrainer-stylemodellist__actionbutton {
     position: absolute;
-    bottom: var(--appui-spacing-300);
-    min-width: 40px;
-    max-width: 40px;
-    width: 40px;
-    height: 40px;
-    border-radius: 100px;
-    background-color: var(--appui-accent-50);
-}
-
-.styletrainer-stylemodellist__actionbutton:hover {
-    background-color: var(--appui-accent-100);
-}
-
-.styletrainer-stylemodellist__actionbutton:active {
-    background-color: var(--appui-accent-25);
+    bottom: var(--appui-spacing-500);
+    left: var(--appui-spacing-400);
+    min-width: var(--appui-sizing-1000);
+    height: var(--appui-sizing-1000)
 }
 
 .styletrainer-stylemodellist__searchbar {

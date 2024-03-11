@@ -17,7 +17,10 @@ using UnityEngine.UIElements;
 
 namespace Unity.Muse.StyleTrainer
 {
-    class StyleModelInfoEditorContent : ExVisualElement, IStyleModelEditorContent
+#if ENABLE_UXML_SERIALIZED_DATA
+    [UxmlElement]
+#endif
+    partial class StyleModelInfoEditorContent : ExVisualElement, IStyleModelEditorContent
     {
         struct TabData
         {
@@ -61,9 +64,14 @@ namespace Unity.Muse.StyleTrainer
                     sendAddEvent = (evtBus, styleData) =>
                     {
 #if UNITY_EDITOR
-                        var file = EditorUtilities.OpenFile("Add Training Set", "Assets", "png");
+                        string lastFolderPath = Preferences.lastImportFolderPath;
+                        if (!Directory.Exists(lastFolderPath))
+                            lastFolderPath = Preferences.defaultImportFolderPath;
+
+                        var file = EditorUtilities.OpenFile("Add Training Set", lastFolderPath, "png,jpg,jpeg");
                         if (!string.IsNullOrEmpty(file))
                         {
+                            Preferences.lastImportFolderPath = Path.GetDirectoryName(file);
                             var texture = new Texture2D(2, 2);
                             ImageConversion.LoadImage(texture, File.ReadAllBytes(file));
                             texture.hideFlags = HideFlags.HideAndDontSave;
@@ -238,7 +246,9 @@ namespace Unity.Muse.StyleTrainer
             UpdateView();
         }
 
+#if ENABLE_UXML_TRAITS
         public new class UxmlFactory : UxmlFactory<StyleModelInfoEditorContent, UxmlTraits> { }
+#endif
     }
 
     interface IStyleModelInfoTabView

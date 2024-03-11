@@ -405,7 +405,19 @@ namespace Unity.Muse.StyleTrainer
                     OnLoadStyleProject(new LoadStyleProjectEvent());
                 else
                 {
-                    m_StyleTrainerData.GetArtifact(_ => { }, true);
+                    eventBus.SendEvent(new ShowLoadingScreenEvent()
+                    {
+                        description = "Creating new project...",
+                        show = true
+                    });
+                    m_StyleTrainerData.GetArtifact(_ =>
+                    {
+                        eventBus.SendEvent(new ShowLoadingScreenEvent()
+                        {
+                            description = "Creating new project...",
+                            show = false
+                        });
+                    }, true);
                 }
             }
         }

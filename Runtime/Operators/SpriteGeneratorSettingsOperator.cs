@@ -154,7 +154,6 @@ namespace Unity.Muse.Sprite.Operators
                 style =
                 {
                     flexDirection = FlexDirection.Row,
-                    width = new Length(100, LengthUnit.Percent),
                     flexShrink = 1,
                     justifyContent = Justify.FlexStart,
                     alignItems = Align.Center
@@ -186,11 +185,13 @@ namespace Unity.Muse.Sprite.Operators
             m_StyleStrength.SetValueWithoutNotify(GetStyleStrengthFromOperatorData());
             UI.Add(m_StyleStrength);
 
-            var removeBg = new VisualElement { style = { flexDirection = FlexDirection.Row } };
+            var removeBg = new InputLabel(TextContent.removeBackground)
+            {
+                inputAlignment = Align.FlexEnd
+            };
+            removeBg.AddToClassList("muse-input-label--toggle-flexend");
+            removeBg.AddToClassList("bottom-gap");
             UI.Add(removeBg);
-            var removeBgLabel = new Label("Remove Background") { style = { flexGrow = 1 } };
-            removeBgLabel.AddToClassList("larger-label");
-            removeBg.Add(removeBgLabel);
 
             var removeBgToggle = new Toggle { name = "remove-bg-toggle" };
             removeBgToggle.RegisterValueChangedCallback(OnRemoveBGChanged);

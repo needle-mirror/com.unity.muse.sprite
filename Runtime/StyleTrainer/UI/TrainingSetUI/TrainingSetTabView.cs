@@ -13,7 +13,10 @@ using UnityEngine.UIElements;
 
 namespace Unity.Muse.StyleTrainer
 {
-    class TrainingSetView : ExVisualElement, IStyleModelInfoTabView
+#if ENABLE_UXML_SERIALIZED_DATA
+    [UxmlElement]
+#endif
+    partial class TrainingSetView : ExVisualElement, IStyleModelInfoTabView
     {
         GridView m_GridView;
         StyleData m_StyleData;
@@ -306,6 +309,8 @@ namespace Unity.Muse.StyleTrainer
             m_GridView.ScrollToItem(indices[0]);
         }
 
+#if ENABLE_UXML_TRAITS
         public new class UxmlFactory : UxmlFactory<TrainingSetView, UxmlTraits> { }
+#endif
     }
 }

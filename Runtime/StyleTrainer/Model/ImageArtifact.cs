@@ -97,8 +97,9 @@ namespace Unity.Muse.StyleTrainer
                 }
 
                 var texture = m_Cache.GetTexture2D();
-                if ((state == EState.Loaded || state == EState.New) && texture != null)
+                if (useCache && (state == EState.Loaded || state == EState.New) && texture != null)
                 {
+                    state = EState.Loaded;
                     onDoneCallback?.Invoke(texture);
                 }
                 else
@@ -109,20 +110,10 @@ namespace Unity.Muse.StyleTrainer
                     {
                         guid = guid
                     };
-                    if (StyleTrainerConfig.config.useMockData)
-                    {
-                        var getImageRestCall = new GetImageRestCall(ServerConfig.serverConfig, getImageRequest);
-                        getImageRestCall.RegisterOnSuccess(OnGetImageSuccess);
-                        getImageRestCall.RegisterOnFailure(OnGetImageFailure);
-                        getImageRestCall.SendRequest();
-                    }
-                    else
-                    {
-                        var getImageRestCall = new GetImageFromURLRestCall(ServerConfig.serverConfig, getImageRequest);
-                        getImageRestCall.RegisterOnSuccess(OnGetImageFromURLSuccess);
-                        getImageRestCall.RegisterOnFailure(OnGetImageFromURLFailure);
-                        getImageRestCall.SendRequest();
-                    }
+                    var getImageRestCall = new GetImageFromURLRestCall(ServerConfig.serverConfig, getImageRequest);
+                    getImageRestCall.RegisterOnSuccess(OnGetImageFromURLSuccess);
+                    getImageRestCall.RegisterOnFailure(OnGetImageFromURLFailure);
+                    getImageRestCall.SendRequest();
                 }
             }
         }
@@ -231,16 +222,6 @@ namespace Unity.Muse.StyleTrainer
             base.GUIDChanged();
 
             //DataChanged(this);
-        }
-
-        void OnGetImageFailure(GetImageRestCall obj)
-        {
-            if (obj.retriesFailed) LoadImageFailed();
-        }
-
-        void OnGetImageSuccess(GetImageRestCall arg1, byte[] arg2)
-        {
-            LoadImageSuccess(arg2);
         }
 
         /// <summary>

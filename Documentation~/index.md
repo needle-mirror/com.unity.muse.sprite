@@ -31,3 +31,5 @@ To apply the generated sprite directly to your project, drag it from the **Gener
 
 * [Muse Texture Generator](https://docs.unity3d.com/Packages/com.unity.muse.texture@latest)
 * [Work with sprites](https://docs.unity3d.com/Manual/Sprites.html)
+* [Unity AI FAQ](https://unity.com/ai/faq)
+* [Muse feature setup](https://unity.com/products/muse/onboarding)

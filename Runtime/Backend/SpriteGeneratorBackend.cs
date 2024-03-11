@@ -19,7 +19,7 @@ namespace Unity.Muse.Sprite.Backend
             retryDelay = serverConfig.webRequestPollRate;
         }
 
-        public override string server => m_ServerConfig.server;
+        public override string server => m_ServerConfig.serverURL;
     }
     internal class SpriteGenerateRestCall : SpriteGeneratorRestCall<GeneratorRequest, GenerateResponse, SpriteGenerateRestCall>
     {
@@ -46,14 +46,13 @@ namespace Unity.Muse.Sprite.Backend
             {
                 return new[]
                 {
-                    $"/api/v1/sprite/generate",
                     $"/api/v2/images/sprites/organizations/{request.organization_id}/projects/{request.asset_id}/generate",
                 };
             }
         }
 
         protected override IQuarkEndpoint.EMethod[] methods => new [] {
-            IQuarkEndpoint.EMethod.POST, IQuarkEndpoint.EMethod.POST,
+            IQuarkEndpoint.EMethod.POST,
         };
 
         protected override string RequestLog()
@@ -75,14 +74,13 @@ namespace Unity.Muse.Sprite.Backend
             {
                 return new[]
                 {
-                    $"/api/v1/sprite/variation",
                     $"/api/v2/images/sprites/organizations/{request.organization_id}/projects/{request.asset_id}/variation",
                 };
             }
         }
 
         protected override IQuarkEndpoint.EMethod[] methods => new [] {
-            IQuarkEndpoint.EMethod.POST, IQuarkEndpoint.EMethod.POST,
+            IQuarkEndpoint.EMethod.POST,
         };
 
         protected override string RequestLog()
@@ -104,14 +102,13 @@ namespace Unity.Muse.Sprite.Backend
             {
                 return new[]
                 {
-                    $"/api/v1/sprite/scribble",
                     $"/api/v2/images/sprites/organizations/{request.organization_id}/projects/{request.asset_id}/scribble",
                 };
             }
         }
 
         protected override IQuarkEndpoint.EMethod[] methods => new [] {
-            IQuarkEndpoint.EMethod.POST, IQuarkEndpoint.EMethod.POST,
+            IQuarkEndpoint.EMethod.POST,
         };
 
         protected override string RequestLog()
@@ -139,14 +136,13 @@ namespace Unity.Muse.Sprite.Backend
             {
                 return new[]
                 {
-                    $"/api/v1/sprite/jobs",
                     $"/api/v2/images/sprites/organizations/{request.organization_id}/projects/{request.guid}/jobs",
                 };
             }
         }
 
         protected override IQuarkEndpoint.EMethod[] methods => new [] {
-            IQuarkEndpoint.EMethod.POST, IQuarkEndpoint.EMethod.GET,
+            IQuarkEndpoint.EMethod.GET,
         };
     }
 
@@ -168,14 +164,13 @@ namespace Unity.Muse.Sprite.Backend
             {
                 return new[]
                 {
-                    $"/api/v1/sprite/job",
                     $"/api/v2/images/sprites/organizations/{request.organization_id}/projects/{request.data.assetID}/jobs/{jobID}/info",
                 };
             }
         }
 
         protected override IQuarkEndpoint.EMethod[] methods => new [] {
-            IQuarkEndpoint.EMethod.POST, IQuarkEndpoint.EMethod.GET,
+            IQuarkEndpoint.EMethod.GET,
         };
 
         protected override string ResponseLog()
@@ -204,14 +199,13 @@ namespace Unity.Muse.Sprite.Backend
             {
                 return new[]
                 {
-                    $"/api/v1/sprite/download_url",
                     $"/api/v2/assets/images/sprites/organizations/{request.organization_id}/assets/{request.guid}",
                 };
             }
         }
 
         protected override IQuarkEndpoint.EMethod[] methods => new [] {
-            IQuarkEndpoint.EMethod.POST, IQuarkEndpoint.EMethod.GET,
+            IQuarkEndpoint.EMethod.GET,
         };
     }
 

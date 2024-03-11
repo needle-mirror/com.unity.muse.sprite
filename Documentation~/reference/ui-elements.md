@@ -58,7 +58,7 @@ The following table describes the context menu (&#8230;) items of a generated sp
 
 | **Property** | **Description** |
 | --- | --- |
-| **Muse Points Used** | Displays the number of [Muse points you have used and the total points you have](https://unity.com/ai/faq). |
+| **Muse Points Used** | Displays the number of [Muse points you have used and the total points you have](https://unity.com/ai/faq). There are no point deductions for unsuccessful generations. |
 | **Go to Muse account** | Opens the [Muse account](https://id.unity.com/en/account/edit) page in your browser. |
 
 ## Additional resources

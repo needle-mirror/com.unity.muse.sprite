@@ -14,7 +14,6 @@ namespace StyleTrainer.Backend
         where T3 : QuarkRestCall
     {
         readonly ServerConfig m_ServerConfig;
-        readonly MockData m_MockData;
 
         protected StyleTrainerRestCall(ServerConfig serverConfig, T1 request)
         {
@@ -24,42 +23,9 @@ namespace StyleTrainer.Backend
             retryDelay = serverConfig.webRequestPollRate;
 
             var config = StyleTrainerConfig.config;
-            if (config.useMockData)
-            {
-                m_MockData = MockData.instance;
-                m_MockData.Init();
-            }
-            else
-            {
-                m_MockData = null;
-            }
         }
 
-        protected MockData mockData => m_MockData;
-
-        public override string server => m_ServerConfig.server;
-
-        protected override void MakeServerRequest()
-        {
-            if (m_MockData is not null)
-                Scheduler.ScheduleCallback(3, CallMockResponse);
-            else
-                base.MakeServerRequest();
-        }
-
-        void CallMockResponse()
-        {
-            try
-            {
-                OnMockResponse();
-            }
-            finally
-            {
-                SignalRequestCompleted(restCallState);
-            }
-        }
-
-        protected virtual void OnMockResponse() { }
+        public override string server => m_ServerConfig.serverURL;
 
         protected override void OnError()
         {
@@ -119,20 +85,14 @@ namespace StyleTrainer.Backend
             {
                 return new[]
                 {
-                    $"/api/v1/sprite/style/create",
                     $"/api/v2/images/sprites/organizations/{request.organization_id}/projects/{request.asset_id}/style/create",
                 };
             }
         }
 
         protected override IQuarkEndpoint.EMethod[] methods => new [] {
-            IQuarkEndpoint.EMethod.POST, IQuarkEndpoint.EMethod.POST,
+            IQuarkEndpoint.EMethod.POST,
         };
-
-        protected override void OnMockResponse()
-        {
-            OnSuccess(mockData.CreateStyleRestCallMock(request));
-        }
     }
 
     class GetStylesRestCall : StyleTrainerRestCall<GetStylesRequest, GetStylesResponse, GetStylesRestCall>
@@ -151,20 +111,15 @@ namespace StyleTrainer.Backend
             {
                 return new[]
                 {
-                    $"/api/v1/sprite/style/getlist",
                     $"/api/v2/images/sprites/organizations/{request.organization_id}/projects/{request.guid}/style/list",
                 };
             }
         }
 
         protected override IQuarkEndpoint.EMethod[] methods => new [] {
-            IQuarkEndpoint.EMethod.POST, IQuarkEndpoint.EMethod.GET,
+            IQuarkEndpoint.EMethod.GET,
         };
 
-        protected override void OnMockResponse()
-        {
-            OnSuccess(mockData.GetStylesRestCallMock(request));
-        }
     }
 
     class SetStyleStateRestCall : StyleTrainerRestCall<SetStyleStateRequest, SetStyleStateResponse, SetStyleStateRestCall>
@@ -186,20 +141,14 @@ namespace StyleTrainer.Backend
             {
                 return new[]
                 {
-                    $"/api/v1/sprite/style/setstate",
                     $"/api/v2/images/sprites/organizations/{request.organization_id}/projects/{request.guid}/style/{request.style_guid}/state",
                 };
             }
         }
 
         protected override IQuarkEndpoint.EMethod[] methods => new [] {
-            IQuarkEndpoint.EMethod.POST, IQuarkEndpoint.EMethod.PUT,
+            IQuarkEndpoint.EMethod.PUT,
         };
-
-        protected override void OnMockResponse()
-        {
-            OnSuccess(mockData.SetStyleStateRestCallMock(request));
-        }
     }
 
     class GetStyleRestCall : StyleTrainerRestCall<GetStyleRequest, GetStyleResponse, GetStyleRestCall>
@@ -218,20 +167,15 @@ namespace StyleTrainer.Backend
             {
                 return new[]
                 {
-                    $"/api/v1/sprite/style/getinfo",
                     $"/api/v2/images/sprites/organizations/{request.organization_id}/projects/{request.guid}/style/{request.style_guid}/info",
                 };
             }
         }
 
         protected override IQuarkEndpoint.EMethod[] methods => new [] {
-            IQuarkEndpoint.EMethod.POST, IQuarkEndpoint.EMethod.GET,
+            IQuarkEndpoint.EMethod.GET,
         };
 
-        protected override void OnMockResponse()
-        {
-            OnSuccess(mockData.GetStyleRestCallMock(request));
-        }
     }
 
     class CreateTrainingSetRestCall : StyleTrainerRestCall<CreateTrainingSetRequest, CreateTrainingSetResponse, CreateTrainingSetRestCall>
@@ -250,20 +194,14 @@ namespace StyleTrainer.Backend
             {
                 return new[]
                 {
-                    $"/api/v1/sprite/style/trainingset",
                     $"/api/v2/images/sprites/organizations/{request.organization_id}/projects/{request.asset_id}/style/{request.guid}/trainingset",
                 };
             }
         }
 
         protected override IQuarkEndpoint.EMethod[] methods => new [] {
-            IQuarkEndpoint.EMethod.POST, IQuarkEndpoint.EMethod.POST,
+            IQuarkEndpoint.EMethod.POST,
         };
-
-        protected override void OnMockResponse()
-        {
-            OnSuccess(mockData.CreateTrainingSetRestCallMock(request));
-        }
 
         protected override string RequestLog()
         {
@@ -298,20 +236,14 @@ namespace StyleTrainer.Backend
             {
                 return new[]
                 {
-                    $"/api/v1/sprite/style/trainingsetinfo",
                     $"/api/v2/images/sprites/organizations/{request.organization_id}/projects/{request.guid}/style/trainingset/{request.training_set_guid}",
                 };
             }
         }
 
         protected override IQuarkEndpoint.EMethod[] methods => new [] {
-            IQuarkEndpoint.EMethod.POST, IQuarkEndpoint.EMethod.GET,
+            IQuarkEndpoint.EMethod.GET,
         };
-
-        protected override void OnMockResponse()
-        {
-            OnSuccess(mockData.GetTrainingSetRestCallMock(request));
-        }
     }
 
     class CreateCheckPointV2RestCall : StyleTrainerRestCall<CreateCheckPointV2Request, CreateCheckPointV2Response, CreateCheckPointV2RestCall>
@@ -330,20 +262,14 @@ namespace StyleTrainer.Backend
             {
                 return new[]
                 {
-                    $"/api/v1/sprite/v2/style/checkpoint",
                     $"/api/v2/images/sprites/organizations/{request.organization_id}/projects/{request.asset_id}/style/{request.guid}/checkpoint",
                 };
             }
         }
 
         protected override IQuarkEndpoint.EMethod[] methods => new [] {
-            IQuarkEndpoint.EMethod.POST, IQuarkEndpoint.EMethod.POST,
+            IQuarkEndpoint.EMethod.POST,
         };
-
-        protected override void OnMockResponse()
-        {
-            OnSuccess(mockData.CreateCheckPointV2RestCallMock(request));
-        }
     }
 
     class GetCheckPointRestCall : StyleTrainerRestCall<GetCheckPointRequest, GetCheckPointResponse, GetCheckPointRestCall>
@@ -362,20 +288,14 @@ namespace StyleTrainer.Backend
             {
                 return new[]
                 {
-                    $"/api/v1/sprite/style/checkpointinfo",
                     $"/api/v2/images/sprites/organizations/{request.organization_id}/projects/{request.guid}/style/checkpoint/{request.checkpoint_guid}/info",
                 };
             }
         }
 
         protected override IQuarkEndpoint.EMethod[] methods => new [] {
-            IQuarkEndpoint.EMethod.POST, IQuarkEndpoint.EMethod.GET,
+            IQuarkEndpoint.EMethod.GET,
         };
-
-        protected override void OnMockResponse()
-        {
-            OnSuccess(mockData.GetCheckPointRestCallMock(request));
-        }
     }
 
     class SetCheckPointFavouriteRestCall : StyleTrainerRestCall<SetCheckPointFavouriteRequest, SetCheckPointFavouriteResponse, SetCheckPointFavouriteRestCall>
@@ -394,20 +314,14 @@ namespace StyleTrainer.Backend
             {
                 return new[]
                 {
-                    $"/api/v1/sprite/style/setcheckpoint",
                     $"/api/v2/images/sprites/organizations/{request.organization_id}/projects/{request.guid}/style/{request.style_guid}/checkpoint/{request.checkpoint_guid}/set",
                 };
             }
         }
 
         protected override IQuarkEndpoint.EMethod[] methods => new [] {
-            IQuarkEndpoint.EMethod.POST, IQuarkEndpoint.EMethod.PUT,
+            IQuarkEndpoint.EMethod.PUT,
         };
-
-        protected override void OnMockResponse()
-        {
-            OnSuccess(mockData.SetCheckPointFavouriteRestCallMock(request));
-        }
     }
 
     class GetImageFromURLRestCall : StyleTrainerRestCall<GetImageRequest, byte[], GetImageFromURLRestCall>
@@ -469,11 +383,6 @@ namespace StyleTrainer.Backend
         protected override IQuarkEndpoint.EMethod[] methods => new [] {
             IQuarkEndpoint.EMethod.GET,
         };
-
-        protected override void OnMockResponse()
-        {
-            OnSuccess(mockData.GetImage(request));
-        }
     }
 
     class GetImageURLRestCall : StyleTrainerRestCall<GetImageRequest, GetImageURLResponse, GetImageURLRestCall>
@@ -492,67 +401,14 @@ namespace StyleTrainer.Backend
             {
                 return new[]
                 {
-                    $"/api/v1/sprite/download_url",
                     $"/api/v2/assets/images/sprites/organizations/{request.organization_id}/assets/{request.guid}",
                 };
             }
         }
 
         protected override IQuarkEndpoint.EMethod[] methods => new [] {
-            IQuarkEndpoint.EMethod.POST, IQuarkEndpoint.EMethod.GET,
+            IQuarkEndpoint.EMethod.GET,
         };
-
-        protected override void OnMockResponse()
-        {
-            OnSuccess(mockData.GetImageURL(request));
-        }
-    }
-
-    // TODO: Deprecated call in v2
-    class GetImageRestCall : StyleTrainerRestCall<GetImageRequest, byte[], GetImageRestCall>
-    {
-        public GetImageRestCall(ServerConfig asset, GetImageRequest request)
-            : base(asset, request)
-        {
-            request.access_token = asset.accessToken;
-            this.request = request;
-        }
-
-        protected override string[] endPoints
-        {
-            get
-            {
-                return new[] {$"/api/v1/sprite/download_image" };
-            }
-        }
-
-        protected override IQuarkEndpoint.EMethod[] methods => new [] {
-            IQuarkEndpoint.EMethod.POST,
-        };
-
-        protected override byte[] ParseResponse(IWebRequest response)
-        {
-            return response.responseByte;
-        }
-
-        protected override string RequestLog()
-        {
-            var log = base.RequestLog();
-            log += $"\n Artifact:{request.guid}";
-            return log;
-        }
-
-        protected override string ResponseLog()
-        {
-            var log = base.RequestLog();
-            log += $"\n Artifact:{request.guid} {requestResult} {requestError}";
-            return log;
-        }
-
-        protected override void OnMockResponse()
-        {
-            OnSuccess(mockData.GetImage(request));
-        }
     }
 
     class GetCheckPointStatusRestCall : StyleTrainerRestCall<GetCheckPointStatusRequest, GetCheckPointStatusResponse, GetCheckPointStatusRestCall>
@@ -583,20 +439,14 @@ namespace StyleTrainer.Backend
                 }
                 return new[]
                 {
-                    $"/api/v1/sprite/style/checkpointstatus",
                     $"/api/v2/images/sprites/organizations/{request.organization_id}/projects/{request.guid}/style/checkpointstatus{guids}"
                 };
             }
         }
 
         protected override IQuarkEndpoint.EMethod[] methods => new [] {
-            IQuarkEndpoint.EMethod.POST, IQuarkEndpoint.EMethod.GET,
+            IQuarkEndpoint.EMethod.GET,
         };
-
-        protected override void OnMockResponse()
-        {
-            OnSuccess(mockData.GetCheckPointStatus(request));
-        }
     }
 
     class GetDefaultStyleProjectRestCall : StyleTrainerRestCall<GetDefaultStyleProjectRequest, GetDefaultStyleProjectResponse, GetDefaultStyleProjectRestCall>
@@ -613,25 +463,16 @@ namespace StyleTrainer.Backend
         {
             get
             {
-                if (ServerConfig.serverConfig.apiVersion == -1)
-                    return new[] { $"/api/v2/images/sprites/organizations/{request.organization_id}/default_project" };
-
                 return new[]
                 {
-                    $"/api/v1/sprite/default_project",
                     $"/api/v2/images/sprites/organizations/{request.organization_id}/default_project",
                 };
             }
         }
 
         protected override IQuarkEndpoint.EMethod[] methods => new [] {
-            IQuarkEndpoint.EMethod.POST, IQuarkEndpoint.EMethod.GET,
+            IQuarkEndpoint.EMethod.GET,
         };
-
-        protected override void OnMockResponse()
-        {
-            OnSuccess(mockData.GetDefaultStyleProject(request));
-        }
     }
 
     [Serializable]

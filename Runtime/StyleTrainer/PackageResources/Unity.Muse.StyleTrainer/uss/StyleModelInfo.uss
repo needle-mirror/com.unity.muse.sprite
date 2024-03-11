@@ -1,5 +1,5 @@
 .styletrainer-stylemodelinfo__content {
-    flex-direction: row;
+    flex-direction: column;
     padding-top: var(--appui-spacing-125);
     padding-bottom: var(--appui-spacing-125);
 }
@@ -12,6 +12,8 @@
 
 .styletrainer-stylemodelinfo__details__nameandcheckpoint {
     flex-direction: row;
+    flex-shrink: 0;
+    overflow: hidden;
 }
 
 .styletrainer-stylemodelinfo__thumbnail {
@@ -23,22 +25,11 @@
 
 .styletrainer-stylemodelinfo__details__nameandcheckpoint__name {
     flex-grow: 1;
-    flex-shrink: 1;
-    flex-basis: 0;
-}
-
-.styletrainer-stylemodelinfo__details__nameandcheckpoint__checkpoint {
-    flex-grow: 1;
-    flex-shrink: 1;
-    flex-basis: 0;
+    flex-shrink: 0;
 }
 
 .styletrainer-stylemodelinfo__favouritetoggle {
     height: var(--appui-sizing-300);
-}
-
-.styletrainer-stylemodelinfo__favouritetoggle-icon {
-
 }
 
 .is-checked .styletrainer-stylemodelinfo__favouritetoggle-icon {
@@ -118,6 +109,12 @@
 
 .styletrainer-stylemodelinfo__icon_nametextfield {
     flex-direction: row;
+    flex-shrink: 0;
+}
+
+.styletrainer-stylemodelinfo__details__description {
+    flex-shrink: 0;
+    overflow: hidden;
 }
 
 .styletrainer-stylemodelinfo__icon_nametextfield__icon__container {
@@ -165,6 +162,7 @@
     align-self: flex-end;
     color: var(--appui-primary-800);
     font-size: var(--appui-font-sizes-100);
+    padding-bottom: var(--appui-spacing-100);
 }
 
 .styletrainer-stylemodelinfo__trainingsteps__slider{

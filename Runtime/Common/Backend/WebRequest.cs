@@ -5,50 +5,6 @@ using UnityEngine.Networking;
 
 namespace Unity.Muse.Sprite.Common.Backend
 {
-    static class WebRequestFactory
-    {
-        static Func<string, string, IWebRequest> s_Factory = DefaultFactory;
-
-        static public IWebRequest CreateWebRequest(string url, string method)
-        {
-            return s_Factory(url, method);
-        }
-
-        public static void SetFactory(Func<string, string, IWebRequest> factory)
-        {
-            if(factory == null)
-                s_Factory = DefaultFactory;
-            else
-                s_Factory = factory;
-        }
-
-        static IWebRequest DefaultFactory(string url, string method)
-        {
-            return new WebRequest(url, method);
-        }
-    }
-
-    interface IWebRequest
-    {
-        void SetRequestHeader(string name, string value);
-        void SetPayload(byte[] payload, string payloadType);
-        void SendWebRequest(Action<IWebRequest> onComplete);
-        void Dispose();
-
-        UnityWebRequest.Result result { get; }
-        long responseCode { get; }
-        string error { get; }
-        string errorMessage { get; }
-        string responseText { get; }
-        byte[] responseByte { get; }
-        string info { get; }
-
-        IWebRequest Recreate()
-        {
-            return null;
-        }
-    }
-
     class WebRequest : IWebRequest
     {
         UnityWebRequest m_WebRequest;
@@ -107,5 +63,7 @@ namespace Unity.Muse.Sprite.Common.Backend
         public string errorMessage => m_WebRequest.downloadHandler?.text;
         public string responseText => m_WebRequest.downloadHandler?.text;
         public byte[] responseByte => m_WebRequest.downloadHandler?.data;
+        public byte[] uploadData => m_WebRequest.uploadHandler.data;
+        public string uploadDataType => m_WebRequest.uploadHandler.contentType;
     }
 }

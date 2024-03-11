@@ -27,9 +27,13 @@ namespace Unity.Muse.Sprite.Common.Backend
         const int k_TrottleIncrease = 5;
         const int k_TrottleDecrease = 1;
         static float s_Trottle = 0;
+        public static float delayCall = 1;
+
         public static IWebRequest SendRequest<T>(string url, string accessToken, T data, Action<IWebRequest> onDone, string method = "POST")
         {
-            var request = WebRequestFactory.CreateWebRequest(url, method);
+            var request = ServerConfig.serverConfig.server.CreateWebRequest(url, method);
+            if (request == null)
+                throw new NotImplementedException($"{url} is not implemented.");
             if (!String.IsNullOrEmpty(accessToken))
                 request.SetRequestHeader("authorization", $"Bearer {accessToken}");
             if (method == "POST" || method == "PUT")
@@ -59,7 +63,7 @@ namespace Unity.Muse.Sprite.Common.Backend
             {
                 ++s_RequestCount;
                 // we are sending all calls 1 second later in case there is a domain reload during startup.
-                Scheduler.ScheduleCallback(1, () =>
+                Scheduler.ScheduleCallback(delayCall, () =>
                 {
                     request.SendWebRequest(x =>
                     {

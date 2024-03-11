@@ -1,13 +1,9 @@
 .styletrainer-sampleoutputview {
-    flex: 1;
     flex-grow: 1;
-    flex-shrink: 1;
 }
 
 .styletrainer-sampleoutputview-gridview {
-    flex: 1;
     flex-grow: 1;
-    flex-shrink: 1;
     padding: 10px;
 }
 
@@ -24,9 +20,7 @@
 }
 
 .styletrainer-sampleoutputview__hintext {
-    flex: 1;
     flex-grow: 1;
-    flex-shrink: 1;
     -unity-text-align: middle-center;
     font-size: 15px;
 }
@@ -42,13 +36,19 @@
     margin-top: var(--appui-sizing-60);
     border-bottom-width: var(--appui-sizing-60);
     border-bottom-color: var(--appui-backgrounds-300);
+    flex-shrink: 0;
+    flex-grow: 0;
 }
 
 .styletrainer-sampleoutputview-tooltip_icon {
-
+    flex-shrink: 0;
+    flex-grow: 0;
 }
 
 .styletrainer-sampleoutputview-tooltip_text {
     font-size: 12px;
     -unity-text-align: middle-center;
+    flex-shrink: 0;
+    flex-grow: 0;
+    overflow: hidden;
 }

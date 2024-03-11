@@ -4,6 +4,20 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-pre.18] - 2024-03-11
+
+## [1.0.0-pre.6] - 2024-02-16
+
+### Changed
+
+- Update com.unity.muse.common dependency version.
+
+## [1.0.0-pre.5] - 2024-02-16
+
+### Fixed
+- Fixed description field in Style Trainer makes other UI components misaligned when expanded.
+- Fixed duplicated style some times doesn't show training images.
+
 ## [1.0.0-pre.4] - 2023-12-15
 
 ### Fixed

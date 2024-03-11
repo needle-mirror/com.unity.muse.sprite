@@ -4,6 +4,8 @@ using Unity.Muse.Common;
 using UnityEngine.Events;
 using UnityEngine.UIElements;
 
+#pragma warning disable 0067
+
 namespace Unity.Muse.Sprite.Common.Events
 {
     [Serializable]
@@ -67,5 +69,6 @@ namespace Unity.Muse.Sprite.Common.Events
         }
 
         public event Action OnModified = () => { };
+        public event Action OnSaveRequested;
     }
 }

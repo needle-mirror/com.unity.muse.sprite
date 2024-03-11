@@ -19,9 +19,14 @@
         <!--appui:SearchBar name="StyleModelSearchBar" class="styletrainer-stylemodellist__searchbar" size="S"/-->
         <ui:ListView name="StyleModelListView" class="styletrainer-stylemodellist__listview" fixed-item-height="100"/>
 
-        <appui:ActionButton name="AddStyleButton" class="styletrainer-stylemodellist__actionbutton"
-                            icon="plus" size="S"
-                            tooltip="Add new style for training" preferred-tooltip-placement="End"/>
+        <appui:FloatingActionButton 
+                name="AddStyleButton" 
+                class="styletrainer-stylemodellist__actionbutton"
+                size="L"
+                accent="true"
+                tooltip="Add new style for training" preferred-tooltip-placement="End">
+            <appui:Icon icon-name="plus" size="L" />
+        </appui:FloatingActionButton>
 
     </styleTrainer:StyleModelList>
 </ui:UXML>

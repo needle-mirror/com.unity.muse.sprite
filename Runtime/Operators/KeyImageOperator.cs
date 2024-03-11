@@ -194,7 +194,6 @@ namespace Unity.Muse.Sprite.Operators
 
             m_HintLabel = new Text(TextContent.doodleStartTooltip);
             m_HintLabel.AddToClassList(hintUssClassName);
-            m_HintLabel.size = TextSize.XS;
             m_ImageContainer.Add(m_HintLabel);
 
             m_ReferenceImage = new Image { pickingMode = PickingMode.Ignore };

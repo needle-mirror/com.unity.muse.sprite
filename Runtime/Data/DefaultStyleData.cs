@@ -4,11 +4,15 @@ using System.Linq;
 using Unity.Muse.Common;
 using Unity.Muse.StyleTrainer;
 
+#pragma warning disable 0067
+
 namespace Unity.Muse.Sprite.Data
 {
     class DefaultStyleData : IModelData
     {
         public event Action OnModified;
+        public event Action OnSaveRequested;
+
         IReadOnlyList<StyleData> m_DefaultStyles;
         bool m_Loading = false;
         bool m_Failed = false;
@@ -35,7 +39,7 @@ namespace Unity.Muse.Sprite.Data
             m_Failed = obj.Any(s => s.state == EState.Error || s.checkPoints.Any(c => c.state == EState.Error));
             OnModified?.Invoke();
         }
-        
+
         void OnGetDefaultStyleFailed()
         {
             m_Loading = false;

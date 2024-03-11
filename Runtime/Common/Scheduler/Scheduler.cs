@@ -42,8 +42,8 @@ namespace Unity.Muse.Sprite.Common
             }
             else
             {
-                if(s_Schedules.Count == 0)
-                    EditorApplication.update += ScheduleTick;
+                EditorApplication.update -= ScheduleTick;
+                EditorApplication.update += ScheduleTick;
             }
 #else
             if (m_SchedulerGO == null)
@@ -54,12 +54,19 @@ namespace Unity.Muse.Sprite.Common
                 m_SchedulerGO.onDestroyingComponent += OnHelperDestroyed;
             }
 #endif
-            s_Schedules.Add(new ScheduleCallbackObject()
+            if (timer <= 0)
             {
-                timer = timer,
-                callback = callback,
-                startTime = DateTime.Now
-            });
+                callback?.Invoke();
+            }
+            else
+            {
+                s_Schedules.Add(new ScheduleCallbackObject()
+                {
+                    timer = timer,
+                    callback = callback,
+                    startTime = DateTime.Now
+                });
+            }
         }
 
         static void OnHelperDestroyed(GameObject obj)
@@ -84,6 +91,16 @@ namespace Unity.Muse.Sprite.Common
             if(s_Schedules.Count == 0)
                 EditorApplication.update -= ScheduleTick;
 #endif
+        }
+
+        internal static void Flush()
+        {
+            for (int i = 0; i < s_Schedules.Count; ++i)
+            {
+                s_Schedules[i].callback?.Invoke();
+                s_Schedules.RemoveAt(i);
+                --i;
+            }
         }
     }
 }

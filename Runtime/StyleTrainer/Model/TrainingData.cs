@@ -49,12 +49,12 @@ namespace Unity.Muse.StyleTrainer
             // attempt to load the image artifact since the duplicate will need it later
             var data = new TrainingData(EState.New, Utilities.emptyGUID);
             data.SetImageArtifact(new ImageArtifact(EState.New));
-            data.imageArtifact.guid = imageArtifact.guid;
-#if DUPLICATE_LOADS_ARTIFACT
-            data.imageArtifact.GetArtifact((_) => { duplicateDone?.Invoke(data); }, true);
-#else
-            duplicateDone?.Invoke(data);
-#endif
+            data.imageArtifact.guid = Utilities.CreateTempGuid();
+            imageArtifact.GetArtifact((_) =>
+            {
+                data.imageArtifact.SetTexture(imageArtifact.GetRawData());
+                duplicateDone?.Invoke(data);
+            }, true);
         }
 
         public void Delete()

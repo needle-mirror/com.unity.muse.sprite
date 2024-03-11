@@ -26,7 +26,6 @@ namespace Unity.Muse.StyleTrainer.Editor
         static StyleTrainerProjectData s_Project;
         StyleTrainerProjectDataEditor m_ProjectDataInspector;
         StyleTrainerConfigEditor m_StyleTrainerConfigEditor;
-        MockDataEditor m_MockDataEditor;
         IMGUIContainer m_CacheInspector;
 
         public Preference()
@@ -45,9 +44,6 @@ namespace Unity.Muse.StyleTrainer.Editor
 
             if (m_StyleTrainerConfigEditor is not null) m_StyleTrainerConfigEditor.Dispose();
             m_StyleTrainerConfigEditor = null;
-
-            if (m_MockDataEditor is not null) m_MockDataEditor.Dispose();
-            m_MockDataEditor = null;
 
             if (m_CacheInspector is not null) m_CacheInspector.Dispose();
             m_CacheInspector = null;
@@ -94,13 +90,6 @@ namespace Unity.Muse.StyleTrainer.Editor
             m_StyleTrainerConfigEditor = UnityEditor.Editor.CreateEditor(styleTrainerConfig) as StyleTrainerConfigEditor;
             if (m_StyleTrainerConfigEditor != null)
                 m_StyleTrainerConfigEditor.CreateInspectorUI(newScrollView);
-
-            if (Unsupported.IsDeveloperMode())
-            {
-                m_MockDataEditor = UnityEditor.Editor.CreateEditor(MockData.instance) as MockDataEditor;
-                if (m_MockDataEditor != null)
-                    m_MockDataEditor.CreateInspectorUI(newScrollView);
-            }
         }
 
         void CacheInspector()

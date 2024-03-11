@@ -34,6 +34,9 @@
     border-bottom-color: var(--appui-backgrounds-300);
     border-top-width: var(--appui-sizing-60);
     border-top-color: var(--appui-backgrounds-300);
+    flex-shrink: 0;
+    overflow: hidden;
+    flex-basis: 42px;
 }
 
 .styletrainer-stylemodelinfoeditor__splitview {
@@ -141,6 +144,8 @@
     margin-top: var(--appui-spacing-200);
     margin-bottom: var(--appui-sizing-100);
     padding: 0 var(--appui-spacing-125);
+    background-color: var(--appui-backgrounds-200);
+    width: 100%
 }
 
 .styletrainer-stylemodelinfoeditor__thumbnail-slider {
@@ -168,26 +173,10 @@
 
 .styletrainer-stylemodelinfoeditor__add-button {
     position: absolute;
-    bottom: 50px;
-    right: 30px;
-    min-width: 40px;
-    max-width: 40px;
-    width: 40px;
-    height: 40px;
-    border-radius: 100px;
-    background-color: var(--appui-accent-50);
-}
-
-.styletrainer-stylemodelinfoeditor__add-button:hover {
-    background-color: var(--appui-accent-100);
-}
-
-.styletrainer-stylemodelinfoeditor__add-button:active {
-    background-color: var(--appui-accent-25);
-}
-
-.styletrainer-stylemodelinfoeditor__add-button:disabled {
-    background-color: var(--appui-accent-0);
+    bottom: var(--appui-sizing-1200);
+    right: var(--appui-spacing-300);
+    min-width: var(--appui-sizing-1000);
+    height: var(--appui-sizing-1000);
 }
 
 .styletrainer-stylemodelinfoeditor-styleloadingscreen {

@@ -11,7 +11,10 @@ using UnityEngine.UIElements;
 
 namespace Unity.Muse.StyleTrainer
 {
-    class StyleModelInfoEditor : ExVisualElement
+#if ENABLE_UXML_SERIALIZED_DATA
+    [UxmlElement]
+#endif
+    partial class StyleModelInfoEditor : ExVisualElement
     {
         public const int k_SampleOutputTab = 0;
         public const int k_TrainingSetTab = 1;
@@ -19,7 +22,7 @@ namespace Unity.Muse.StyleTrainer
 
         ExVisualElement m_StyleModelEditorContainer;
         ExVisualElement m_StyleModelInfoEditorContent;
-        ActionButton m_AddButton;
+        FloatingActionButton m_AddButton;
         SliderFloat m_ThumbnailSizeSlider;
         EventBus m_EventBus;
         VisualElement m_SplashScreen;
@@ -39,7 +42,6 @@ namespace Unity.Muse.StyleTrainer
         void BindElements()
         {
             name = "StyleModelInfoEditor";
-
             AddToClassList("appui-elevation-8");
 
             m_StyleModelEditorContainer = this.Q<ExVisualElement>("StyleModelEditorContainer");
@@ -50,7 +52,7 @@ namespace Unity.Muse.StyleTrainer
             m_EditorContent.NotifyCanAddChanged(CanAddChanged);
             m_StyleModelInfoEditorContent.Add(contentEditor);
 
-            m_AddButton = this.Q<ActionButton>("AddButton");
+            m_AddButton = this.Q<FloatingActionButton>("AddButton");
             m_AddButton.clicked += OnAddClicked;
 
             m_ThumbnailSizeSlider = this.Q<SliderFloat>("ThumbnailSizeSlider");
@@ -141,7 +143,9 @@ namespace Unity.Muse.StyleTrainer
             m_AddButton.SetEnabled(false);
         }
 
+#if ENABLE_UXML_TRAITS
         public new class UxmlFactory : UxmlFactory<StyleModelInfoEditor, UxmlTraits> { }
+#endif
     }
 
     interface IStyleModelEditorContent

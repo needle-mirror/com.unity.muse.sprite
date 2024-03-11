@@ -1,4 +1,5 @@
 #if UNITY_EDITOR
+using Unity.Muse.Sprite.Common.Backend;
 using UnityEditor;
 #else
 using Unity.Muse.StyleTrainer.EditorMockClass;
@@ -48,7 +49,6 @@ namespace Unity.Muse.StyleTrainer
         public void Save()
         {
 #if UNITY_EDITOR
-
             StyleTrainerDebug.Log("Saving Asset");
             Save(true);
 #else
@@ -57,7 +57,6 @@ namespace Unity.Muse.StyleTrainer
         }
 
         public StyleTrainerData data => m_StyleTrainerData;
-
 
         public IReadOnlyList<StyleData> GetDefaultStyles(Action<IReadOnlyList<StyleData>> onDone, Action onFailed, bool cache)
         {
@@ -104,31 +103,46 @@ namespace Unity.Muse.StyleTrainer
                 return m_DefaultStyles;
             }
         }
+        
+        void OnStyleTrainerDataChanged(StyleTrainerData _)
+        {
+            Save();
+        }
 
         internal void Init()
         {
-            m_StyleTrainerData.Init();
+            if (m_StyleTrainerData != null)
+            {
+                m_StyleTrainerData.Init();
+                m_StyleTrainerData.OnDataChanged += OnStyleTrainerDataChanged;
+            }
             m_DefaultStyles = StyleTrainerConfig.config.defaultStyles.ToList();
+            Save();
         }
 
         void OnEnable()
         {
-            m_StyleTrainerData.Init();
+            m_StyleTrainerData?.Init();
             StyleTrainerDebug.Log("Asset enabled");
         }
 
         void OnDisable()
         {
-            Save();
-            StyleTrainerConfig.config.artifactCache.Prune();
-            StyleTrainerConfig.config.artifactCache.Dispose();
+            if (StyleTrainerConfig.config)
+            {
+                StyleTrainerConfig.config.artifactCache?.Prune();
+                StyleTrainerConfig.config.artifactCache?.Dispose();
+            }
             StyleTrainerDebug.Log("Asset disabled");
-            m_StyleTrainerData?.OnDispose();
+            if (m_StyleTrainerData != null)
+            {
+                m_StyleTrainerData.OnDataChanged -= OnStyleTrainerDataChanged;
+                m_StyleTrainerData.OnDispose();
+            }
         }
 
         void OnDestroy()
         {
-            Save();
             StyleTrainerDebug.Log("Asset destroy");
         }
 
@@ -140,11 +154,16 @@ namespace Unity.Muse.StyleTrainer
                     m_PreviousProjectIDs.Add(guid);
             }
             StyleTrainerConfig.config.artifactCache.Clear();
-            m_StyleTrainerData?.OnDispose();
-            m_StyleTrainerData?.Delete();
+            if (m_StyleTrainerData != null)
+            {
+                m_StyleTrainerData.OnDataChanged -= OnStyleTrainerDataChanged;
+                m_StyleTrainerData.OnDispose();
+                m_StyleTrainerData.Delete();
+            }
             m_StyleTrainerData = new StyleTrainerData(EState.New);
+            m_StyleTrainerData.OnDataChanged += OnStyleTrainerDataChanged;
 #if UNITY_EDITOR
-            MockData.instance.Reset();
+            ServerConfig.serverConfig.server.Reset();
 #endif
             Save();
             onDataChanged.Invoke(this);
@@ -155,9 +174,12 @@ namespace Unity.Muse.StyleTrainer
             var oldGuid = m_StyleTrainerData?.guid;
             m_StyleTrainerData?.OnDispose();
             m_StyleTrainerData?.Delete();
-            m_StyleTrainerData = new StyleTrainerData(EState.New);
-            m_StyleTrainerData.guid = oldGuid;
-            m_StyleTrainerData.state = EState.Initial;
+            m_StyleTrainerData = new StyleTrainerData(EState.New)
+            {
+                guid = oldGuid,
+                state = EState.Initial
+            };
+            Save();
             onDataChanged.Invoke(this);
         }
     }

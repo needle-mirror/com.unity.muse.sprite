@@ -10,11 +10,18 @@ namespace Unity.Muse.Sprite.Editor
         public const string menuItemPath = "Muse/New Sprite Generator";
 
         [MenuItem(menuItemPath, false, 100)]
-        public static void CreateSpriteWindow()
+        public static void CreateSpriteWindowMenuItem()
         {
-            EditorModelAssetEditor.OpenWindowForMode(UIMode.UIMode.modeKey);
+            CreateSpriteWindow();
         }
-        
+
+        internal static MuseEditor CreateSpriteWindow()
+        {
+            var museWindow = EditorModelAssetEditor.OpenWindowForMode(UIMode.UIMode.modeKey);
+            museWindow.DiscardChanges();
+            return museWindow;
+        }
+
         [MenuItem(menuItemPath, true)]
         public static bool ValidateCreateSpriteWindow()
         {

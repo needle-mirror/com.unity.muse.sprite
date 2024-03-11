@@ -55,7 +55,6 @@ MonoBehaviour:
     m_TrainingSetData: []
     m_Name: Default
     m_Description: Default style.
-  m_UseMockData: 0
   references:
     version: 2
     RefIds:

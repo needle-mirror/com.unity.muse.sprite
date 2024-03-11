@@ -6,7 +6,10 @@ using UnityEngine.UIElements;
 
 namespace Unity.Muse.StyleTrainer
 {
-    class TrainingItemGridItem : ExVisualElement
+#if ENABLE_UXML_SERIALIZED_DATA
+    [UxmlElement]
+#endif
+    partial class TrainingItemGridItem : ExVisualElement
     {
         ActionButton m_DeleteButton;
         int m_ItemIndex;
@@ -48,7 +51,9 @@ namespace Unity.Muse.StyleTrainer
             if (ai is not null) m_PreviewImage.SetArtifact(ai);
         }
 
+#if ENABLE_UXML_TRAITS
         public new class UxmlFactory : UxmlFactory<TrainingItemGridItem, UxmlTraits> { }
+#endif
 
         public void CanModify(bool canModify)
         {

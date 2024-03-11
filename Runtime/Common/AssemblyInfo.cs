@@ -5,3 +5,4 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.Muse.Sprite.Common.Editor")]
 [assembly: InternalsVisibleTo("Unity.Muse.Sprite.Tests")]
 [assembly: InternalsVisibleTo("Unity.Muse.Sprite.Editor.Tests")]
+[assembly: InternalsVisibleTo("DynamicProxyGenAssembly2")]

@@ -57,7 +57,7 @@ namespace Unity.Muse.Sprite.Common.Backend
             retryDelay = serverConfig.webRequestPollRate;
         }
 
-        public override string server => m_ServerConfig.server;
+        public override string server => m_ServerConfig.serverURL;
     }
 
     class VersionCheckProjectRestCall : CommonRestCall<VersionCheckProjectRequest, VersionCheckProjectResponse, VersionCheckProjectRestCall>
@@ -77,8 +77,6 @@ namespace Unity.Muse.Sprite.Common.Backend
         {
             get
             {
-                if (version == 1)
-                    return new[] { $"/api/v1/sprite/default_project" };
                 return new[] { $"/api/v{version}/images/sprites/organizations/{request.organization_id}/default_project" };
             }
         }
@@ -87,8 +85,6 @@ namespace Unity.Muse.Sprite.Common.Backend
         {
             get
             {
-                if (version == 1)
-                    return new[] { IQuarkEndpoint.EMethod.POST };
                 return new[] { IQuarkEndpoint.EMethod.GET };
             }
         }

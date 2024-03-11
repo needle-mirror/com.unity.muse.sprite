@@ -2,6 +2,8 @@ using System;
 using Unity.Muse.Common;
 using UnityEngine;
 
+#pragma warning disable 0067
+
 namespace Unity.Muse.Sprite.Data
 {
     [Serializable]
@@ -10,6 +12,7 @@ namespace Unity.Muse.Sprite.Data
         [SerializeField]
         int m_Counter = 0;
         public event Action OnModified;
+        public event Action OnSaveRequested;
 
         public void ResetCounter()
         {

@@ -11,7 +11,10 @@ using Button = Unity.AppUI.UI.Button;
 
 namespace Unity.Muse.StyleTrainer
 {
-    class StyleTrainerMainUI : ExVisualElement, IDisposable
+#if ENABLE_UXML_SERIALIZED_DATA
+    [UxmlElement]
+#endif
+    partial class StyleTrainerMainUI : ExVisualElement, IDisposable
     {
         StyleModelInfoEditor m_StyleModelInfoEditor;
         StyleModelList m_StyleModelList;
@@ -30,8 +33,6 @@ namespace Unity.Muse.StyleTrainer
         public StyleTrainerMainUI()
         {
             name = "StyleTrainerMainUI";
-            RegisterCallback<AttachToPanelEvent>(AttachToPanel);
-            RegisterCallback<DetachFromPanelEvent>(DetachFromPanel);
         }
 
         public void SetEventBus(EventBus eventBus)
@@ -42,25 +43,6 @@ namespace Unity.Muse.StyleTrainer
             m_EventBus.RegisterEvent<ShowLoadingScreenEvent>(OnShowLoadingScreenEvent);
             m_StyleModelInfoEditor.SetEventBus(eventBus);
             m_StyleModelList.SetEventBus(eventBus);
-        }
-
-        void AttachToPanel(AttachToPanelEvent evt)
-        {
-            AccountInfo.Instance.OnOrganizationChanged += OnOrganizationChanged;
-            OnOrganizationChanged();
-        }
-
-        void DetachFromPanel(DetachFromPanelEvent evt)
-        {
-            AccountInfo.Instance.OnOrganizationChanged -= OnOrganizationChanged;
-        }
-
-        void OnOrganizationChanged()
-        {
-            if (!AccountInfo.Instance.IsSubscribed)
-                AccountUtility.DisplaySubscriptionDialog(this);
-            else
-                AccountUtility.DismissSubscriptionDialog(this);
         }
 
         void OnShowDialogEvent(ShowDialogEvent dialogData)
@@ -119,7 +101,7 @@ namespace Unity.Muse.StyleTrainer
 
             m_StyleTrainerMainUIContent = this.Q<VisualElement>("StyleTrainerContent");
             m_TopMenu = this.Q<VisualElement>("StyleTrainerTopMenu");
-            m_AccountDropdown = new AccountDropdown(this);
+            m_AccountDropdown = new AccountDropdown();
             m_TopMenu.Q<VisualElement>("AccountDropDownContainer").Add(m_AccountDropdown);
             m_SplitView = this.Q<SplitView>("StyleTrainerUISplitView");
             m_SplitView.fixedPaneIndex = 0;
@@ -169,7 +151,9 @@ namespace Unity.Muse.StyleTrainer
 #endif
         }
 
+#if ENABLE_UXML_TRAITS
         public new class UxmlFactory : UxmlFactory<StyleTrainerMainUI, UxmlTraits> { }
+#endif
 
         public void Dispose()
         {

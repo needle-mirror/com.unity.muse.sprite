@@ -9,7 +9,7 @@
     <Style src="project:/Packages/com.unity.muse.common/PackageResources/Styles/UnityMuseTheme.tss"/>
     <Style src="../uss/StyleTrainerStyle.uss"/>
     <Style src="project:/Packages/com.unity.muse.common/Runtime/UI/PackageResources/uss/Account.uss"/>
-    <appui:Panel name="muse-root" class="muse-root">
+    <appui:Panel name="muse-root" class="muse-root" scale="small">
         <engine:VisualElement>
         </engine:VisualElement>
         <styleTrainer:StyleTrainerMainUI class="styletrainer-mainui">

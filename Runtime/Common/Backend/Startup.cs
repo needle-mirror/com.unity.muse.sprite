@@ -12,7 +12,8 @@ namespace Unity.Muse.Sprite.Common.Backend
         [RuntimeInitializeOnLoadMethod]
         public static void VersionCheck()
         {
-            RegisterVersionCheck();
+            // we don't need version check anymore
+            //RegisterVersionCheck();
         }
 
         public static void RegisterVersionCheck()
@@ -26,13 +27,13 @@ namespace Unity.Muse.Sprite.Common.Backend
             if (ServerConfig.serverConfig != null &&
                 ServerConfig.serverConfig.callApiVersion &&
                 ServerConfig.serverConfig.serverList != null &&
-                ServerConfig.serverConfig.lastApiServer.Equals(ServerConfig.serverConfig.server))
+                ServerConfig.serverConfig.lastApiServer.Equals(ServerConfig.serverConfig.serverURL))
                 return;
 
             var clientUsable = false;
             try
             {
-                clientUsable = AccountInfo.Instance.IsClientUsable;
+                clientUsable = ClientStatus.Instance.IsClientUsable;
             }
             catch (Exception)
             {
@@ -44,15 +45,15 @@ namespace Unity.Muse.Sprite.Common.Backend
 
             ServerConfig.serverConfig.callApiVersion = true;
             ServerConfig.serverConfig.apiVersion = minVersionToCheck;
-            ServerConfig.serverConfig.lastApiServer = ServerConfig.serverConfig.server;
+            ServerConfig.serverConfig.lastApiServer = ServerConfig.serverConfig.serverURL;
 
             for (var version = maxVersionToCheck; version >= minVersionToCheck; --version)
             {
                 var versionCheckTask = new VersionCheckTask(version);
-                versionCheckTask.Execute(OnVersionCheckDone);    
+                versionCheckTask.Execute(OnVersionCheckDone);
             }
         }
-  
+
         private static void OnVersionCheckDone(bool success, int version)
         {
             if (success)

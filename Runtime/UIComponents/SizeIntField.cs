@@ -176,45 +176,5 @@ namespace Unity.Muse.Sprite.UIComponents
         {
             value = new Vector2Int(evt.newValue, value.y);
         }
-
-        /// <summary>
-        /// Factory class to instantiate a <see cref="UnityEngine.UIElements.SizeIntField"/> using the data read from a UXML file.
-        /// </summary>
-        [Preserve]
-        public new class UxmlFactory : UxmlFactory<SizeIntField, UxmlTraits> { }
-
-        /// <summary>
-        /// Class containing the <see cref="UxmlTraits"/> for the <see cref="SizeIntField"/>.
-        /// </summary>
-        public new class UxmlTraits : VisualElementExtendedUxmlTraits
-        {
-            readonly UxmlBoolAttributeDescription m_Disabled = new UxmlBoolAttributeDescription
-            {
-                name = "disabled",
-                defaultValue = false
-            };
-
-            readonly UxmlEnumAttributeDescription<Size> m_Size = new UxmlEnumAttributeDescription<Size>
-            {
-                name = "size",
-                defaultValue = Size.M,
-            };
-
-            /// <summary>
-            /// Initializes the VisualElement from the UXML attributes.
-            /// </summary>
-            /// <param name="ve"> The <see cref="VisualElement"/> to initialize.</param>
-            /// <param name="bag"> The <see cref="IUxmlAttributes"/> bag to use to initialize the <see cref="VisualElement"/>.</param>
-            /// <param name="cc"> The <see cref="CreationContext"/> to use to initialize the <see cref="VisualElement"/>.</param>
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-
-                var element = (SizeIntField)ve;
-                element.size = m_Size.GetValueFromBag(bag, cc);
-
-                element.SetEnabled(!m_Disabled.GetValueFromBag(bag, cc));
-            }
-        }
     }
 }

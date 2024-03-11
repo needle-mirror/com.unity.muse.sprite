@@ -6,7 +6,10 @@ using UnityEngine.UIElements;
 
 namespace Unity.Muse.StyleTrainer
 {
-    internal class SampleOutputPromptInput : ExVisualElement
+#if ENABLE_UXML_SERIALIZED_DATA
+    [UxmlElement]
+#endif
+    internal partial class SampleOutputPromptInput : ExVisualElement
     {
         TextArea m_Prompt;
         ActionButton m_DeleteButton;
@@ -38,7 +41,10 @@ namespace Unity.Muse.StyleTrainer
                 if ((evt.keyCode == KeyCode.Tab || (evt.keyCode == KeyCode.None && evt.character == '\t')) && !evt.shiftKey)
                 {
                     evt.StopImmediatePropagation();
+#if !UNITY_2023_2_OR_NEWER
                     evt.PreventDefault();
+#endif
+
                     if (evt.character != '\t')
                         m_Prompt.focusController.FocusNextInDirectionEx(m_Prompt, VisualElementFocusChangeDirection.right);
                 }
@@ -112,6 +118,8 @@ namespace Unity.Muse.StyleTrainer
             return ve;
         }
 
+#if ENABLE_UXML_TRAITS
         public new class UxmlFactory : UxmlFactory<SampleOutputPromptInput, UxmlTraits> { }
+#endif
     }
 }

@@ -2,12 +2,15 @@ using System;
 using Unity.Muse.Common;
 using UnityEngine;
 
+#pragma warning disable 0067
+
 namespace Unity.Muse.Sprite.Data
 {
     [Serializable]
     internal class SessionData : IModelData
     {
         public event Action OnModified;
+        public event Action OnSaveRequested;
 
         [SerializeField]
         string m_SessionId = String.Empty;

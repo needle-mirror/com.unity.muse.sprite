@@ -14,7 +14,10 @@ using TextField = Unity.AppUI.UI.TextField;
 
 namespace Unity.Muse.StyleTrainer
 {
-    class StyleModelInfo : ExVisualElement
+#if ENABLE_UXML_SERIALIZED_DATA
+    [UxmlElement]
+#endif
+    partial class StyleModelInfo : ExVisualElement
     {
         Text m_StatusLabel;
         Text m_DescriptionTextCount;
@@ -24,11 +27,9 @@ namespace Unity.Muse.StyleTrainer
         AppUI.UI.Button m_GenerateButton;
         EventBus m_EventBus;
         StyleData m_StyleData;
-        CheckPointData m_CurrentCheckPoint;
         CircularProgress m_TrainingIcon;
         Icon m_ErrorIcon;
-        bool m_DuplicateButtonState = false;
-        bool m_GenerateButtonState = false;
+        const float k_OriginalDescriptionTextAreaHeight = 75f;
 
         public StyleModelInfo()
         {
@@ -51,7 +52,9 @@ namespace Unity.Muse.StyleTrainer
                 if ((evt.keyCode == KeyCode.Tab || (evt.keyCode == KeyCode.None && evt.character == '\t')) && !evt.shiftKey)
                 {
                     evt.StopImmediatePropagation();
+#if !UNITY_2023_2_OR_NEWER
                     evt.PreventDefault();
+#endif
                     if (evt.character != '\t')
                         m_Description.focusController.FocusNextInDirectionEx(m_Description, VisualElementFocusChangeDirection.right);
                 }
@@ -64,12 +67,10 @@ namespace Unity.Muse.StyleTrainer
             m_StatusLabel = this.Q<Text>("StatusLabel");
 
             m_DuplicateButton = this.Q<AppUI.UI.Button>("StyleModelInfoDetailsDuplicateStyle");
-            m_DuplicateButton.SetEnabled(m_DuplicateButtonState);
             m_DuplicateButton.clicked += OnDuplicateButtonClicked;
 
             m_GenerateButton = this.Q<AppUI.UI.Button>("StyleModelInfoDetailsGenerateStyle");
             m_GenerateButton.clicked += OnGenerateButtonClicked;
-            m_GenerateButton.SetEnabled(m_GenerateButtonState);
         }
 
         void OnNameChanging(ChangingEvent<string> evt)
@@ -94,6 +95,7 @@ namespace Unity.Muse.StyleTrainer
             m_Description.SetValueWithoutNotify(m_StyleData?.description);
             m_Description.tooltip = m_Description.value;
             m_DescriptionTextCount.text = $"{m_Description.value.Length}/{StyleData.maxDescriptionLength}";
+            m_Description.style.height = k_OriginalDescriptionTextAreaHeight;
         }
 
         void UpdateStatusIcon()
@@ -186,7 +188,9 @@ namespace Unity.Muse.StyleTrainer
             m_EventBus.SendEvent(new DuplicateButtonClickEvent());
         }
 
+#if ENABLE_UXML_TRAITS
         public new class UxmlFactory : UxmlFactory<StyleModelInfo, UxmlTraits> { }
+#endif
 
         public void SetEventBus(EventBus eventBus)
         {
@@ -207,15 +211,11 @@ namespace Unity.Muse.StyleTrainer
 
         void OnDuplicateButtonStateUpdate(DuplicateButtonStateUpdateEvent arg0)
         {
-            m_DuplicateButtonState = arg0.state;
-            m_DuplicateButton.SetEnabled(arg0.state);
             UpdateButtonState();
         }
 
         void OnGenerateButtonStateUpdate(GenerateButtonStateUpdateEvent arg0)
         {
-            m_GenerateButtonState = arg0.state;
-            m_GenerateButton.SetEnabled(arg0.state);
             UpdateButtonState();
         }
 

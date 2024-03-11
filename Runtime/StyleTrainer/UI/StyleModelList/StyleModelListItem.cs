@@ -8,7 +8,10 @@ using UnityEngine.UIElements;
 
 namespace Unity.Muse.StyleTrainer
 {
-    class StyleModelListItem : ExVisualElement
+#if ENABLE_UXML_SERIALIZED_DATA
+    [UxmlElement]
+#endif
+    partial class StyleModelListItem : ExVisualElement
     {
         Text m_StyleName;
         Text m_StyleDescription;
@@ -157,6 +160,8 @@ namespace Unity.Muse.StyleTrainer
             return ve;
         }
 
+#if ENABLE_UXML_TRAITS
         public new class UxmlFactory : UxmlFactory<StyleModelListItem, UxmlTraits> { }
+#endif
     }
 }

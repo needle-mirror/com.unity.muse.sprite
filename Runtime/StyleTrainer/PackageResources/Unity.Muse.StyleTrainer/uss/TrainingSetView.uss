@@ -48,6 +48,8 @@
     flex-shrink: 1;
     -unity-text-align: middle-center;
     font-size: 15px;
+    overflow: hidden;
+    min-height: 50px;
 }
 
 .styletrainer-trainingsetview__tooltip_text {
@@ -61,6 +63,9 @@
     margin-top: var(--appui-sizing-60);
     border-bottom-width: var(--appui-sizing-60);
     border-bottom-color: var(--appui-backgrounds-300);
+    flex-shrink: 0;
+    flex-grow: 0;
+    overflow: hidden;
 }
 
 .styletrainer-trainingsetview__tooltip_icon {
