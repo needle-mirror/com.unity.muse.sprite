@@ -13,6 +13,7 @@ You can generate sprites from a reference image. A reference image can be an ima
 
     - Use the **Sprite Picker** in the **Input Image** panel to pick.
     - Drag the image to the **Input Image** panel.
+    - Right-click the image in the **Project** window and select **Open in Muse**.
 1. In the **Prompt** field, write a prompt that describes the sprite you want to generate.
 1. To set the number of images to generate, move the **Images** slider.
 1. If you don't want a background in the generated sprites, enable **Remove Background**.

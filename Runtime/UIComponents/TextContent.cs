@@ -2,7 +2,7 @@ namespace Unity.Muse.Sprite.UIComponents
 {
     static class TextContent
     {
-        public static readonly string doodleStartTooltip = "Scribble or drag & drop reference image here.";
+        public static readonly string doodleStartTooltip = "Draw a shape or drag & drop reference image here.";
         public static readonly string doodleBrushTooltip = "Scribble Tool. (B)\n'[' or ']' decreases/increases brush size.";
         public static readonly string doodleEraserTooltip = "Erases the scribbles. (E)\n'[' or ']' decreases/increases brush size.";
         public static readonly string doodleBrushSizeTooltip = "Sets the brush size.";

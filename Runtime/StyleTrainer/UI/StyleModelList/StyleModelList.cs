@@ -2,7 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using Unity.AppUI.UI;
+using Unity.Muse.AppUI.UI;
 using Unity.Muse.Common;
 using Unity.Muse.Sprite.Common.DebugConfig;
 using Unity.Muse.Sprite.Common.Events;

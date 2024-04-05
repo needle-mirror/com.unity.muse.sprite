@@ -1,7 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using Unity.AppUI.UI;
+using Unity.Muse.AppUI.UI;
 using Unity.Muse.Common;
 using Unity.Muse.Sprite.Common.Events;
 using Unity.Muse.StyleTrainer.Events.StyleModelEditorUIEvents;

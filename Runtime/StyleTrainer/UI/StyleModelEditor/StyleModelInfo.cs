@@ -1,5 +1,5 @@
 using System;
-using Unity.AppUI.UI;
+using Unity.Muse.AppUI.UI;
 using Unity.Muse.Sprite.Common.Events;
 using Unity.Muse.StyleTrainer.Events.SampleOutputModelEvents;
 using Unity.Muse.StyleTrainer.Events.StyleModelEditorUIEvents;
@@ -10,7 +10,7 @@ using Unity.Muse.StyleTrainer.Events.TrainingControllerEvents;
 using Unity.Muse.StyleTrainer.Events.TrainingSetModelEvents;
 using UnityEngine;
 using UnityEngine.UIElements;
-using TextField = Unity.AppUI.UI.TextField;
+using TextField = Unity.Muse.AppUI.UI.TextField;
 
 namespace Unity.Muse.StyleTrainer
 {

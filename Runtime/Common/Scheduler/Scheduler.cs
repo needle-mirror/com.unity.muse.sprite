@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using UnityEditor;
 using UnityEngine;
 
 namespace Unity.Muse.Sprite.Common
@@ -42,8 +41,8 @@ namespace Unity.Muse.Sprite.Common
             }
             else
             {
-                EditorApplication.update -= ScheduleTick;
-                EditorApplication.update += ScheduleTick;
+                UnityEditor.EditorApplication.update -= ScheduleTick;
+                UnityEditor.EditorApplication.update += ScheduleTick;
             }
 #else
             if (m_SchedulerGO == null)
@@ -89,17 +88,27 @@ namespace Unity.Muse.Sprite.Common
             }
 #if UNITY_EDITOR
             if(s_Schedules.Count == 0)
-                EditorApplication.update -= ScheduleTick;
+                UnityEditor.EditorApplication.update -= ScheduleTick;
 #endif
         }
 
         internal static void Flush()
         {
-            for (int i = 0; i < s_Schedules.Count; ++i)
+            s_Schedules.Clear();
+            
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.update -= ScheduleTick;
+#endif
+            if (m_SchedulerGO)
             {
-                s_Schedules[i].callback?.Invoke();
-                s_Schedules.RemoveAt(i);
-                --i;
+#if UNITY_EDITOR
+                if (UnityEditor.EditorApplication.isPlaying)
+                    UnityEngine.Object.Destroy(m_SchedulerGO.gameObject);
+                else 
+                    UnityEngine.Object.DestroyImmediate(m_SchedulerGO.gameObject);
+#else
+                UnityEngine.Object.Destroy(m_SchedulerGO.gameObject);
+#endif
             }
         }
     }

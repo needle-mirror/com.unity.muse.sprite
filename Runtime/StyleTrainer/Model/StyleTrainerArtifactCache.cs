@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using System.Threading;
 using Unity.Muse.Common;
 using UnityEngine;
 using MuseArtifact = Unity.Muse.Common.Artifact;
@@ -11,13 +10,13 @@ namespace Unity.Muse.StyleTrainer
     {
         BaseArtifactCache m_ArtifactCache;
         string m_ArtifactCachePath;
-        Mutex m_Mutex;
+        readonly object m_Mutex;
 
         public StyleTrainerArtifactCache(string artifactCachePath)
         {
             m_ArtifactCachePath = artifactCachePath;
 
-            m_Mutex = new Mutex(true);
+            m_Mutex = new object();
 
             CreateCache();
         }
@@ -42,31 +41,31 @@ namespace Unity.Muse.StyleTrainer
         void CacheOperation(Action<BaseArtifactCache> operation)
         {
             bool failedToRun = false;
-            m_Mutex.WaitOne();
-            try
+            lock (m_Mutex)
             {
-                operation(m_ArtifactCache);
-            }
-            catch (Exception e)
-            {
-                failedToRun = true;
-                UnityEngine.Debug.LogError($"Error accessing cache. Attempt to recreate cache file\nerror: {e.Message}");
                 try
                 {
-                    m_ArtifactCache.Dispose();
+                    operation(m_ArtifactCache);
+                }
+                catch (Exception)
+                {
+                    failedToRun = true;
+                    try
+                    {
+                        m_ArtifactCache.Dispose();
+                    }
+                    finally
+                    {
+                        DeleteCacheFile();
+                        m_ArtifactCache = null;
+                        CreateCache();
+                    }
                 }
                 finally
                 {
-                    DeleteCacheFile();
-                    m_ArtifactCache = null;
-                    CreateCache();
+                    if (failedToRun)
+                        operation(m_ArtifactCache);
                 }
-            }
-            finally
-            {
-                if (failedToRun)
-                    operation(m_ArtifactCache);
-                m_Mutex.ReleaseMutex();
             }
         }
 

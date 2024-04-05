@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Unity.AppUI.UI;
+using Unity.Muse.AppUI.UI;
 using Unity.Muse.Common;
 using Unity.Muse.Sprite.Common.Events;
 using Unity.Muse.Sprite.Artifacts;
@@ -11,8 +11,8 @@ using Unity.Muse.Sprite.Data;
 using UnityEngine;
 using UnityEngine.Scripting;
 using UnityEngine.UIElements;
-using Button = Unity.AppUI.UI.Button;
-using TextField = Unity.AppUI.UI.TextField;
+using Button = Unity.Muse.AppUI.UI.Button;
+using TextField = Unity.Muse.AppUI.UI.TextField;
 
 namespace Unity.Muse.Sprite.Operators
 {

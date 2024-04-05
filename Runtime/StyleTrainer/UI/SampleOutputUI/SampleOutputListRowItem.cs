@@ -1,4 +1,4 @@
-using Unity.AppUI.UI;
+using Unity.Muse.AppUI.UI;
 using UnityEngine.UIElements;
 
 namespace Unity.Muse.StyleTrainer

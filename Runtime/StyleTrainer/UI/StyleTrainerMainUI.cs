@@ -1,5 +1,5 @@
 using System;
-using Unity.AppUI.UI;
+using Unity.Muse.AppUI.UI;
 using Unity.Muse.Common;
 using Unity.Muse.Common.Account;
 using Unity.Muse.Sprite.Common.Events;
@@ -7,7 +7,7 @@ using Unity.Muse.StyleTrainer.Events.StyleTrainerMainUIEvents;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
-using Button = Unity.AppUI.UI.Button;
+using Button = Unity.Muse.AppUI.UI.Button;
 
 namespace Unity.Muse.StyleTrainer
 {

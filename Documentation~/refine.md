@@ -15,7 +15,7 @@ Use a mask to refine any part of a generated sprite. Adjust the mask with brush 
    > [!TIP]
    > You can also double-click a generated sprite in the **Generations** panel to enter the Refinements branch.
 
-1. To activate the masking brush, select the **Paint** icon. For more information about the masking tools, refer to [Refine panel](xref:ui-elements#refine-panel) reference.
+1. To activate the masking brush, select the **Paint** icon. For more information about the masking tools, refer to [Refine panel](xref:ui-elements#refine-panel) reference and [Keyboard shortcuts](xref:keyboard-shortcuts#refine-panel).
 1. Paint a mask over the area that you want to refine.
 1. Enter a prompt that describes the desired refinement.
 1. Select **Generate**. This regenerates subjects in the masked area.

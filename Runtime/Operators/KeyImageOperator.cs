@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using Unity.AppUI.UI;
+using Unity.Muse.AppUI.UI;
 using Unity.Muse.Common;
 using Unity.Muse.Common.Tools;
 using Unity.Muse.Sprite.Backend;
@@ -10,7 +10,7 @@ using Unity.Muse.Sprite.UIComponents;
 using UnityEngine;
 using UnityEngine.Scripting;
 using UnityEngine.UIElements;
-using Button = Unity.AppUI.UI.Button;
+using Button = Unity.Muse.AppUI.UI.Button;
 using TextContent = Unity.Muse.Sprite.UIComponents.TextContent;
 
 namespace Unity.Muse.Sprite.Operators
@@ -153,8 +153,30 @@ namespace Unity.Muse.Sprite.Operators
             controlButtonsLeft.AddToClassList(controlButtonsContainerLeftClassName);
             controlButtons.Add(controlButtonsLeft);
 
-            m_BrushButton = new ActionButton(ToggleBrush) { icon = "paint-brush", accent = true, tooltip = TextContent.doodleBrushTooltip };
-            m_EraserButton = new ActionButton(ToggleEraser) { icon = "eraser", accent = true, tooltip = TextContent.doodleEraserTooltip };
+
+            m_BrushButton = new ActionButton(ToggleBrush)
+                { icon = "paint-brush", tooltip = TextContent.doodleBrushTooltip };
+            m_EraserButton = new ActionButton(ToggleEraser)
+                { icon = "eraser", tooltip = TextContent.doodleEraserTooltip };
+
+            controlButtonsLeft.Add(m_BrushButton);
+            controlButtonsLeft.Add(m_EraserButton);
+            controlButtonsLeft.AddToClassList("right-gap");
+
+#if UNITY_EDITOR
+            m_ScenePicker = new SpritePicker();
+            m_ScenePicker.onSelectedObject += OnScenePickerSelectedObject;
+            m_ScenePicker.onPickStart += UpdateVisibility;
+            m_ScenePicker.onPickEnd += UpdateVisibility;
+
+            m_PickerButton = new ActionButton(ToggleEditorSelection)
+                { icon = "color-picker", tooltip = TextContent.doodleSelectorTooltip };
+            m_PickerButton.AddToClassList("right-gap");
+
+            m_PickerButton.AddManipulator(m_ScenePicker);
+            controlButtonsLeft.Add(m_PickerButton);
+#endif
+
             m_BrushSizeSlider = new TouchSliderFloat
             {
                 tooltip = TextContent.doodleBrushSizeTooltip,
@@ -165,20 +187,9 @@ namespace Unity.Muse.Sprite.Operators
             m_BrushSizeSlider.RegisterValueChangedCallback(OnBrushSizeChanged);
             m_BrushSizeSlider.RegisterValueChangingCallback(OnBrushSizeChanging);
             m_BrushSizeSlider.label = "Radius";
-            controlButtonsLeft.Add(m_BrushButton);
-            controlButtonsLeft.Add(m_EraserButton);
+            m_BrushSizeSlider.AddToClassList("right-gap");
 
-#if UNITY_EDITOR
-            m_ScenePicker = new SpritePicker();
-            m_ScenePicker.onSelectedObject += OnScenePickerSelectedObject;
-            m_ScenePicker.onPickStart += UpdateVisibility;
-            m_ScenePicker.onPickEnd += UpdateVisibility;
-            m_PickerButton = new ActionButton(ToggleEditorSelection) { icon = "color-picker", accent = true, tooltip = TextContent.doodleSelectorTooltip };
-            m_PickerButton.AddManipulator(m_ScenePicker);
-            controlButtonsLeft.Add(m_PickerButton);
-#endif
             controlButtons.Add(m_BrushSizeSlider);
-
             var controlButtonsRight = new VisualElement();
             controlButtonsRight.AddToClassList(controlButtonsContainerRightClassName);
             controlButtons.Add(controlButtonsRight);

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Unity.Muse.Common;
 using Unity.Muse.Sprite.Backend;
 using Unity.Muse.Sprite.Common.Backend;
@@ -172,8 +173,30 @@ namespace Unity.Muse.Sprite.Operators
             var mask = GetTexture();
             if (mask is null)
                 return null;
+            var ui = new Image { image = mask };
+            if(!model.isRefineMode)
+            {
+                ui.userData = GenerationSettingsView.HideUse;
+            }
 
-            return new Image { image = mask };
+            return ui;
+        }
+
+        public bool EvaluateAddOperator(Model model)
+        {
+            return model.isRefineMode;
+        }
+
+        public void OnOperatorRemoved(List<IOperator> removedInOperators)
+        {
+            var keyImageOperator = removedInOperators.Find(x => x is KeyImageOperator) as KeyImageOperator;
+            if (keyImageOperator != null)
+            {
+                keyImageOperator.Enable(true);
+                return;
+            }
+
+            removedInOperators.Add(new KeyImageOperator());
         }
     }
 }

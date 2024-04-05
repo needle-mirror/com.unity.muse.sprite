@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Unity.AppUI.UI;
+using Unity.Muse.AppUI.UI;
 using Unity.Muse.Common;
 using Unity.Muse.Sprite.Artifacts;
 using Unity.Muse.Sprite.Common.Backend;
@@ -17,7 +17,6 @@ namespace Unity.Muse.Sprite.UIComponents
         ActionButton m_ActionButton;
         VisualElement m_ButtonContainer;
         ActionButton m_BookmarkButton;
-        ActionButton m_DislikeButton;
         VisualElement m_LeftVerticalContainer;
 
         float m_ButtonWidth = 0f;
@@ -61,16 +60,6 @@ namespace Unity.Muse.Sprite.UIComponents
             m_BookmarkButton.clicked += OnBookmarkClicked;
             m_BookmarkButton.AddToClassList("container-button");
             m_LeftVerticalContainer.Add(m_BookmarkButton);
-
-            m_DislikeButton = new ActionButton
-            {
-                tooltip = Muse.Common.TextContent.dislikeTooltip,
-                icon = "dislike"
-            };
-            m_DislikeButton.clicked += OnDislikeClicked;
-            m_DislikeButton.AddToClassList("container-button");
-            m_DislikeButton.AddToClassList("dislike-button");
-            m_LeftVerticalContainer.Add(m_DislikeButton);
 
             m_PreviewImage.OnLoadedPreview += UpdateView;
             m_PreviewImage.OnDelete += DeleteCurrentModel;
@@ -117,7 +106,6 @@ namespace Unity.Muse.Sprite.UIComponents
 
         void OnAttachToPanel(AttachToPanelEvent evt)
         {
-            UpdateFeedback();
             UpdateBookmark();
             UpdateView();
         }
@@ -149,21 +137,6 @@ namespace Unity.Muse.Sprite.UIComponents
             var isBookmarked = IsBookmarked();
             m_BookmarkButton.EnableInClassList("bookmarked", isBookmarked);
             m_BookmarkButton.icon = isBookmarked ? "star-filled" : "star";
-        }
-
-        void OnDislikeClicked()
-        {
-            var feedbackManager = CurrentModel.GetData<FeedbackManager>();
-            feedbackManager.ToggleDislike(m_Artifact);
-
-            UpdateFeedback();
-        }
-
-        void UpdateFeedback()
-        {
-            var feedbackManager = CurrentModel.GetData<FeedbackManager>();
-            var isDisliked = feedbackManager.IsDisliked(m_Artifact);
-            m_DislikeButton.icon = isDisliked ? "dislike-filled" : "dislike";
         }
 
         void UpdateButtons()

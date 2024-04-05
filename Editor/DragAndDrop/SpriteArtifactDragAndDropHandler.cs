@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -13,6 +14,8 @@ namespace Unity.Muse.Sprite.Editor.DragAndDrop
     sealed class SpriteArtifactDragAndDropHandler : IArtifactDragAndDropHandler
     {
         SpriteMuseArtifact m_Artifact;
+
+        public event Action<string, Artifact> ArtifactDropped;
 
         public static void Register()
         {
@@ -30,6 +33,8 @@ namespace Unity.Muse.Sprite.Editor.DragAndDrop
         {
             Model.SendAnalytics(new SaveSpriteData {drag_destination = SpriteSaveDestination.SceneView, is_drag = true, material_hash = ""});
             CreateNewSprite(worldPosition);
+
+            ArtifactDropped?.Invoke(null, m_Artifact);
         }
 
         public bool CanDropHierarchy(GameObject dropUpon) => true;
@@ -38,6 +43,8 @@ namespace Unity.Muse.Sprite.Editor.DragAndDrop
         {
             Model.SendAnalytics(new SaveSpriteData {drag_destination = SpriteSaveDestination.HierarchyWindow, is_drag = true, material_hash = ""});
             CreateNewSprite(Vector3.zero);
+
+            ArtifactDropped?.Invoke(null, m_Artifact);
         }
 
         public bool CanDropProject(string path) => true;
@@ -50,7 +57,11 @@ namespace Unity.Muse.Sprite.Editor.DragAndDrop
                 path = ExporterHelpers.assetsRoot;
 
             Model.SendAnalytics(new SaveSpriteData {drag_destination = SpriteSaveDestination.ProjectWindow, is_drag = true, material_hash = ""});
-            m_Artifact.ExportToDirectory(path);
+
+            m_Artifact.ExportToDirectory(path, true, exportedPath =>
+            {
+                ArtifactDropped?.Invoke(exportedPath, m_Artifact);
+            });
         }
 
         void CreateNewSprite(Vector3 position)

@@ -1,5 +1,5 @@
 using System;
-using Unity.AppUI.UI;
+using Unity.Muse.AppUI.UI;
 using Unity.Muse.Common;
 using Unity.Muse.Common.Account;
 using UnityEditor;
@@ -21,7 +21,7 @@ namespace Unity.Muse.StyleTrainer.Editor
         StyleModelController m_Controller;
         StyleTrainerMainUI m_MainUI;
 
-        [UnityEditor.MenuItem("Muse/Style Trainer")]
+        [UnityEditor.MenuItem("Muse/Style Trainer", false, 100)]
         static void Launch()
         {
             OpenAsset(Preference.project);

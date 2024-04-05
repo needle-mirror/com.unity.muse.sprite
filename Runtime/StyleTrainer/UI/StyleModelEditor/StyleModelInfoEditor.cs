@@ -1,5 +1,5 @@
 using System;
-using Unity.AppUI.UI;
+using Unity.Muse.AppUI.UI;
 using Unity.Muse.Common;
 using Unity.Muse.Sprite.Common.Events;
 using Unity.Muse.StyleTrainer.Events.SampleOutputModelEvents;

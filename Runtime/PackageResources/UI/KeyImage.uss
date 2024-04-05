@@ -4,8 +4,7 @@
 
 .appui-sprite-keyimage__image-container {
     border-width: var(--appui-alias-control-border-width);
-    background-color: var(--appui-base-100);
-    border-color: var(--appui-base-400);
+    background-color: var(--appui-backgrounds-100);
     justify-content: center;
     align-items: center;
 }
@@ -45,6 +44,5 @@
 
 #brush-size-slider {
     flex-grow: 1;
-    margin-left: 2px;
-    margin-right: 2px;
+    width: 120px;
 }

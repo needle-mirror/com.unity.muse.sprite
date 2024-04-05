@@ -39,5 +39,14 @@ namespace Unity.Muse.StyleTrainer
                 return m_ArtifactCache;
             }
         }
+
+        void OnDisable()
+        {
+            if (m_ArtifactCache != null)
+            {
+                m_ArtifactCache.Dispose();
+                m_ArtifactCache = null;
+            }
+        }
     }
 }

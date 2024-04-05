@@ -1,5 +1,5 @@
 using System;
-using Unity.AppUI.UI;
+using Unity.Muse.AppUI.UI;
 using Unity.Muse.Sprite.Common.Events;
 using UnityEngine;
 

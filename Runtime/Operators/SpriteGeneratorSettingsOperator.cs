@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using Unity.AppUI.UI;
+using Unity.Muse.AppUI.UI;
 using Unity.Muse.Common;
 using Unity.Muse.Sprite.Backend;
 using Unity.Muse.Sprite.Common.Backend;
@@ -12,10 +12,10 @@ using Unity.Muse.StyleTrainer;
 using UnityEngine;
 using UnityEngine.Scripting;
 using UnityEngine.UIElements;
-using Text = Unity.AppUI.UI.Text;
+using Text = Unity.Muse.AppUI.UI.Text;
 using TextContent = Unity.Muse.Sprite.UIComponents.TextContent;
-using TextOverflow = Unity.AppUI.UI.TextOverflow;
-using Toggle = Unity.AppUI.UI.Toggle;
+using TextOverflow = Unity.Muse.AppUI.UI.TextOverflow;
+using Toggle = Unity.Muse.AppUI.UI.Toggle;
 
 namespace Unity.Muse.Sprite.Operators
 {

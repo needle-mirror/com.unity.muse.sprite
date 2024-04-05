@@ -1,8 +1,8 @@
 using System;
-using Unity.AppUI.UI;
+using Unity.Muse.AppUI.UI;
 using UnityEngine;
 using UnityEngine.UIElements;
-using Toggle = Unity.AppUI.UI.Toggle;
+using Toggle = Unity.Muse.AppUI.UI.Toggle;
 
 namespace Unity.Muse.Sprite.UIComponents
 {
