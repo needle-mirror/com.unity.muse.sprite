@@ -29,83 +29,58 @@ namespace Unity.Muse.StyleTrainer
                 description = "Cannot generate style",
                 semantic = AlertSemantic.Error
             };
-            var config = StyleTrainerConfig.config;
 
             // Validate style name and description
-            if (string.IsNullOrWhiteSpace(m_StyleData.title) || string.IsNullOrWhiteSpace(m_StyleData.description))
-            {
-                showDialogEvent.description = $"Version's name and description cannot be empty.";
-                m_EventBus.SendEvent(showDialogEvent);
-                m_OnDoneCallback.Invoke(false);
-                return;
-            }
+            if (!HasValidNameAndDescription(showDialogEvent, true)) return;
 
-            // validate sample output
-            if (m_StyleData.sampleOutputPrompts?.Count < config.minSampleSetSize)
-            {
-                showDialogEvent.description = $"Sample output must have at least {config.minSampleSetSize} samples";
-                showDialogEvent.confirmAction = () =>
-                {
-                    m_EventBus.SendEvent(new RequestChangeTabEvent { tabIndex = StyleModelInfoEditor.k_SampleOutputTab });
-                };
-                m_EventBus.SendEvent(showDialogEvent);
-                m_OnDoneCallback.Invoke(false);
-                return;
-            }
+            // Validate sample output
+            if (IsPracticePromptsCountBelowMinSize(showDialogEvent, true)) return;
+            if (IsPracticePromptsCountExceedingMaxSize(showDialogEvent, true)) return;
 
-            if (m_StyleData.sampleOutputPrompts?.Count > config.maxSampleSetSize)
-            {
-                showDialogEvent.description = $"Sample output must have at most {config.maxSampleSetSize} samples";
-                showDialogEvent.confirmAction = () =>
-                {
-                    m_EventBus.SendEvent(new RequestChangeTabEvent { tabIndex = StyleModelInfoEditor.k_SampleOutputTab });
-                };
-                m_EventBus.SendEvent(showDialogEvent);
-                m_OnDoneCallback.Invoke(false);
-                return;
-            }
+            // Validate training set
+            if (IsTrainingSetImagesCountBelowMinSize(showDialogEvent, true)) return;
+            if (IsTrainingSetImagesCountExceedingMaxSize(showDialogEvent, true)) return;
 
-            if (m_StyleData.trainingSetData?.Count < 1 || m_StyleData.trainingSetData[0]?.Count < config.minTrainingSetSize)
-            {
-                showDialogEvent.description = $"Training set must have at least {config.minTrainingSetSize} samples";
-                showDialogEvent.confirmAction = () =>
-                {
-                    m_EventBus.SendEvent(new RequestChangeTabEvent { tabIndex = StyleModelInfoEditor.k_TrainingSetTab });
-                };
-                m_EventBus.SendEvent(showDialogEvent);
-                m_OnDoneCallback.Invoke(false);
-                return;
-            }
+            if (HasEmptyPrompts(showDialogEvent, true)) return;
+            if (HasDuplicatePrompts(showDialogEvent, true)) return;
 
-            if (m_StyleData.trainingSetData?.Count < 1 || m_StyleData.trainingSetData[0]?.Count > config.maxTrainingSetSize)
-            {
-                showDialogEvent.description = $"Training set must have at most {config.maxTrainingSetSize} samples";
-                showDialogEvent.confirmAction = () =>
-                {
-                    m_EventBus.SendEvent(new RequestChangeTabEvent { tabIndex = StyleModelInfoEditor.k_TrainingSetTab });
-                };
-                m_EventBus.SendEvent(showDialogEvent);
-                m_OnDoneCallback.Invoke(false);
-                return;
-            }
+            //validate training are all unique
+            m_TrainingImagesLoaded = 0;
+            for (var i = 0; i < m_StyleData.trainingSetData[0]?.Count; ++i) m_StyleData.trainingSetData[0][i].imageArtifact.GetArtifact(_ => ValidateTrainingSetImages(), true);
+        }
 
-            var duplicatedItem = new List<int>();
-
+        internal bool HasEmptyPrompts(ShowDialogEvent showDialogEvent, bool showDialog)
+        {
             // check if any of the samples are empty
             for (var i = 0; i < m_StyleData.sampleOutputPrompts?.Count; ++i)
             {
                 var prompt1 = m_StyleData.sampleOutputPrompts[i];
                 if (string.IsNullOrWhiteSpace(prompt1))
                 {
-                    showDialogEvent.description = $"Sample output cannot have empty prompts.";
-                    showDialogEvent.confirmAction = () =>
+                    if (showDialog)
                     {
-                        m_EventBus.SendEvent(new RequestChangeTabEvent { tabIndex = StyleModelInfoEditor.k_SampleOutputTab });
-                    };
-                    m_EventBus.SendEvent(showDialogEvent);
-                    m_OnDoneCallback.Invoke(false);
-                    return;
+                        showDialogEvent.description = $"Practice prompts cannot have empty prompts.";
+                        showDialogEvent.confirmAction = () =>
+                        {
+                            m_EventBus.SendEvent(new RequestChangeTabEvent { tabIndex = StyleModelInfoEditor.sampleOutputTab });
+                        };
+                        m_EventBus.SendEvent(showDialogEvent);
+                        m_OnDoneCallback.Invoke(false);
+                    }
+                    return true;
                 }
+            }
+
+            return false;
+        }
+
+        internal bool HasDuplicatePrompts(ShowDialogEvent showDialogEvent, bool showDialog)
+        {
+            var duplicatedItem = new List<int>();
+
+            for (var i = 0; i < m_StyleData.sampleOutputPrompts?.Count; ++i)
+            {
+                var prompt1 = m_StyleData.sampleOutputPrompts[i];
 
                 duplicatedItem.Clear();
                 for (var j = i + 1; j < m_StyleData.sampleOutputPrompts?.Count; ++j)
@@ -115,24 +90,135 @@ namespace Unity.Muse.StyleTrainer
                 if (duplicatedItem.Count > 0)
                 {
                     duplicatedItem.Add(i);
-                    showDialogEvent.description = "One of the sample prompt is a duplicate. Please review your sample prompts.";
-                    showDialogEvent.confirmAction = () =>
+                    if (showDialog)
                     {
-                        m_EventBus.SendEvent(new RequestChangeTabEvent
+                        showDialogEvent.description = "One of the practice prompts is a duplicate. Please review your practice prompts.";
+                        showDialogEvent.confirmAction = () =>
                         {
-                            tabIndex = StyleModelInfoEditor.k_SampleOutputTab,
-                            highlightIndices = duplicatedItem.AsReadOnly()
-                        });
-                    };
-                    m_EventBus.SendEvent(showDialogEvent);
-                    m_OnDoneCallback.Invoke(false);
-                    return;
+                            m_EventBus.SendEvent(new RequestChangeTabEvent
+                            {
+                                tabIndex = StyleModelInfoEditor.sampleOutputTab,
+                                highlightIndices = duplicatedItem.AsReadOnly()
+                            });
+                        };
+                        m_EventBus.SendEvent(showDialogEvent);
+                        m_OnDoneCallback.Invoke(false);
+                    }
+
+                    return true;
                 }
             }
 
-            //validate training are all unique
-            m_TrainingImagesLoaded = 0;
-            for (var i = 0; i < m_StyleData.trainingSetData[0]?.Count; ++i) m_StyleData.trainingSetData[0][i].imageArtifact.GetArtifact(_ => ValidateTrainingSetImages(), true);
+            return false;
+        }
+
+        bool IsPracticePromptsCountBelowMinSize(ShowDialogEvent showDialogEvent, bool showDialog)
+        {
+            var config = StyleTrainerConfig.config;
+
+            if (m_StyleData.sampleOutputPrompts?.Count < config.minSampleSetSize)
+            {
+                if (showDialog)
+                {
+                    showDialogEvent.description = $"Practice prompts must have at least {config.minSampleSetSize} prompts";
+                    showDialogEvent.confirmAction = () =>
+                    {
+                        m_EventBus.SendEvent(new RequestChangeTabEvent { tabIndex = StyleModelInfoEditor.sampleOutputTab });
+                    };
+                    m_EventBus.SendEvent(showDialogEvent);
+                    m_OnDoneCallback.Invoke(false);
+                }
+
+                return true;
+            }
+
+            return false;
+        }
+
+        bool IsPracticePromptsCountExceedingMaxSize(ShowDialogEvent showDialogEvent, bool showDialog)
+        {
+            var config = StyleTrainerConfig.config;
+
+            if (m_StyleData.sampleOutputPrompts?.Count > config.maxSampleSetSize)
+            {
+                if (showDialog)
+                {
+                    showDialogEvent.description = $"Practice prompts must have at most {config.maxSampleSetSize} prompts";
+                    showDialogEvent.confirmAction = () =>
+                    {
+                        m_EventBus.SendEvent(new RequestChangeTabEvent { tabIndex = StyleModelInfoEditor.sampleOutputTab });
+                    };
+                    m_EventBus.SendEvent(showDialogEvent);
+                    m_OnDoneCallback.Invoke(false);
+                }
+
+                return true;
+            }
+
+            return false;
+        }
+
+        internal bool IsTrainingSetImagesCountBelowMinSize(ShowDialogEvent showDialogEvent, bool showDialog)
+        {
+            var config = StyleTrainerConfig.config;
+
+            if(m_StyleData.trainingSetData?.Count < 1 || m_StyleData.trainingSetData[0]?.Count < config.minTrainingSetSize)
+            {
+                if (showDialog)
+                {
+                    showDialogEvent.description = $"Training set must have at least {config.minTrainingSetSize} samples";
+                    showDialogEvent.confirmAction = () =>
+                    {
+                        m_EventBus.SendEvent(new RequestChangeTabEvent { tabIndex = StyleModelInfoEditor.trainingSetTab });
+                    };
+                    m_EventBus.SendEvent(showDialogEvent);
+                    m_OnDoneCallback.Invoke(false);
+                }
+
+                return true;
+            }
+
+            return false;
+        }
+
+        bool IsTrainingSetImagesCountExceedingMaxSize(ShowDialogEvent showDialogEvent, bool showDialog)
+        {
+            var config = StyleTrainerConfig.config;
+
+            if(m_StyleData.trainingSetData?.Count < 1 || m_StyleData.trainingSetData[0]?.Count > config.maxTrainingSetSize)
+            {
+                if (showDialog)
+                {
+                    showDialogEvent.description = $"Training set must have at most {config.maxTrainingSetSize} samples";
+                    showDialogEvent.confirmAction = () =>
+                    {
+                        m_EventBus.SendEvent(new RequestChangeTabEvent { tabIndex = StyleModelInfoEditor.trainingSetTab });
+                    };
+                    m_EventBus.SendEvent(showDialogEvent);
+                    m_OnDoneCallback.Invoke(false);
+                }
+
+                return true;
+            }
+
+            return false;
+        }
+
+        internal bool HasValidNameAndDescription(ShowDialogEvent showDialogEvent, bool showDialog)
+        {
+            if (string.IsNullOrWhiteSpace(m_StyleData.title) || string.IsNullOrWhiteSpace(m_StyleData.description))
+            {
+                if (showDialog)
+                {
+                    showDialogEvent.description = $"Style name and description cannot be empty.";
+                    m_EventBus.SendEvent(showDialogEvent);
+                    m_OnDoneCallback.Invoke(false);
+                }
+
+                return false;
+            }
+
+            return true;
         }
 
         void ValidateTrainingSetImages()
@@ -170,7 +256,7 @@ namespace Unity.Muse.StyleTrainer
                     {
                         m_EventBus.SendEvent(new RequestChangeTabEvent
                         {
-                            tabIndex = StyleModelInfoEditor.k_TrainingSetTab,
+                            tabIndex = StyleModelInfoEditor.trainingSetTab,
                             highlightIndices = duplicatedItem.AsReadOnly()
                         });
                     };

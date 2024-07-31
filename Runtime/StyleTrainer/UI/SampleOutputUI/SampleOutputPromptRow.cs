@@ -20,20 +20,40 @@ namespace Unity.Muse.StyleTrainer
         public Action<int> OnSampleOutputPromptDeleteClicked;
         const float k_RowMaxHeight = 100f;
         float m_PromptDimensionRatio = k_PromptDimensionRatio;
+        List<string> m_PlaceHolders = new ()
+        {
+            "Eg. Cat with a hat",
+            "Eg. Castle on a hill",
+            "Eg. Car with six wheels"
+        };
+        List<SampleOutputPromptInput> m_Prompts;
+
         protected SampleOutputPromptRow() { }
 
         public void BindElements(StyleData styleData)
         {
+            m_Prompts ??= new List<SampleOutputPromptInput>();
             ClearContent();
             m_StyleData = styleData;
 
+            for (int i = m_Prompts.Count; i < m_StyleData.sampleOutputPrompts.Count; i++)
+            {
+                m_Prompts.Add(SampleOutputPromptInput.CreateFromUxml());
+            }
+
             for(int i = 0; i < m_StyleData.sampleOutputPrompts.Count; i++)
             {
-                var input = SampleOutputPromptInput.CreateFromUxml();
+                var input = m_Prompts[i];
                 input.itemIndex = i;
                 input.prompt = m_StyleData.sampleOutputPrompts[i];
-                input.OnPromptChanged += OnPromptChanged;
-                input.OnDeleteClicked += OnDeleteClicked;
+
+                if (i < m_PlaceHolders.Count)
+                {
+                    input.SetPlaceholder(m_PlaceHolders[i]);
+                }
+
+                input.OnPromptChanged += UpdatePromptInput;
+                input.OnPromptChanging += UpdatePromptInput;
                 var rowItem = CreateRowItem(input, m_PromptDimensionRatio);
                 m_RowItems.Add(new RowItemData
                 {
@@ -44,26 +64,21 @@ namespace Unity.Muse.StyleTrainer
             }
         }
 
-        public void ClearContent()
+        void ClearContent()
         {
             for(int i = 0; i < m_RowItems.Count; i++)
             {
-                m_RowItems[i].promptInput.OnPromptChanged -= OnPromptChanged;
-                m_RowItems[i].promptInput.OnDeleteClicked -= OnDeleteClicked;
+                m_RowItems[i].promptInput.OnPromptChanged -= UpdatePromptInput;
+                m_RowItems[i].promptInput.OnPromptChanging -= UpdatePromptInput;
             }
 
-            this.Clear();
+            Clear();
             m_RowItems.Clear();
         }
 
-        void OnDeleteClicked(int obj)
+        void UpdatePromptInput(int index, string prompt)
         {
-            OnSampleOutputPromptDeleteClicked?.Invoke(obj);
-        }
-
-        void OnPromptChanged(int arg1, string arg2)
-        {
-            m_RowItems[arg1].promptInput.prompt = m_StyleData.UpdateSamplePrompt(arg1, arg2);
+            m_RowItems[index].promptInput.prompt = m_StyleData.UpdateSamplePrompt(index, prompt);
         }
 
         internal static SampleOutputPromptRow CreateFromUxml(StyleData styleData, float height)

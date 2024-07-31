@@ -1,8 +1,8 @@
 using System;
-using System.Collections.Generic;
+using Unity.Muse.Sprite.Common;
 using Unity.Muse.Sprite.Common.Backend;
+using Unity.Muse.Sprite.Common.DebugConfig;
 using UnityEngine;
-using UnityEngine.Networking;
 
 namespace Unity.Muse.Sprite.Backend
 {
@@ -47,6 +47,166 @@ namespace Unity.Muse.Sprite.Backend
                 return new[]
                 {
                     $"/api/v2/images/sprites/organizations/{request.organization_id}/projects/{request.asset_id}/generate",
+                };
+            }
+        }
+
+        protected override IQuarkEndpoint.EMethod[] methods => new [] {
+            IQuarkEndpoint.EMethod.POST,
+        };
+
+        protected override string RequestLog()
+        {
+            return $"Request:{MakeEndPoint(this)} Payload:{request.GetRequestLog()}";
+        }
+    }
+
+    internal class SpritePixelateRestCall : SpriteGeneratorRestCall<PixelateRequest, GenerateResponse, SpritePixelateRestCall>
+    {
+        public static class Status
+        {
+            public const string failed = "failed";
+            public const string completed = "done";
+            public const string waiting = "waiting";
+            public const string working = "working";
+        }
+
+        public SpritePixelateRestCall(ServerConfig asset, PixelateRequest request, string generatorProfile)
+            : base(asset, request)
+        {
+            request.access_token = asset.accessToken;
+            request.organization_id = asset.organizationId;
+            request.asset_id = generatorProfile;
+            this.request = request;
+        }
+
+        protected override string[] endPoints
+        {
+            get
+            {
+                return new[]
+                {
+                    $"/api/v2/images/sprites/organizations/{request.organization_id}/projects/{request.asset_id}/pixelate",
+                };
+            }
+        }
+
+        protected override IQuarkEndpoint.EMethod[] methods => new [] {
+            IQuarkEndpoint.EMethod.POST,
+        };
+
+        protected override string RequestLog()
+        {
+            return $"Request:{MakeEndPoint(this)} Payload:{request.GetRequestLog()}";
+        }
+    }
+
+    internal class SpriteRecolorRestCall : SpriteGeneratorRestCall<RecolorRequest, GenerateResponse, SpriteRecolorRestCall>
+    {
+        public static class Status
+        {
+            public const string failed = "failed";
+            public const string completed = "done";
+            public const string waiting = "waiting";
+            public const string working = "working";
+        }
+
+        public SpriteRecolorRestCall(ServerConfig asset, RecolorRequest request, string generatorProfile)
+            : base(asset, request)
+        {
+            request.access_token = asset.accessToken;
+            request.organization_id = asset.organizationId;
+            request.asset_id = generatorProfile;
+            this.request = request;
+        }
+
+        protected override string[] endPoints
+        {
+            get
+            {
+                return new[]
+                {
+                    $"/api/v2/images/sprites/organizations/{request.organization_id}/projects/{request.asset_id}/recolor",
+                };
+            }
+        }
+
+        protected override IQuarkEndpoint.EMethod[] methods => new[] {
+            IQuarkEndpoint.EMethod.POST,
+        };
+
+        protected override string RequestLog()
+        {
+            return $"Request:{MakeEndPoint(this)} Payload:{request.GetRequestLog()}";
+        }
+    }
+
+    internal class SpriteRemoveBackgroundRestCall : SpriteGeneratorRestCall<RemoveBackgroundRequest, GenerateResponse, SpriteRemoveBackgroundRestCall>
+    {
+        public static class Status
+        {
+            public const string failed = "failed";
+            public const string completed = "done";
+            public const string waiting = "waiting";
+            public const string working = "working";
+        }
+
+        public SpriteRemoveBackgroundRestCall(ServerConfig asset, RemoveBackgroundRequest request, string generatorProfile)
+            : base(asset, request)
+        {
+            request.access_token = asset.accessToken;
+            request.organization_id = asset.organizationId;
+            request.asset_id = generatorProfile;
+            this.request = request;
+        }
+
+        protected override string[] endPoints
+        {
+            get
+            {
+                return new[]
+                {
+                    $"/api/v2/images/sprites/organizations/{request.organization_id}/projects/{request.asset_id}/removebackground",
+                };
+            }
+        }
+
+        protected override IQuarkEndpoint.EMethod[] methods => new[] {
+            IQuarkEndpoint.EMethod.POST,
+        };
+
+        protected override string RequestLog()
+        {
+            return $"Request:{MakeEndPoint(this)} Payload:{request.GetRequestLog()}";
+        }
+    }
+
+    internal class SpriteUpscaleRestCall : SpriteGeneratorRestCall<UpscaleRequest, GenerateResponse, SpriteUpscaleRestCall>
+    {
+        public static class Status
+        {
+            public const string failed = "failed";
+            public const string completed = "done";
+            public const string waiting = "waiting";
+            public const string working = "working";
+        }
+
+        public SpriteUpscaleRestCall(ServerConfig asset, UpscaleRequest request, string generatorProfile)
+            : base(asset, request)
+        {
+            request.access_token = asset.accessToken;
+            request.organization_id = asset.organizationId;
+            request.asset_id = generatorProfile;
+            this.request = request;
+        }
+
+        protected override string[] endPoints
+        {
+            get
+            {
+                return new[]
+                {
+                    $"/api/v2/images/sprites/organizations/{request.organization_id}/projects/{request.asset_id}/upscale",
                 };
             }
         }
@@ -213,6 +373,7 @@ namespace Unity.Muse.Sprite.Backend
     {
         string m_ImageDownloadURL = string.Empty;
         GetArtifactUrlRestCall m_GetImageURL;
+        bool m_DownloadingImage = false;
 
         public GetArtifactRestCall(ServerConfig serverConfig, string guid)
             : base(serverConfig, new ServerRequest<EmptyPayload>())
@@ -239,11 +400,32 @@ namespace Unity.Muse.Sprite.Backend
             }
         }
 
+        protected override void MakeServerRequest()
+        {
+            if(DebugConfig.instance?.requestDebugLog == true)
+                Scheduler.ScheduleCallback(0.5f, ReportProgress);
+            base. MakeServerRequest();
+            m_DownloadingImage = true;
+        }
+
+        void ReportProgress()
+        {
+            if (restCallState == EState.InProgress)
+            {
+                if(DebugConfig.instance?.requestDebugLog == true)
+                    Scheduler.ScheduleCallback(0.5f, ReportProgress);
+                Debug.Log($"progress: {downloadProgress} bytes: {downloadedBytes} for {m_ImageDownloadURL}");
+            }
+        }
+
         void OnGetImageURLSuccess(GetArtifactUrlRestCall arg1, GetArtifactUrlResponse response)
         {
             m_ImageDownloadURL = response.url;
         }
 
+        public bool downloading => m_DownloadingImage;
+        public float downloadProgress => webRequest.downloadProgress;
+        public ulong downloadedBytes => webRequest.downloadBytes;
         public override string server => m_ImageDownloadURL;
 
         protected override string[] endPoints
@@ -358,6 +540,69 @@ namespace Unity.Muse.Sprite.Backend
             var logRequest = this with { };
             logRequest.base64Image = $"Image data removed for logging size:{logRequest.base64Image?.Length}";
             logRequest.mask64Image = $"Image data removed for logging size:{logRequest.mask64Image?.Length}";
+            return JsonUtility.ToJson(logRequest);
+        }
+    }
+
+    [Serializable]
+    record UpscaleRequest : BaseRequest
+    {
+        public string asset_id;
+        public string base64Image;
+        public int scale;
+
+        public string GetRequestLog()
+        {
+            var logRequest = this with { };
+            logRequest.base64Image = $"Image data removed for logging size:{logRequest.base64Image?.Length}";
+            return JsonUtility.ToJson(logRequest);
+        }
+    }
+
+    [Serializable]
+    record PixelateRequest : BaseRequest
+    {
+        public string asset_id;
+        public string base64Image;
+        public bool resizeToTargetSize;
+        public int targetSize;
+        public int pixelBlockSize;
+        public int mode;
+        public int outlineThickness;
+
+        public string GetRequestLog()
+        {
+            var logRequest = this with { };
+            logRequest.base64Image = $"Image data removed for logging size:{logRequest.base64Image?.Length}";
+            return JsonUtility.ToJson(logRequest);
+        }
+    }
+
+    [Serializable]
+    record RecolorRequest : BaseRequest
+    {
+        public string asset_id;
+        public string base64Image;
+        public string paletteImage;
+
+        public string GetRequestLog()
+        {
+            var logRequest = this with { };
+            logRequest.base64Image = $"Image data removed for logging size:{logRequest.base64Image?.Length}";
+            return JsonUtility.ToJson(logRequest);
+        }
+    }
+
+    [Serializable]
+    record RemoveBackgroundRequest : BaseRequest
+    {
+        public string asset_id;
+        public string base64Image;
+
+        public string GetRequestLog()
+        {
+            var logRequest = this with { };
+            logRequest.base64Image = $"Image data removed for logging size:{logRequest.base64Image?.Length}";
             return JsonUtility.ToJson(logRequest);
         }
     }

@@ -24,21 +24,6 @@
     border-color: var(--appui-accent-100);
 }
 
-.styletrainer-sampleoutputgriditem__deletebutton {
-    position: absolute;
-    top: 5px;
-    right: 5px;
-    display: none;
-}
-
-*:hover > .styletrainer-sampleoutputgriditem__deletebutton {
-    display: flex;
-}
-
-.styletrainer-sampleoutputview-gridview-disable .styletrainer-sampleoutputgriditem__deletebutton {
-    display: none;
-}
-
 .is-selected .delete-button-webgl {
     display: flex;
 }

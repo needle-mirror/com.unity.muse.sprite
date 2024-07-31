@@ -1,7 +1,9 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Threading;
 using Unity.Muse.Common;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -14,31 +16,39 @@ using UnityEditor;
 
 namespace Unity.Muse.Sprite.Common.Backend
 {
-    internal static class BackendUtilities
+    static class BackendUtilities
     {
         struct RequestQueue
         {
             public IWebRequest request;
             public Action<IWebRequest> onDone;
         }
-        static Queue<RequestQueue> s_Requests = new Queue<RequestQueue>();
-        static int s_RequestCount = 0;
+        static Queue<RequestQueue> s_Requests = new();
         const int k_MaxRequest = 10;
-        const int k_TrottleIncrease = 5;
-        const int k_TrottleDecrease = 1;
-        static float s_Trottle = 0;
+        const int k_ThrottleIncrease = 5;
+        const int k_ThrottleDecrease = 1;
+        static float s_Throttle = 0;
         public static float delayCall = 1;
+        static bool errorOnUnimplemented = true;
 
         public static IWebRequest SendRequest<T>(string url, string accessToken, T data, Action<IWebRequest> onDone, string method = "POST")
         {
+            if (!ServerConfig.serverConfig || ServerConfig.serverConfig.server == null)
+                return null; // server has shut down
             var request = ServerConfig.serverConfig.server.CreateWebRequest(url, method);
             if (request == null)
-                throw new NotImplementedException($"{url} is not implemented.");
-            if (!String.IsNullOrEmpty(accessToken))
+            {
+                var notImplementedException = new NotImplementedException($"{url} is not implemented.");
+                if (errorOnUnimplemented)
+                    throw notImplementedException;
+                Debug.LogException(notImplementedException);
+            }
+
+            if (!string.IsNullOrEmpty(accessToken))
                 request.SetRequestHeader("authorization", $"Bearer {accessToken}");
             if (method == "POST" || method == "PUT")
             {
-                string requestJSON = JsonUtility.ToJson(data);
+                var requestJSON = JsonUtility.ToJson(data);
                 request.SetRequestHeader("content-type", "application/json; charset=UTF-8");
                 request.SetPayload(Encoding.UTF8.GetBytes(requestJSON), "application/json");
             }
@@ -49,7 +59,7 @@ namespace Unity.Muse.Sprite.Common.Backend
 
         static void SendRequest(IWebRequest request, Action<IWebRequest> onDone)
         {
-            if(s_RequestCount != 0 && (s_RequestCount >= k_MaxRequest || s_Trottle > 0))
+            if (RequestCounter.Counter != 0 && (RequestCounter.Counter >= k_MaxRequest || s_Throttle > 0))
             {
                 s_Requests.Enqueue(new RequestQueue
                 {
@@ -61,16 +71,16 @@ namespace Unity.Muse.Sprite.Common.Backend
             }
             else
             {
-                ++s_RequestCount;
+                var requestCounter = new RequestCounter();
                 // we are sending all calls 1 second later in case there is a domain reload during startup.
                 Scheduler.ScheduleCallback(delayCall, () =>
                 {
                     request.SendWebRequest(x =>
                     {
-                        bool dispose = false;
+                        var dispose = false;
                         try
                         {
-                            --s_RequestCount;
+                            requestCounter.Dispose();
                             if (x.responseCode == 429)
                             {
                                 // we need to wait for a while and try again.
@@ -79,11 +89,11 @@ namespace Unity.Muse.Sprite.Common.Backend
                                     request = request.Recreate(),
                                     onDone = onDone
                                 });
-                                s_Trottle += k_TrottleIncrease;
+                                s_Throttle += k_ThrottleIncrease;
                             }
                             else
                             {
-                                s_Trottle = Mathf.Max(0, s_Trottle - k_TrottleDecrease);
+                                s_Throttle = Mathf.Max(0, s_Throttle - k_ThrottleDecrease);
                                 dispose = true;
                                 onDone(request);
                             }
@@ -96,16 +106,49 @@ namespace Unity.Muse.Sprite.Common.Backend
                         }
                     });
                 });
-
             }
         }
 
         static void SendNextRequest()
         {
-            if (s_Requests.Count > 0 && s_RequestCount < k_MaxRequest)
+            if (s_Requests.Count > 0 && RequestCounter.Counter < k_MaxRequest)
             {
                 var newRequest = s_Requests.Dequeue();
                 SendRequest(newRequest.request, newRequest.onDone);
+            }
+        }
+
+        // method is only used by tests
+        internal static IEnumerator WaitForEmptyBackend(float timeout = 30f)
+        {
+            errorOnUnimplemented = false;
+            try
+            {
+                var start = DateTime.UtcNow;
+                var timePassedInSeconds = 0f;
+
+                static bool Predicate()
+                {
+                    return RequestCounter.Counter == 0;
+                }
+
+                while (!Predicate() && timePassedInSeconds < timeout)
+                {
+                    var end = DateTime.UtcNow;
+                    var timeDiff = end - start;
+                    timePassedInSeconds = (float)timeDiff.TotalSeconds;
+
+                    yield return null;
+                }
+
+                if (!Predicate())
+                {
+                    Debug.LogWarning("Backend not empty after " + timeout + " seconds.");
+                }
+            }
+            finally
+            {
+                errorOnUnimplemented = true;
             }
         }
 
@@ -113,13 +156,13 @@ namespace Unity.Muse.Sprite.Common.Backend
         {
             //if (!ShaderUtil.hardwareSupportsRectRenderTexture || !(bool)(UnityEngine.Object)original)
             if (original == null)
-                return (Texture2D)null;
-            RenderTexture active = RenderTexture.active;
-            RenderTexture temporary = RenderTexture.GetTemporary(width, height, 0, RenderTextureFormat.ARGB32);
-            Graphics.Blit((UnityEngine.Texture)original, temporary);
+                return null;
+            var active = RenderTexture.active;
+            var temporary = RenderTexture.GetTemporary(width, height, 0, RenderTextureFormat.ARGB32);
+            Graphics.Blit(original, temporary);
             RenderTexture.active = temporary;
-            bool flag = width >= SystemInfo.maxTextureSize || height >= SystemInfo.maxTextureSize;
-            Texture2D temporaryDuplicate = new Texture2D(width, height, format, original.mipmapCount > 1 || flag);
+            var flag = width >= SystemInfo.maxTextureSize || height >= SystemInfo.maxTextureSize;
+            var temporaryDuplicate = new Texture2D(width, height, format, original.mipmapCount > 1 || flag);
             temporaryDuplicate.ReadPixels(new Rect(0.0f, 0.0f, (float)width, (float)height), 0, 0);
             temporaryDuplicate.Apply();
 #if UNITY_EDITOR
@@ -218,5 +261,44 @@ namespace Unity.Muse.Sprite.Common.Backend
             renderTexture.SafeDestroy();
             return copy;
         }
+
+        sealed class RequestCounter : IDisposable
+        {
+            static int s_Counter;
+
+            public static int Counter => s_Counter;
+
+            public RequestCounter()
+            {
+                Interlocked.Increment(ref s_Counter);
+            }
+
+            bool m_Disposed;
+
+            public void Dispose()
+            {
+                Dispose(true);
+                GC.SuppressFinalize(this);
+            }
+
+            void Dispose(bool disposing)
+            {
+                if (!m_Disposed)
+                {
+                    if (disposing)
+                    {
+                        Interlocked.Decrement(ref s_Counter);
+                    }
+
+                    m_Disposed = true;
+                }
+            }
+
+            ~RequestCounter()
+            {
+                Dispose(false);
+            }
+        }
+
     }
 }

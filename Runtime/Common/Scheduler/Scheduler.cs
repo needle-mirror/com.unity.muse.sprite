@@ -1,10 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace Unity.Muse.Sprite.Common
 {
-    internal static class Scheduler
+    static class Scheduler
     {
         struct ScheduleCallbackObject
         {
@@ -12,12 +13,12 @@ namespace Unity.Muse.Sprite.Common
             public DateTime startTime;
             public Action callback;
         }
-        static List<ScheduleCallbackObject> s_Schedules = new List<ScheduleCallbackObject>();
+        static List<ScheduleCallbackObject> s_Schedules = new();
         static SchedulerGameObject.SchedulerGO m_SchedulerGO;
 
-        static public bool IsCallScheduled(Action callback)
+        public static bool IsCallScheduled(Action callback)
         {
-            for (int i = 0; i < s_Schedules.Count; ++i)
+            for (var i = 0; i < s_Schedules.Count; ++i)
             {
                 if (s_Schedules[i].callback == callback)
                     return true;
@@ -26,7 +27,7 @@ namespace Unity.Muse.Sprite.Common
             return false;
         }
 
-        static public void ScheduleCallback(float timer, Action callback)
+        public static void ScheduleCallback(float timer, Action callback)
         {
 #if UNITY_EDITOR
             if (UnityEditor.EditorApplication.isPlaying)
@@ -41,8 +42,9 @@ namespace Unity.Muse.Sprite.Common
             }
             else
             {
-                UnityEditor.EditorApplication.update -= ScheduleTick;
-                UnityEditor.EditorApplication.update += ScheduleTick;
+                UnityEditor.EditorApplication.CallbackFunction callbackFunction = ScheduleTick;
+                if (!UnityEditor.EditorApplication.update.GetInvocationList().Contains(callbackFunction))
+                    UnityEditor.EditorApplication.update += ScheduleTick;
             }
 #else
             if (m_SchedulerGO == null)
@@ -73,10 +75,10 @@ namespace Unity.Muse.Sprite.Common
             m_SchedulerGO = null;
         }
 
-        static internal void ScheduleTick()
+        internal static void ScheduleTick()
         {
             var now = DateTime.Now;
-            for (int i = 0; i < s_Schedules.Count; ++i)
+            for (var i = 0; i < s_Schedules.Count; ++i)
             {
                 if (s_Schedules[i].timer <= (now - s_Schedules[i].startTime).TotalSeconds)
                 {
@@ -85,30 +87,6 @@ namespace Unity.Muse.Sprite.Common
                     callback.callback?.Invoke();
                     --i;
                 }
-            }
-#if UNITY_EDITOR
-            if(s_Schedules.Count == 0)
-                UnityEditor.EditorApplication.update -= ScheduleTick;
-#endif
-        }
-
-        internal static void Flush()
-        {
-            s_Schedules.Clear();
-            
-#if UNITY_EDITOR
-            UnityEditor.EditorApplication.update -= ScheduleTick;
-#endif
-            if (m_SchedulerGO)
-            {
-#if UNITY_EDITOR
-                if (UnityEditor.EditorApplication.isPlaying)
-                    UnityEngine.Object.Destroy(m_SchedulerGO.gameObject);
-                else 
-                    UnityEngine.Object.DestroyImmediate(m_SchedulerGO.gameObject);
-#else
-                UnityEngine.Object.Destroy(m_SchedulerGO.gameObject);
-#endif
             }
         }
     }

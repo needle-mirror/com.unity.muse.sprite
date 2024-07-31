@@ -216,15 +216,14 @@ namespace Unity.Muse.Sprite.Artifacts
             try
             {
                 m_Model = model;
-                Model.SendAnalytics(new GenerateAnalyticsData
-                {
-                    prompt = this.GetOperator<PromptOperator>()?.GetPrompt(),
-                    prompt_negative = this.GetOperator<PromptOperator>()?.GetNegativePrompt(),
-                    inpainting_used = this.GetOperator<SpriteRefiningMaskOperator>()?.Enabled() ?? false,
-                    images_generated_nr = m_Operators.GetOperator<GenerateOperator>()?.GetCount() ?? 0,
-                    reference_image_used = m_Operators.GetOperator<KeyImageOperator>()?.HasReference() ?? false,
-                    is_doodle = m_Operators.GetOperator<KeyImageOperator>()?.HasDoodle() ?? false
-                });
+                Model.SendAnalytics(new GenerateAnalytic(
+                    this.GetOperator<PromptOperator>()?.GetPrompt(),
+                    this.GetOperator<PromptOperator>()?.GetNegativePrompt(),
+                    this.GetOperator<SpriteRefiningMaskOperator>()?.Enabled() ?? false,
+                    m_Operators.GetOperator<GenerateOperator>()?.GetCount() ?? 0,
+                    m_Operators.GetOperator<KeyImageOperator>()?.HasReference() ?? false,
+                    m_Operators.GetOperator<KeyImageOperator>()?.HasDoodle() ?? false
+                ));
             }
             catch (Exception exception)
             {

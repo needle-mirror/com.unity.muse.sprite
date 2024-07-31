@@ -1,5 +1,4 @@
 .styletrainer-sampleoutputpromptrow{
-    flex-direction: row;
-    height:100%;
-    max-height:250px;
+    flex-direction: column;
+    height: 100%;
 }

@@ -3,6 +3,8 @@ using Unity.Muse.AppUI.UI;
 using Unity.Muse.Common;
 using Unity.Muse.Common.Account;
 using Unity.Muse.Sprite.Common.Events;
+using Unity.Muse.StyleTrainer.Events.StyleModelEditorUIEvents;
+using Unity.Muse.StyleTrainer.Events.StyleModelListUIEvents;
 using Unity.Muse.StyleTrainer.Events.StyleTrainerMainUIEvents;
 using UnityEditor;
 using UnityEngine;
@@ -20,9 +22,11 @@ namespace Unity.Muse.StyleTrainer
         StyleModelList m_StyleModelList;
         EventBus m_EventBus;
         VisualElement m_TopMenu;
-        AccountDropdown m_AccountDropdown;
+        Text m_StyleNameText;
+        Button m_LibraryButton;
         VisualElement m_StyleTrainerMainUIContent;
-        SplitView m_SplitView;
+        TwoPaneSplitView m_SplitView;
+        VisualElement m_SplitViewAnchor;
         Button m_LoginButton;
         VisualElement m_NoAssetContainer;
         VisualElement m_LoginScreen;
@@ -41,8 +45,33 @@ namespace Unity.Muse.StyleTrainer
             m_EventBus.RegisterEvent<SignInEvent>(OnSignInEvent);
             m_EventBus.RegisterEvent<ShowDialogEvent>(OnShowDialogEvent);
             m_EventBus.RegisterEvent<ShowLoadingScreenEvent>(OnShowLoadingScreenEvent);
+            m_EventBus.RegisterEvent<StyleModelListSelectionChangedEvent>(OnStyleModelListSelectionChangedEvent);
+            m_EventBus.RegisterEvent<StyleModelListCollapsedEvent>(OnStyleModelListCollapsed);
+            m_EventBus.RegisterEvent<ChangeStyleNameEvent>(OnStyleNameChanged);
             m_StyleModelInfoEditor.SetEventBus(eventBus);
             m_StyleModelList.SetEventBus(eventBus);
+        }
+
+        void OnStyleNameChanged(ChangeStyleNameEvent arg0)
+        {
+            m_StyleNameText.text = arg0.newStyleName;
+        }
+
+        void OnStyleModelListCollapsed(StyleModelListCollapsedEvent arg0)
+        {
+            m_StyleModelList.EnableInClassList("styletrainer-stylemodellist__collapsed", arg0.collapsed);
+            m_SplitViewAnchor.Q<VisualElement>("unity-dragline").style.display = arg0.collapsed ? DisplayStyle.None : DisplayStyle.Flex;
+            m_LibraryButton.EnableInClassList("is-collapsed", arg0.collapsed);
+        }
+
+        void OnStyleModelGeometryChanged(GeometryChangedEvent evt)
+        {
+            // Workaround for the fact that the SplitView doesn't have a way to set the position of the dragline
+            // by code. It is usually calculated during a GeometryChangedEvent.
+            var styleModelListWidth = m_StyleModelList.resolvedStyle.width;
+            var styleModelListMargins = m_StyleModelList.resolvedStyle.marginLeft + m_StyleModelList.resolvedStyle.marginRight;
+
+            m_SplitViewAnchor.style.left = styleModelListWidth + styleModelListMargins;
         }
 
         void OnShowDialogEvent(ShowDialogEvent dialogData)
@@ -101,17 +130,26 @@ namespace Unity.Muse.StyleTrainer
 
             m_StyleTrainerMainUIContent = this.Q<VisualElement>("StyleTrainerContent");
             m_TopMenu = this.Q<VisualElement>("StyleTrainerTopMenu");
-            m_AccountDropdown = new AccountDropdown();
-            m_TopMenu.Q<VisualElement>("AccountDropDownContainer").Add(m_AccountDropdown);
-            m_SplitView = this.Q<SplitView>("StyleTrainerUISplitView");
+            m_StyleNameText = m_TopMenu.Q<Text>("style-name");
+            m_LibraryButton = m_TopMenu.Q<Button>("library-button");
+            m_LibraryButton.clicked += OnLibraryButtonClicked;
+
+            m_StyleNameText.text = "";
+            m_SplitView = this.Q<TwoPaneSplitView>("StyleTrainerUISplitView");
             m_SplitView.fixedPaneIndex = 0;
             m_SplitView.fixedPaneInitialDimension = 300;
             m_SplitView.orientation = TwoPaneSplitViewOrientation.Horizontal;
 
             m_StyleModelInfoEditor = StyleModelInfoEditor.CreateFromUxml();
             m_StyleModelList = StyleModelList.CreateFromUxml();
+            m_StyleModelList.RegisterCallback<GeometryChangedEvent>(OnStyleModelGeometryChanged);
+
             m_SplitView.Add(m_StyleModelList);
             m_SplitView.Add(m_StyleModelInfoEditor);
+
+            m_StyleModelInfoEditor.AddManipulator(new SessionStatusTracker());
+
+            m_SplitViewAnchor = m_SplitView.Q<VisualElement>("unity-dragline-anchor");
 
             m_LoginScreen = this.Q<VisualElement>("LoginScreen");
             m_LoginButton = m_LoginScreen.Q<Button>("LoginButton");
@@ -124,6 +162,19 @@ namespace Unity.Muse.StyleTrainer
             {
                 signIn = true
             });
+        }
+
+        void OnLibraryButtonClicked()
+        {
+            m_EventBus.SendEvent(new StyleModelListCollapsedEvent
+            {
+                collapsed = !m_StyleModelList.ClassListContains("styletrainer-stylemodellist__collapsed")
+            });
+        }
+
+        void OnStyleModelListSelectionChangedEvent(StyleModelListSelectionChangedEvent evt)
+        {
+            m_StyleNameText.text = evt.styleData?.title;
         }
 
         void RefreshLoggedIn(SignInEvent evt)

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Unity.Muse.AppUI.UI;
 using Unity.Muse.Common;
+using Unity.Muse.Common.Account;
 using Unity.Muse.Sprite.Common.DebugConfig;
 using Unity.Muse.Sprite.Common.Events;
 using Unity.Muse.StyleTrainer.Events.StyleModelEvents;
@@ -11,6 +12,7 @@ using Unity.Muse.StyleTrainer.Events.StyleModelListUIEvents;
 using Unity.Muse.StyleTrainer.Events.StyleTrainerProjectEvents;
 using UnityEngine;
 using UnityEngine.UIElements;
+using Button = Unity.Muse.AppUI.UI.Button;
 
 namespace Unity.Muse.StyleTrainer
 {
@@ -20,17 +22,31 @@ namespace Unity.Muse.StyleTrainer
     partial class StyleModelList : ExVisualElement
     {
         ListView m_ListView;
-        FloatingActionButton m_AddStyleButton;
+        SearchBar m_SearchBar;
+        ExVisualElement m_StyleModelTitleContainer;
+        ExVisualElement m_AddStyleContainer;
+        Button m_AddStyleButton;
+        Button m_AddStyleButtonCollapsed;
         EventBus m_EventBus;
         ContextualMenuManipulator m_DebugMenu;
 
         void BindElements()
         {
-            m_AddStyleButton = this.Q<FloatingActionButton>("AddStyleButton");
+            m_AddStyleButton = this.Q<Button>("styletrainer-stylemodellist__add-button");
             m_AddStyleButton.clicked += OnAddStyleClicked;
+            m_AddStyleButtonCollapsed = this.Q<Button>("AddStyleButtonCollapsed");
+            m_AddStyleButtonCollapsed.clicked += OnAddStyleClicked;
             if (DebugConfig.developerMode) m_DebugMenu = new ContextualMenuManipulator(DebugMenuBuilder);
             this.AddManipulator(m_DebugMenu);
             SetupListView();
+            SetupSearchBar();
+            m_StyleModelTitleContainer = this.Q<ExVisualElement>("StyleModelTitleContainer");
+            m_AddStyleContainer = this.Q<ExVisualElement>("AddStyleContainer");
+
+            var notifications = this.Q<VisualElement>("notification-area");
+            notifications.Add(new SessionStatusNotifications());
+            m_AddStyleButton.AddManipulator(new SessionStatusTracker());
+            m_AddStyleButtonCollapsed.AddManipulator(new SessionStatusTracker());
         }
 
         void DebugMenuBuilder(ContextualMenuPopulateEvent obj)
@@ -41,6 +57,35 @@ namespace Unity.Muse.StyleTrainer
         void LoadStyles(DropdownMenuAction obj)
         {
             m_EventBus.SendEvent(new LoadStyleProjectEvent());
+        }
+
+        void SetupSearchBar()
+        {
+            m_SearchBar = this.Q<SearchBar>("StyleModelSearchBar");
+            m_SearchBar.trailingElement.pickingMode = PickingMode.Position;
+            m_SearchBar.trailingElement.RegisterCallback<MouseDownEvent>(OnClearSearch);
+            m_SearchBar.trailingElement.EnableInClassList("hidden", string.IsNullOrEmpty(m_SearchBar.value));
+            m_SearchBar.RegisterValueChangingCallback(OnSearch);
+        }
+
+        void OnClearSearch(MouseDownEvent evt)
+        {
+            if (evt.button == (int)MouseButton.LeftMouse)
+            {
+                m_SearchBar.value = "";
+                SearchInList(m_SearchBar.value);
+            }
+        }
+
+        void OnSearch(ChangingEvent<string> evt)
+        {
+            SearchInList(evt.newValue);
+        }
+
+        void SearchInList(string searchStyle)
+        {
+            m_EventBus.SendEvent(new SearchStyleEvent() { search =  searchStyle});
+            m_SearchBar.trailingElement.EnableInClassList("hidden", string.IsNullOrEmpty(m_SearchBar.value));
         }
 
         void SetupListView()
@@ -83,6 +128,13 @@ namespace Unity.Muse.StyleTrainer
         {
             m_EventBus = eventBus;
             m_EventBus.RegisterEvent<StyleModelSourceChangedEvent>(ModelSourcedChanged);
+            m_EventBus.RegisterEvent<StyleModelListCollapsedEvent>(OnStyleModelListCollapsed);
+        }
+
+        void OnStyleModelListCollapsed(StyleModelListCollapsedEvent arg0)
+        {
+            m_StyleModelTitleContainer.EnableInClassList("styletrainer-stylemodellist__title-container__collapsed", arg0.collapsed);
+            m_AddStyleContainer.EnableInClassList("is-collapsed", arg0.collapsed);
         }
 
         void ModelSourcedChanged(StyleModelSourceChangedEvent arg0)

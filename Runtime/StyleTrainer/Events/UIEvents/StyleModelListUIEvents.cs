@@ -19,4 +19,14 @@ namespace Unity.Muse.StyleTrainer.Events.StyleModelListUIEvents
     {
         public StyleData styleData;
     }
+
+    class StyleModelListCollapsedEvent : BaseEvent<StyleModelListCollapsedEvent>
+    {
+        public bool collapsed;
+    }
+
+    class SearchStyleEvent : BaseEvent<SearchStyleEvent>
+    {
+        public string search;
+    }
 }

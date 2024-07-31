@@ -37,7 +37,7 @@ namespace Unity.Muse.StyleTrainer
             {
                 m_DefaultProject.guid = Utilities.emptyGUID;
                 m_DefaultProject.state = EState.Error;
-                StyleTrainerDebug.LogError($"GetDefaultStyleProjectRestCall: call success but response is not success");
+                StyleTrainerDebug.LogWarning($"GetDefaultStyleProjectRestCall: call success but response is not success");
                 m_OnDone.Invoke();
             }
         }

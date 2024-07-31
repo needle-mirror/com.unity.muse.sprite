@@ -1,11 +1,12 @@
 .styletrainer-trainingitemgriditem {
+    width: 100%;
+    height: 100%;
 }
-
 
 .styletrainer-trainingitemgriditem__deletebutton {
     position: absolute;
-    top: 10px;
-    right: 10px;
+    top: var(--appui-spacing-200);
+    right: var(--appui-spacing-200);
     display: none;
 }
 
@@ -14,27 +15,15 @@
     height: 100%;
     flex-grow: 1;
     flex-shrink: 1;
-    justify-content: center;
-    align-items: center;
+    border-radius: 6px;
 }
 
-.styletrainer-trainingitemgriditem__promptField {
-
+#PreviewImage{
+    -unity-background-scale-mode: scale-to-fit;
 }
 
-.styletrainer-trainingitemgriditem__gridItem {
-    width: 100%;
-    height: 100%;
-    flex-grow: 1;
-    flex-shrink: 1;
-    border-radius: var(--appui-alias-control-border-radius);
-    overflow: hidden;
-    border-width: 3px;
-    border-color: var(--appui-backgrounds-300);
-}
-
-.appui-grid-view__item.is-selected  .styletrainer-trainingitemgriditem__gridItem{
-    border-width: 3px;
+.appui-grid-view__item.is-selected #PreviewImage {
+    border-width: var(--appui-border-width-md);
     border-color: var(--appui-accent-100);
 }
 
@@ -48,4 +37,27 @@
 
 .is-selected .delete-button-webgl {
     display: flex;
+}
+
+.styletrainer-trainingitemgriditem__plus-button #GridItem{
+    border-color: rgba(0,0,0,0);
+}
+
+.styletrainer-trainingitemgriditem__plus-button PreviewImage Button{
+    border-width: 0;
+}
+
+.styletrainer-trainingitemgriditem__plus-button__container{
+    width: 100%;
+    height: 100%;
+    background-color: var(--unity-theme-background-color-90);
+}
+
+.styletrainer-trainingitemgriditem__plus-button__container:hover{
+    background-color: var(--unity-theme-background-color-89);
+}
+
+.styletrainer-trainingitemgriditem__plus-button__container Icon{
+    background-color: var(--appui-alias-actions-background-color-default);
+    border-radius: var(--appui-alias-control-border-radius);
 }

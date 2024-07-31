@@ -71,7 +71,8 @@ namespace Unity.Muse.Sprite.Common.Backend
 
         void OnDependencyComplete(QuarkRestCall dependency)
         {
-            dependency.onCompleted -= OnDependencyComplete;
+            if (dependency.restCallState != EState.Retrying)
+                dependency.onCompleted -= OnDependencyComplete;
             int i = 0;
             for (; i < m_Dependencies.Count; ++i)
             {

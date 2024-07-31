@@ -1,6 +1,6 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using Unity.Muse.AppUI.UI;
 using Unity.Muse.Common;
 using Unity.Muse.Sprite.Common.Events;
@@ -19,32 +19,58 @@ namespace Unity.Muse.StyleTrainer
     partial class TrainingSetView : ExVisualElement, IStyleModelInfoTabView
     {
         GridView m_GridView;
+        Text m_TrainingImagesTextCount;
+        Text m_TrainingImagesTitleText;
+        VisualElement m_TrainingImagesHintContainer;
         StyleData m_StyleData;
         EventBus m_EventBus;
-        Text m_HintText;
         int m_CountPerRow = 2;
-        const float k_DefaultThumbnailSize = 240;
+        const float k_DefaultThumbnailSize = 92;
         VisualElement m_DragAndDropContainer;
+        ExVisualElement m_TextDragDropContainer;
         SpriteTextureDropManipulator m_SpriteTextureDropManipulator;
         public Action<IList<Texture2D>> OnDragAndDrop;
         float m_ThumbnailSize = 1;
         public Action<int> OnDeleteClickedCallback;
         bool m_CanModify;
-        ExVisualElement m_ToolTipContainer;
-        Icon m_ToolTipIcon;
-        Text m_ToolTipText;
         VisualElement m_LoadingScreen;
-        VisualElement m_DataContent;
+        VisualElement m_GridViewContainer;
         string m_CurrentContext;
+        const string k_PlusButtonGuid = "dummy";
+        List<MuseShortcut> m_DeleteShortcuts;
+
+        void OnDeleteClicked(int indexToDelete)
+        {
+            OnDeleteClicked(new[] { indexToDelete });
+        }
+
+        void OnDeleteClicked(IList<int> indicesToDelete)
+        {
+            m_EventBus.SendEvent(new DeleteTrainingSetEvent
+            {
+                styleData = m_StyleData,
+                indices = indicesToDelete
+            });
+        }
+
+        new TrainingData this[int index] => (TrainingData)m_GridView.itemsSource[index];
 
         void BindItem(VisualElement arg1, int arg2)
         {
-            if (arg1 is TrainingItemGridItem tigi)
+            if (arg1 is TrainingItemGridItem trainingItem)
             {
-                tigi.CanModify(m_CanModify);
-                tigi.itemIndex = arg2;
-                tigi.SetPreviewImage(this[arg2].imageArtifact);
-                tigi.OnDeleteClicked += OnDeleteClicked;
+                trainingItem.SetEventBus(m_EventBus);
+
+                if (this[arg2].guid == k_PlusButtonGuid)
+                {
+                    trainingItem.CreatePlusButton();
+                    return;
+                }
+
+                trainingItem.CanModify(m_CanModify);
+                trainingItem.itemIndex = arg2-1;
+                trainingItem.SetPreviewImage(this[arg2].imageArtifact);
+                trainingItem.OnDeleteClicked += OnDeleteClicked;
             }
         }
 
@@ -56,20 +82,9 @@ namespace Unity.Muse.StyleTrainer
             }
         }
 
-        void OnDeleteClicked(int obj)
+        VisualElement MakeGridItem()
         {
-            m_EventBus.SendEvent(new DeleteTrainingSetEvent
-            {
-                styleData = m_StyleData,
-                indices = new[] { obj }
-            });
-        }
-
-        new TrainingData this[int index] => (TrainingData)m_GridView.itemsSource[index];
-
-        static VisualElement MakeGridItem()
-        {
-            return TrainingItemGridItem.CreateFromUxml();
+            return new TrainingItemGridItem(m_StyleData);
         }
 
         public VisualElement GetView()
@@ -92,7 +107,7 @@ namespace Unity.Muse.StyleTrainer
         void OnTrainingSetDataSourceChanged(TrainingSetDataSourceChangedEvent arg0)
         {
             m_LoadingScreen.style.display = DisplayStyle.Flex;
-            m_DataContent.style.display = DisplayStyle.None;
+            m_GridViewContainer.style.display = DisplayStyle.None;
             m_StyleData = arg0.styleData;
             if (m_StyleData.state == EState.Loading)
             {
@@ -126,7 +141,7 @@ namespace Unity.Muse.StyleTrainer
             if (m_CurrentContext == context)
             {
                 m_LoadingScreen.style.display = DisplayStyle.None;
-                m_DataContent.style.display = DisplayStyle.Flex;
+                m_GridViewContainer.style.display = DisplayStyle.Flex;
                 // dispose off old ones
                 for(int i = 0; i < m_GridView.itemsSource?.Count; ++i)
                 {
@@ -136,8 +151,22 @@ namespace Unity.Muse.StyleTrainer
                     }
                 }
 
-                m_GridView.itemsSource = (IList)obj;
-                UpdateHintView();
+                var trainingDataList = new List<TrainingData>();
+                foreach (var trainingData in obj)
+                {
+                    trainingDataList.Add(trainingData);
+                }
+
+                var dummies = trainingDataList.Where(t => t.guid == k_PlusButtonGuid);
+                if(!dummies.Any() && m_CanModify)
+                {
+                    var plusButtonData = new TrainingData(EState.New, k_PlusButtonGuid);
+                    trainingDataList.Insert(0, plusButtonData);
+                }
+
+                m_GridView.itemsSource = trainingDataList;
+
+                UpdateUI();
                 m_GridView.Refresh();
             }
         }
@@ -180,17 +209,24 @@ namespace Unity.Muse.StyleTrainer
                 return;
 
             RefreshThumbnailSize(m_ThumbnailSize);
+
+            m_TextDragDropContainer.style.paddingLeft = m_GridView.resolvedStyle.height;
         }
 
         void RefreshThumbnailSize(float value)
         {
+            if (float.IsNaN(m_GridViewContainer.resolvedStyle.width))
+                return;
+
             var size = value * k_DefaultThumbnailSize;
 
-            var sizeAndMargin = size;
+            var borderWidth = m_GridViewContainer.resolvedStyle.borderLeftWidth
+                + m_GridViewContainer.resolvedStyle.borderRightWidth;
 
-            var width = m_DataContent.resolvedStyle.width;
-            var newCountPerRow = Mathf.FloorToInt(width / sizeAndMargin);
+            var marginWidth = m_GridView.resolvedStyle.marginLeft + m_GridView.resolvedStyle.marginRight;
+            var width = m_GridViewContainer.resolvedStyle.width - borderWidth - marginWidth;
 
+            var newCountPerRow = Mathf.FloorToInt(width / size);
             newCountPerRow = Mathf.Max(1, newCountPerRow);
 
             if (newCountPerRow != m_CountPerRow)
@@ -203,6 +239,20 @@ namespace Unity.Muse.StyleTrainer
 
             if (!Mathf.Approximately(itemHeight, m_GridView.itemHeight))
                 m_GridView.itemHeight = itemHeight;
+
+            var itemsSourceCount = m_GridView.itemsSource?.Count ?? 0;
+            var numberOfRows = (itemsSourceCount + m_CountPerRow -1) / m_CountPerRow;
+            numberOfRows = Math.Max(1, numberOfRows);
+
+            var borderHeight = m_GridViewContainer.resolvedStyle.borderTopWidth
+                + m_GridViewContainer.resolvedStyle.borderBottomWidth;
+
+            var marginHeight = m_GridView.resolvedStyle.marginTop + m_GridView.resolvedStyle.marginBottom;
+            var gridViewHeight = numberOfRows * itemHeight + marginHeight + borderHeight;
+
+            m_GridViewContainer.style.height = gridViewHeight;
+
+            m_GridView.style.height = gridViewHeight;
         }
 
         internal static TrainingSetView CreateFromUxml()
@@ -225,78 +275,120 @@ namespace Unity.Muse.StyleTrainer
             m_GridView.selectionType = SelectionType.Multiple;
             m_GridView.itemHeight = (int)k_DefaultThumbnailSize;
             m_GridView.scrollView.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
-            m_GridView.scrollView.verticalScrollerVisibility = ScrollerVisibility.AlwaysVisible;
-            m_GridView.scrollView.verticalScroller.style.opacity = 0;
+            m_GridView.scrollView.verticalScrollerVisibility = ScrollerVisibility.Hidden;
+            var contextMenu = new ContextualMenuManipulator(OnGridViewContextClicked);
+            contextMenu.target = m_GridView;
+
             m_DragAndDropContainer = this.Q<VisualElement>("DragAndDropContainer");
             m_DragAndDropContainer.pickingMode = PickingMode.Ignore;
 
+            m_TextDragDropContainer = new ExVisualElement();
+            m_TextDragDropContainer.pickingMode = PickingMode.Ignore;
+            m_TextDragDropContainer.AddToClassList("styletrainer-trainingsetview-gridview__hint-text__container");
+
+            var dragAndDropDescriptionText = new Text(StringConstants.dragAndDropDescription);
+            dragAndDropDescriptionText.AddToClassList("styletrainer-trainingsetview-gridview__hint-text");
+            dragAndDropDescriptionText.pickingMode = PickingMode.Ignore;
+            m_TextDragDropContainer.Add(dragAndDropDescriptionText);
+
+            m_DragAndDropContainer.Add(m_TextDragDropContainer);
+
             m_LoadingScreen = this.Q<VisualElement>("LoadingScreen");
-            m_DataContent = this.Q<VisualElement>("DataContent");
-            m_DataContent.style.display = DisplayStyle.None;
+            m_GridViewContainer = this.Q<VisualElement>("GridViewContainer");
+            m_GridViewContainer.style.display = DisplayStyle.None;
 
-            m_HintText = this.Q<Text>("HintText");
-            m_ToolTipContainer = this.Q<ExVisualElement>("ToolTipContainer");
-            m_ToolTipIcon = m_ToolTipContainer.Q<Icon>("ToolTipIcon");
-            m_ToolTipText = m_ToolTipContainer.Q<Text>("ToolTipText");
-            m_ToolTipText.text = $"Training set requires at least {StyleTrainerConfig.config.minTrainingSetSize} and no more than {StyleTrainerConfig.config.maxTrainingSetSize} images";
+            m_TrainingImagesTextCount = this.Q<Text>("TrainingImagesTextCount");
+            m_TrainingImagesTitleText = this.Q<Text>("TrainingImagesTitleText");
+            m_TrainingImagesHintContainer = this.Q<ExVisualElement>("TrainingImagesHintContainer");
+            var hint = m_TrainingImagesHintContainer.Q<Text>();
+            var hintTextWithLineHeight = hint.text.Insert(0, "<line-height=120%>");
+            hint.text = hintTextWithLineHeight;
 
-            UpdateHintView();
-            m_DataContent.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
-        }
+            UpdateUI();
+            m_GridViewContainer.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
 
-        void UpdateToolTip()
-        {
-            if (m_CanModify)
+            this.AddManipulator(new MuseShortcutHandler());
+            m_DeleteShortcuts = new List<MuseShortcut>();
+
+            if (Application.platform == RuntimePlatform.OSXEditor || Application.platform == RuntimePlatform.OSXPlayer)
             {
-                var itemCount = m_GridView.itemsSource?.Count;
-                if (itemCount >= StyleTrainerConfig.config.minTrainingSetSize &&
-                    itemCount <= StyleTrainerConfig.config.maxTrainingSetSize)
-                {
-                    m_ToolTipIcon.iconName = "check";
-                    m_ToolTipText.text = $"Training set good to go!";
-                }
-                else
-                {
-                    if (itemCount > StyleTrainerConfig.config.maxTrainingSetSize)
-                    {
-                        m_ToolTipText.text = $"There are too many training images. Remove {m_GridView.itemsSource?.Count - StyleTrainerConfig.config.maxTrainingSetSize} image(s).";
-                        m_ToolTipIcon.iconName = "warning";
-                    }
-                    else
-                    {
-                        m_ToolTipText.text = $"Training set requires at least {StyleTrainerConfig.config.minTrainingSetSize - m_GridView.itemsSource?.Count} more image(s).";
-                        m_ToolTipIcon.iconName = "info";
-                    }
-                }
+                m_DeleteShortcuts.Add( new MuseShortcut("Delete Training Images", DeleteSelectedTrainingSetImages, KeyCode.Backspace, KeyModifier.Action, m_GridView){ requireFocus = true });
             }
             else
             {
-                m_ToolTipIcon.iconName = "info";
-                m_ToolTipText.text = "Training set has been created. Training set is locked.";
+                m_DeleteShortcuts.Add(new MuseShortcut("Delete Training Images", DeleteSelectedTrainingSetImages, KeyCode.Delete, source: m_GridView){ requireFocus = true });
             }
+
+            RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
+            RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
         }
 
-        void UpdateHintView()
+        void OnAttachToPanel(AttachToPanelEvent evt) => MuseShortcuts.AddShortcuts(m_DeleteShortcuts);
+        void OnDetachFromPanel(DetachFromPanelEvent evt) => MuseShortcuts.RemoveShortcuts(m_DeleteShortcuts);
+
+        void OnGridViewContextClicked(ContextualMenuPopulateEvent menuEvent)
         {
-            var itemCount = m_GridView.itemsSource?.Count;
-            if (itemCount == 0)
+            menuEvent.menu.AppendAction("Delete", DeleteSelectedTrainingSetImages,
+                 m_CanModify ? DropdownMenuAction.Status.Normal: DropdownMenuAction.Status.Disabled);
+        }
+
+        void DeleteSelectedTrainingSetImages(DropdownMenuAction menuItem)
+        {
+            DeleteSelectedTrainingSetImages();
+        }
+
+        void DeleteSelectedTrainingSetImages()
+        {
+            if (!m_GridView.selectedItems.Any() || !m_CanModify)
+                return;
+
+            var trainingDataIndices = m_GridView.selectedIndices.Select(index => index - 1).ToList();
+            trainingDataIndices.Remove(-1); // remove the plus button index
+
+            OnDeleteClicked(trainingDataIndices);
+            m_GridView.SetSelectionWithoutNotify(new []{0});
+        }
+
+        void UpdateUI()
+        {
+            if (m_StyleData?.state == EState.Loaded)
             {
-                m_GridView.style.display = DisplayStyle.None;
-                m_HintText.style.display = DisplayStyle.Flex;
+                m_TrainingImagesTitleText.text = StringConstants.trainingImagesTitleTrained;
+                m_TrainingImagesHintContainer.style.display = DisplayStyle.None;
+                m_TrainingImagesTextCount.text = StringConstants.trainingImagesLocked;
             }
             else
             {
-                m_GridView.style.display = DisplayStyle.Flex;
-                m_HintText.style.display = DisplayStyle.None;
+                if (m_StyleData?.state == EState.Training)
+                {
+                    var trainingData = (List<TrainingData>)m_GridView?.itemsSource;
+
+                    if(trainingData?.Count > 0 && trainingData[0].guid == k_PlusButtonGuid)
+                    {
+                        m_GridView.itemsSource.RemoveAt(0);
+                    }
+                }
+
+                m_TrainingImagesTitleText.text = StringConstants.trainingImagesTitleUntrained;
+                m_TrainingImagesHintContainer.style.display = DisplayStyle.Flex;
+
+                while (m_StyleData?.trainingSetData[0].Count > StyleData.maxTrainingSetImages)
+                {
+                    m_StyleData?.trainingSetData[0].RemoveAt(m_StyleData.trainingSetData[0].Count - 1);
+                    m_GridView.itemsSource.RemoveAt(m_GridView.itemsSource.Count - 1);
+                }
+
+                m_TrainingImagesTextCount.text = $"{m_StyleData?.trainingSetData[0].Count}/{StyleData.maxTrainingSetImages}";
             }
 
-            UpdateToolTip();
+            m_TextDragDropContainer.style.display = m_StyleData?.trainingSetData[0].Count == 0 ? DisplayStyle.Flex : DisplayStyle.None;
+            RefreshThumbnailSize(m_ThumbnailSize);
         }
 
         public void CanModify(bool canModify)
         {
             m_CanModify = canModify;
-            UpdateToolTip();
+            UpdateUI();
 
             m_GridView.EnableInClassList("styletrainer-trainingsetview-gridview-disable", !canModify);
             m_GridView.selectionType = canModify ? SelectionType.Multiple : SelectionType.None;

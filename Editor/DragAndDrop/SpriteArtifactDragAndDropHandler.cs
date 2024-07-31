@@ -31,7 +31,8 @@ namespace Unity.Muse.Sprite.Editor.DragAndDrop
 
         public void HandleDropSceneView(GameObject dropUpon, Vector3 worldPosition)
         {
-            Model.SendAnalytics(new SaveSpriteData {drag_destination = SpriteSaveDestination.SceneView, is_drag = true, material_hash = ""});
+            Model.SendAnalytics(new SaveSpriteAnalytic(SpriteSaveDestination.SceneView, true, ""));
+
             CreateNewSprite(worldPosition);
 
             ArtifactDropped?.Invoke(null, m_Artifact);
@@ -41,7 +42,8 @@ namespace Unity.Muse.Sprite.Editor.DragAndDrop
 
         public void HandleDropHierarchy(GameObject dropUpon)
         {
-            Model.SendAnalytics(new SaveSpriteData {drag_destination = SpriteSaveDestination.HierarchyWindow, is_drag = true, material_hash = ""});
+            Model.SendAnalytics(new SaveSpriteAnalytic(SpriteSaveDestination.HierarchyWindow, true, ""));
+
             CreateNewSprite(Vector3.zero);
 
             ArtifactDropped?.Invoke(null, m_Artifact);
@@ -56,7 +58,7 @@ namespace Unity.Muse.Sprite.Editor.DragAndDrop
             if (string.IsNullOrWhiteSpace(path))
                 path = ExporterHelpers.assetsRoot;
 
-            Model.SendAnalytics(new SaveSpriteData {drag_destination = SpriteSaveDestination.ProjectWindow, is_drag = true, material_hash = ""});
+            Model.SendAnalytics(new SaveSpriteAnalytic(SpriteSaveDestination.ProjectWindow, true, ""));
 
             m_Artifact.ExportToDirectory(path, true, exportedPath =>
             {

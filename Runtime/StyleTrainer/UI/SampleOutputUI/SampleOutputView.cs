@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Unity.Muse.AppUI.UI;
 using Unity.Muse.Common;
 using Unity.Muse.Sprite.Common.Events;
@@ -15,17 +16,22 @@ namespace Unity.Muse.StyleTrainer
 {
     class SampleOutputView : ExVisualElement, IStyleModelInfoTabView
     {
-        Text m_ToolTipText;
-        Icon m_ToolTipIcon;
-
         StyleData m_StyleData;
-        Text m_HintText;
+
+        VisualElement m_UntrainedViewContainer;
+        SampleOutputTrainedView m_TrainedViewContainer;
 
         SampleOutputListView m_ListView;
+        Text m_PromptsHintText;
+        Text m_HeaderPromptTitleText;
         EventBus m_EventBus;
-        float m_ThumbnailSize = StyleModelInfoEditor.k_InitialThumbnailSliderValue;
+        float m_ThumbnailSize = StyleModelInfoEditor.initialThumbnailSliderValue;
         public Action<int> OnDeleteClickedCallback;
         bool m_CanModify;
+
+
+
+        const string k_HiddenClassList = "styletrainer-sampleoutputview__hidden";
 
         public SampleOutputView()
         {
@@ -33,37 +39,48 @@ namespace Unity.Muse.StyleTrainer
             AddToClassList("styletrainer-sampleoutputview");
             styleSheets.Add(ResourceManager.Load<StyleSheet>(PackageResources.sampleOutputViewStyleSheet));
 
-            var toolTipContainer = new ExVisualElement { name = "ToolTipContainer" };
-            Add(toolTipContainer);
-            toolTipContainer.AddToClassList("styletrainer-sampleoutputview-tooltip_container");
-            m_ToolTipIcon = new Icon
-            {
-                name = "ToolTipIcon",
-                iconName = "info"
-            };
-            m_ToolTipIcon.AddToClassList("styletrainer-sampleoutputview-tooltip_icon");
-            toolTipContainer.Add(m_ToolTipIcon);
-            m_ToolTipText = new Text
-            {
-                name = "ToolTipText",
-                text = $"Sample output requires at least {StyleTrainerConfig.config.minSampleSetSize} and no more than {StyleTrainerConfig.config.maxSampleSetSize} prompts."
-            };
-            toolTipContainer.Add(m_ToolTipText);
-            m_ToolTipText.AddToClassList("styletrainer-sampleoutputview-tooltip_text");
+            m_UntrainedViewContainer = CreateUntrainedViewContainer();
+            m_UntrainedViewContainer.AddToClassList("styletrainer-sampleoutputview__untrained-container");
+            m_UntrainedViewContainer.AddToClassList(k_HiddenClassList);
+            Add(m_UntrainedViewContainer);
 
-            m_ListView = new SampleOutputListView();
-            // m_ListView.AddToClassList("styletrainer-sampleoutputview-listview");
-            m_HintText = new Text
-            {
-                text = "Add some sample prompt to validate the model.",
-                name = "SampleOutputViewHintText"
-            };
-            m_HintText.AddToClassList("styletrainer-sampleoutputview__hintext");
+            m_TrainedViewContainer = CreateTrainedViewContainer();
+            m_TrainedViewContainer.AddToClassList("styletrainer-sampleoutputview__trained-container");
+            m_UntrainedViewContainer.AddToClassList(k_HiddenClassList);
+            Add(m_TrainedViewContainer);
 
-            Add(m_ListView);
-            Add(m_HintText);
             RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachedFromPanel);
+        }
+
+        ExVisualElement CreateUntrainedViewContainer()
+        {
+            var hintContainer = new ExVisualElement();
+            hintContainer.AddToClassList("styletrainer-sampleoutputview-prompts-hinttext");
+            m_PromptsHintText = new Text(StringConstants.promptsHintText);
+            var hintTextWithLineHeight = m_PromptsHintText.text.Insert(0, "<line-height=120%>");
+            m_PromptsHintText.text = hintTextWithLineHeight;
+            hintContainer.Add(m_PromptsHintText);
+
+            var promptsContainer = new ExVisualElement();
+            promptsContainer.AddToClassList("styletrainer-sampleoutputview-container");
+
+            var headerPromptTitleText = new Text("Practice Prompts");
+            headerPromptTitleText.AddToClassList("styletrainer-sampleoutputview-container__title");
+            promptsContainer.Add(headerPromptTitleText);
+
+            m_ListView = new SampleOutputListView();
+            promptsContainer.Add(m_ListView);
+
+            var untrainedViewContainer = new ExVisualElement();
+            untrainedViewContainer.Add(hintContainer);
+            untrainedViewContainer.Add(promptsContainer);
+            return untrainedViewContainer;
+        }
+
+        SampleOutputTrainedView CreateTrainedViewContainer()
+        {
+            return new SampleOutputTrainedView();
         }
 
         void OnDetachedFromPanel(DetachFromPanelEvent evt)
@@ -101,63 +118,24 @@ namespace Unity.Muse.StyleTrainer
             var itemCount = m_StyleData?.sampleOutputPrompts?.Count;
             if (itemCount == 0)
             {
-                m_HintText.style.display = DisplayStyle.Flex;
                 m_ListView.style.display = DisplayStyle.None;
             }
             else
             {
-                m_HintText.style.display = DisplayStyle.None;
                 m_ListView.style.display= DisplayStyle.Flex;
                 m_ListView.SetStyleData(m_StyleData);
+                m_TrainedViewContainer.SetStyleData(m_StyleData);
             }
 
-            UpdateToolTip();
+            UpdateView();
         }
 
-        void UpdateToolTip()
+        void UpdateView()
         {
-            if (m_CanModify)
+            if (m_StyleData != null)
             {
-                var itemCount = m_StyleData?.sampleOutputPrompts?.Count;
-                if (itemCount >= StyleTrainerConfig.config.minSampleSetSize &&
-                    itemCount <= StyleTrainerConfig.config.maxSampleSetSize)
-                {
-                    var emptyPrompt = 0;
-                    for (int i = 0; i < itemCount; ++i)
-                    {
-                        if (string.IsNullOrWhiteSpace(m_StyleData.sampleOutputPrompts[i]))
-                            ++emptyPrompt;
-                    }
-
-                    if (emptyPrompt == 0)
-                    {
-                        m_ToolTipIcon.iconName = "check";
-                        m_ToolTipText.text = $"Sample output good to go!";
-                    }
-                    else
-                    {
-                        m_ToolTipIcon.iconName = "info";
-                        m_ToolTipText.text = $"There are empty prompts. Please fill them up.";
-                    }
-                }
-                else
-                {
-                    if (itemCount > StyleTrainerConfig.config.maxSampleSetSize)
-                    {
-                        m_ToolTipText.text = $"There are too many prompts. Remove {itemCount - StyleTrainerConfig.config.maxSampleSetSize} prompt(s).";
-                        m_ToolTipIcon.iconName = "warning";
-                    }
-                    else
-                    {
-                        m_ToolTipText.text = $"Sample output requires {StyleTrainerConfig.config.minSampleSetSize - itemCount} more prompt(s).";
-                        m_ToolTipIcon.iconName = "info";
-                    }
-                }
-            }
-            else
-            {
-                m_ToolTipIcon.iconName = "info";
-                m_ToolTipText.text = "Style created. Sample set is locked";
+                m_UntrainedViewContainer.EnableInClassList(k_HiddenClassList, m_StyleData.state == EState.Loaded);
+                m_TrainedViewContainer.EnableInClassList(k_HiddenClassList, m_StyleData.state != EState.Loaded);
             }
         }
 
@@ -174,6 +152,7 @@ namespace Unity.Muse.StyleTrainer
             m_EventBus.RegisterEvent<CheckPointSourceDataChangedEvent>(OnCheckPointSourceDataChanged);
             m_EventBus.RegisterEvent<CheckPointDataChangedEvent>(OnCheckPointDataChanged);
             m_EventBus.RegisterEvent<FavouriteCheckPointChangeEvent>(OnFavouriteToggleChanged);
+            m_TrainedViewContainer.SetEventBus(m_EventBus);
         }
 
         void OnFavouriteToggleChanged(FavouriteCheckPointChangeEvent arg0)
@@ -200,7 +179,7 @@ namespace Unity.Muse.StyleTrainer
         public void CanModify(bool canModify)
         {
             m_CanModify = canModify;
-            UpdateToolTip();
+            UpdateView();
             m_ListView.CanModify(canModify);
         }
 

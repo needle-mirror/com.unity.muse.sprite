@@ -14,3 +14,7 @@
     overflow: hidden;
     white-space: nowrap;
 }
+
+.appui-tooltip__container {
+    max-width: 275px;
+}

@@ -9,18 +9,20 @@
     <Style src="../uss/TrainingSetView.uss"/>
     <styleTrainer:TrainingSetView class="styletrainer-trainingsetview" name="TrainingSetView">
         <appui:ExVisualElement name="DataContent" class="styletrainer-trainingsetview__content">
-            <appui:ExVisualElement name="ToolTipContainer" class="styletrainer-trainingsetview__tooltip_container">
-                <appui:Icon name="ToolTipIcon" class="styletrainer-trainingsetview__tooltip_icon"/>
-                <appui:Text name="ToolTipText" class="styletrainer-trainingsetview__tooltip_text"
-                            text="Training set requires at least 5 samples."/>
+            <appui:ExVisualElement name="TrainingImagesHintContainer" class="styletrainer-trainingsetview__hints-training-images">
+                <appui:Text text="These images will be used as the basis of your style."/>
             </appui:ExVisualElement>
-
-            <appui:ExVisualElement name="GridViewContainer" class="styletrainer-trainingsetview__gridview_container">
-                <appui:Text name="HintText" class="styletrainer-trainingsetview__hinttext"
-                            text="Drag and drop training images here."/>
-                <appui:GridView name="TrainingSetViewGridView" class="styletrainer-trainingsetview-gridview"/>
-                <ui:VisualElement name="DragAndDropContainer"
-                                  class="styletrainer-trainingsetview__draganddropcontainer"/>
+            <appui:ExVisualElement class="styletrainer-trainingsetview__training-images-container">
+                <appui:ExVisualElement name="HeaderTrainingImages" class="styletrainer-trainingsetview__header">
+                    <appui:Text name="TrainingImagesTitleText" text="Training Images" class="styletrainer-trainingsetview__text_title styletrainer-title-text"/>
+                    <appui:Text name="TrainingImagesTextCount" text="0/15" class="styletrainer-trainingsetview__text_count"
+                                size="S"/>
+                </appui:ExVisualElement>
+                <appui:ExVisualElement name="GridViewContainer" class="styletrainer-trainingsetview__gridview_container">
+                    <appui:GridView name="TrainingSetViewGridView" class="styletrainer-trainingsetview-gridview"/>
+                    <ui:VisualElement name="DragAndDropContainer"
+                                      class="styletrainer-trainingsetview__draganddropcontainer"/>
+                </appui:ExVisualElement>
             </appui:ExVisualElement>
         </appui:ExVisualElement>
         <appui:ExVisualElement name="LoadingScreen" class="styletrainer-trainingsetview__loadingscreen">

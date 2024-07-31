@@ -97,6 +97,7 @@ namespace Unity.Muse.Sprite.UIComponents
 
         public override void UpdateView()
         {
+            base.UpdateView();
             m_ButtonContainer.style.display = canRefineBookmark ? DisplayStyle.Flex : DisplayStyle.None;
             m_ButtonContainer.visible = canRefineBookmark;
             m_EditButton.SetEnabled(m_PreviewImage.image != null);

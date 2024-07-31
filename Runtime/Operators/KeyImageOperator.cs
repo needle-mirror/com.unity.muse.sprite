@@ -6,6 +6,7 @@ using Unity.Muse.Common;
 using Unity.Muse.Common.Tools;
 using Unity.Muse.Sprite.Backend;
 using Unity.Muse.Sprite.Common.Backend;
+using Unity.Muse.Sprite.Data;
 using Unity.Muse.Sprite.UIComponents;
 using UnityEngine;
 using UnityEngine.Scripting;
@@ -38,9 +39,13 @@ namespace Unity.Muse.Sprite.Operators
         VisualElement m_ImageContainer;
         TouchSliderFloat m_MaskTightness;
         Text m_HintLabel;
+        VisualElement m_KeyImageControls;
 
         readonly Vector2Int k_DefaultDoodleSize = new Vector2Int(512, 512);
         List<MuseShortcut> m_Shortcuts;
+
+        OperatorOverridePublishers m_Publishers;
+        MuseToggle m_UseOverride;
 
         float m_BrushSize;
 
@@ -80,6 +85,9 @@ namespace Unity.Muse.Sprite.Operators
         /// Accept dragged elements class name.
         /// </summary>
         public const string acceptDragClassName = baseUssClassName + "__accept-drag";
+
+        public const string useOverrideElementName = "use-override-toggle";
+        public const string operatorRootElementName = "key-image-node";
 
         enum ESettings
         {
@@ -130,28 +138,34 @@ namespace Unity.Muse.Sprite.Operators
         {
             var UI = new ExVisualElement
             {
-                passMask = ExVisualElement.Passes.Clear | ExVisualElement.Passes.OutsetShadows | ExVisualElement.Passes.BackgroundColor
+                passMask = ExVisualElement.Passes.Clear | ExVisualElement.Passes.OutsetShadows | ExVisualElement.Passes.BackgroundColor,
             };
             UI.AddToClassList(baseUssClassName);
             UI.AddToClassList("muse-node");
             UI.AddToClassList("appui-elevation-8");
             UI.styleSheets.Add(ResourceManager.Load<StyleSheet>(PackageResources.keyImageStyleSheet));
-            UI.name = "key-image-node";
+            UI.name = operatorRootElementName;
 
             var titleText = new Text();
             titleText.text = "Input Image";
             titleText.AddToClassList("muse-node__title");
             titleText.AddToClassList("bottom-gap");
             UI.Add(titleText);
-
-            var controlButtons = new VisualElement();
-            controlButtons.AddToClassList(controlButtonsContainerClassName);
-            controlButtons.AddToClassList("bottom-gap");
-            UI.Add(controlButtons);
+            m_UseOverride = new MuseToggle($"Use {m_Publishers?.GetPublisherName<OperatorReferenceImageOverride>()} Override")
+            {
+                name = useOverrideElementName,
+            };
+            UI.Add(m_UseOverride);
+            m_UseOverride.OnToggle += OnUseOverrideChanged;
+            UpdateUseOverrideUI(PublisherHasOverrides());
+            m_KeyImageControls = new VisualElement();
+            m_KeyImageControls.AddToClassList(controlButtonsContainerClassName);
+            m_KeyImageControls.AddToClassList("bottom-gap");
+            UI.Add(m_KeyImageControls);
 
             var controlButtonsLeft = new ActionGroup { compact = true };
             controlButtonsLeft.AddToClassList(controlButtonsContainerLeftClassName);
-            controlButtons.Add(controlButtonsLeft);
+            m_KeyImageControls.Add(controlButtonsLeft);
 
 
             m_BrushButton = new ActionButton(ToggleBrush)
@@ -189,10 +203,10 @@ namespace Unity.Muse.Sprite.Operators
             m_BrushSizeSlider.label = "Radius";
             m_BrushSizeSlider.AddToClassList("right-gap");
 
-            controlButtons.Add(m_BrushSizeSlider);
+            m_KeyImageControls.Add(m_BrushSizeSlider);
             var controlButtonsRight = new VisualElement();
             controlButtonsRight.AddToClassList(controlButtonsContainerRightClassName);
-            controlButtons.Add(controlButtonsRight);
+            m_KeyImageControls.Add(controlButtonsRight);
 
             m_DeleteButton = new Button(OnDeleteClicked) { leadingIcon = "delete", tooltip = TextContent.doodleClearTooltip };
             controlButtonsRight.Add(m_DeleteButton);
@@ -217,8 +231,6 @@ namespace Unity.Muse.Sprite.Operators
                 var t = new Texture2D(2, 2);
                 t.LoadImage(Convert.FromBase64String(refImageRaw));
                 t.Apply();
-
-                // var s = UnityEngine.Sprite.Create(t, new Rect(0, 0, t.width, t.height), Vector2.one * 0.5f, 100, 0, SpriteMeshType.FullRect);
                 m_ReferenceImage.image = t;
             }
 
@@ -254,6 +266,16 @@ namespace Unity.Muse.Sprite.Operators
             UI.RegisterCallback<AttachToPanelEvent>(OnAttach);
             UI.RegisterCallback<DetachFromPanelEvent>(OnDetach);
             return UI;
+        }
+
+        void OnUseOverrideChanged(bool obj)
+        {
+            if(obj)
+                m_ImageContainer?.RemoveManipulator(m_SpriteTextureDropManipulator);
+            else
+                m_ImageContainer?.AddManipulator(m_SpriteTextureDropManipulator);
+            m_KeyImageControls.SetEnabled(!obj);
+            UpdateFromOverride(m_Publishers?.RequestCurrentPublisherData<OperatorReferenceImageOverride>()?.bytes, m_Publishers?.RequestCurrentPublisherData<OperatorDoodleImageOverride>()?.bytes);
         }
 
         internal bool HasReference() => string.IsNullOrEmpty(GetReferenceImage());
@@ -424,15 +446,60 @@ namespace Unity.Muse.Sprite.Operators
         public void RegisterToEvents(Model model)
         {
             m_Model = model;
-
+            RegisterToOverrideEvents();
             m_Model.OnDispose += OnDispose;
             AddUndo();
+        }
+
+        void UnregisterFromOverrideEvents()
+        {
+            if (m_Publishers != null)
+            {
+                m_Publishers.UnregisterFromPublisher<OperatorReferenceImageOverride>(OnReferenceImageOverride);
+                m_Publishers.UnregisterFromPublisher<OperatorDoodleImageOverride>(OnDoodleImageOverride);
+                m_Publishers.OnModified -= OnPublishersModified;
+            }
+        }
+
+        void RegisterToOverrideEvents()
+        {
+            var dataPublisher = m_Model.GetData<OperatorOverridePublishers>();
+            UnregisterFromOverrideEvents();
+
+            m_Publishers = dataPublisher;
+            var havePublisher = m_Publishers != null;
+            bool hasOverride = PublisherHasOverrides();
+            UpdateUseOverrideUI(hasOverride);
+            if (havePublisher)
+            {
+                m_Publishers.OnModified += OnPublishersModified;
+                if (hasOverride)
+                {
+                    m_UseOverride?.SetLabel($"Use {m_Publishers.GetPublisherName<OperatorReferenceImageOverride>()} Override");
+                    m_Publishers.RegisterToPublisher<OperatorReferenceImageOverride>(OnReferenceImageOverride);
+                    m_Publishers.RegisterToPublisher<OperatorDoodleImageOverride>(OnDoodleImageOverride);
+                    UpdateFromOverride(m_Publishers.RequestCurrentPublisherData<OperatorReferenceImageOverride>().bytes,
+                        m_Publishers.RequestCurrentPublisherData<OperatorDoodleImageOverride>().bytes);
+                }
+            }
+        }
+
+        bool PublisherHasOverrides()
+        {
+            return m_Publishers?.HavePublisher<OperatorReferenceImageOverride>() == true &&
+                m_Publishers?.HavePublisher<OperatorDoodleImageOverride>() == true;
+        }
+
+        void OnPublishersModified()
+        {
+            RegisterToOverrideEvents();
         }
 
         public void UnregisterFromEvents(Model model)
         {
             model.OnDispose -= OnDispose;
             RemoveUndo();
+            UnregisterFromOverrideEvents();
             if (m_Model == model)
                 m_Model = null;
         }
@@ -508,6 +575,8 @@ namespace Unity.Muse.Sprite.Operators
 
         void UpdateVisibility()
         {
+            if (m_UseOverride == null)
+                return;
             var isScenePicking = false;
 #if UNITY_EDITOR
             isScenePicking = m_ScenePicker.isPicking;
@@ -656,5 +725,49 @@ namespace Unity.Muse.Sprite.Operators
         }
 
         #endregion
+
+        void OnReferenceImageOverride(OperatorReferenceImageOverride obj)
+        {
+            UpdateFromOverride(obj.bytes, m_Publishers?.RequestCurrentPublisherData<OperatorDoodleImageOverride>()?.bytes);
+        }
+
+        void UpdateFromOverride(byte[] image, byte[] doodle)
+        {
+            if (m_UseOverride != null && m_UseOverride.value)
+            {
+                m_DoodlePadManipulator.ClearDoodle();
+                m_ReferenceImage.image = null;
+                m_OperatorData.settings[(int)ESettings.Doodle] = string.Empty;
+                m_OperatorData.settings[(int)ESettings.ReferenceImage] = string.Empty;
+                m_OperatorData.settings[(int)ESettings.IsClear] = true.ToString();
+                if (image != null && image.Length > 0)
+                {
+                    var t = new Texture2D(2, 2);
+                    t.LoadImage(image);
+                    t.Apply();
+                    m_OperatorData.settings[(int)ESettings.ReferenceImage] = Convert.ToBase64String(image);
+                    m_ReferenceImage.image = t;
+                }
+                else if (doodle != null && doodle.Length > 0)
+                {
+                    m_OperatorData.settings[(int)ESettings.Doodle] = Convert.ToBase64String(doodle);
+                    m_OperatorData.settings[(int)ESettings.IsClear] = false.ToString();
+                    m_DoodlePadManipulator.SetValueWithoutNotify(doodle);
+                    m_DoodlePadManipulator.isClear = false;
+                }
+            }
+
+            UpdateVisibility();
+        }
+
+        void UpdateUseOverrideUI(bool hasOverride)
+        {
+            m_UseOverride?.Show(hasOverride);
+        }
+
+        void OnDoodleImageOverride(OperatorDoodleImageOverride obj)
+        {
+            UpdateFromOverride(m_Publishers?.RequestCurrentPublisherData<OperatorReferenceImageOverride>()?.bytes, obj.bytes);
+        }
     }
 }

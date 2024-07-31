@@ -33,7 +33,7 @@ namespace Unity.Muse.Sprite.Common.Backend
             var clientUsable = false;
             try
             {
-                clientUsable = ClientStatus.Instance.IsClientUsable;
+                clientUsable = SessionStatus.IsSessionUsable;
             }
             catch (Exception)
             {

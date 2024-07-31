@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Unity.Muse.AppUI.UI;
 using Unity.Muse.Common;
 using Unity.Muse.Sprite.Common.Events;
@@ -33,16 +34,64 @@ namespace Unity.Muse.StyleTrainer
         readonly TabData[] m_TabData;
         StyleData m_StyleData;
         VisualElement m_TabContainer;
-        Tabs m_Tabs;
         StyleModelInfo m_StyleModelInfo;
         EventBus m_EventBus;
-        float m_ThumbnailSize = StyleModelInfoEditor.k_InitialThumbnailSliderValue;
+        float m_ThumbnailSize = StyleModelInfoEditor.initialThumbnailSliderValue;
         Action<bool> m_NotifyCanAddChanged;
 
         public StyleModelInfoEditorContent()
         {
             m_TabData = new[]
             {
+                new TabData
+                {
+                    tabName = StringConstants.trainingSetTab,
+                    view = CreateTrainingSetView(),
+                    CanModify = () => !Utilities.ValidStringGUID(m_StyleData?.trainingSetData[0].guid) && m_StyleData?.state != EState.Training && m_StyleData?.state != EState.Error,
+                    sendAddEvent = (evtBus, styleData) =>
+                    {
+#if UNITY_EDITOR
+                        string lastFolderPath = Preferences.lastImportFolderPath;
+                        if (!Directory.Exists(lastFolderPath))
+                            lastFolderPath = Preferences.defaultImportFolderPath;
+
+                        NativePlugin.OpenFilePanelAsync(
+                            title: "Add training set", 
+                            directory: lastFolderPath, 
+                            filters: new[]
+                        {
+                            new ExtensionFilter("Image files", "png", "jpg", "jpeg"),
+                        }, 
+                            multiselect: true, 
+                            cb: files =>
+                            {
+                                if (files == null || files.Length == 0)
+                                    return;
+                                
+                                var textures = files
+                                    .Select(file =>
+                                {
+                                    if (!string.IsNullOrEmpty(file))
+                                    {
+                                        Preferences.lastImportFolderPath = Path.GetDirectoryName(file);
+                                        var texture = new Texture2D(2, 2);
+                                        ImageConversion.LoadImage(texture, File.ReadAllBytes(file));
+                                        texture.hideFlags = HideFlags.HideAndDontSave;
+                                        texture.name = $"AddFileTexture-{file}";
+                                        return texture;
+                                    }
+                                    return null;
+                                }).Where(t => t).ToList();
+                            
+                                evtBus.SendEvent(new AddTrainingSetEvent
+                                {
+                                    styleData = styleData,
+                                    textures = textures,
+                                });
+                        });
+#endif
+                    }
+                },
                 new TabData
                 {
                     tabName = StringConstants.sampleOutputTab,
@@ -55,35 +104,6 @@ namespace Unity.Muse.StyleTrainer
                             styleData = styleData
                         });
                     }
-                },
-                new TabData
-                {
-                    tabName = StringConstants.trainingSetTab,
-                    view = CreateTrainingSetView(),
-                    CanModify = () => !Utilities.ValidStringGUID(m_StyleData?.trainingSetData[0].guid) && m_StyleData?.state != EState.Training,
-                    sendAddEvent = (evtBus, styleData) =>
-                    {
-#if UNITY_EDITOR
-                        string lastFolderPath = Preferences.lastImportFolderPath;
-                        if (!Directory.Exists(lastFolderPath))
-                            lastFolderPath = Preferences.defaultImportFolderPath;
-
-                        var file = EditorUtilities.OpenFile("Add Training Set", lastFolderPath, "png,jpg,jpeg");
-                        if (!string.IsNullOrEmpty(file))
-                        {
-                            Preferences.lastImportFolderPath = Path.GetDirectoryName(file);
-                            var texture = new Texture2D(2, 2);
-                            ImageConversion.LoadImage(texture, File.ReadAllBytes(file));
-                            texture.hideFlags = HideFlags.HideAndDontSave;
-                            texture.name = $"AddFileTexture-{file}";
-                            evtBus.SendEvent(new AddTrainingSetEvent()
-                            {
-                                styleData = styleData,
-                                textures = new [] { texture }
-                            });
-                        }
-#endif
-                    }
                 }
             };
         }
@@ -95,9 +115,9 @@ namespace Unity.Muse.StyleTrainer
             return t;
         }
 
-        void OnAddClicked()
+        void OnAddImagesToTrainingSetClicked()
         {
-            m_TabData[m_Tabs.value].sendAddEvent(m_EventBus, m_StyleData);
+            m_TabData[0].sendAddEvent(m_EventBus, m_StyleData);
         }
 
         void OnTabValueChange(ChangeEvent<int> evt)
@@ -109,17 +129,10 @@ namespace Unity.Muse.StyleTrainer
         {
             for (var i = 0; i < m_TabData.Length; i++)
             {
-                if (m_Tabs.value == i)
-                {
-                    m_TabData[i].view.GetView().style.display = DisplayStyle.Flex;
-                    m_TabData[i].view.CanModify(m_TabData[i].CanModify());
-                    m_TabData[i].view.OnViewActivated(m_ThumbnailSize);
-                    m_NotifyCanAddChanged?.Invoke(m_TabData[i].CanModify());
-                }
-                else
-                {
-                    m_TabData[i].view.GetView().style.display = DisplayStyle.None;
-                }
+                m_TabData[i].view.GetView().style.display = DisplayStyle.Flex;
+                m_TabData[i].view.CanModify(m_TabData[i].CanModify());
+                m_TabData[i].view.OnViewActivated(m_ThumbnailSize);
+                m_NotifyCanAddChanged?.Invoke(m_TabData[i].CanModify());
             }
         }
 
@@ -139,8 +152,14 @@ namespace Unity.Muse.StyleTrainer
             m_EventBus.RegisterEvent<StyleTrainingEvent>(OnStyleTrainingEvent);
             m_EventBus.RegisterEvent<RequestChangeTabEvent>(OnRequestChangeTabEvent);
             m_EventBus.RegisterEvent<ThumbnailSizeChangedEvent>(OnThumbnailSizeChangedEvent);
+            m_EventBus.RegisterEvent<AddImagesToTrainingSetEvent>(OnAddImagesToTrainingSetEvent);
 
             m_StyleModelInfo.SetEventBus(eventBus);
+        }
+
+        void OnAddImagesToTrainingSetEvent(AddImagesToTrainingSetEvent arg0)
+        {
+            OnAddImagesToTrainingSetClicked();
         }
 
         void OnThumbnailSizeChangedEvent(ThumbnailSizeChangedEvent arg0)
@@ -151,14 +170,12 @@ namespace Unity.Muse.StyleTrainer
 
         void IStyleModelEditorContent.OnAddClicked()
         {
-            OnAddClicked();
         }
 
         void OnRequestChangeTabEvent(RequestChangeTabEvent arg0)
         {
             if (arg0.tabIndex >= 0 && arg0.tabIndex < m_TabData.Length)
             {
-                m_Tabs.value = arg0.tabIndex;
                 if (arg0.highlightIndices != null)
                     m_TabData[arg0.tabIndex].view.SelectItems(arg0.highlightIndices);
             }
@@ -235,14 +252,9 @@ namespace Unity.Muse.StyleTrainer
 
             m_StyleModelInfo = this.Q<StyleModelInfo>();
             m_TabContainer = this.Q<VisualElement>("StyleTabContainer");
-            m_Tabs = m_TabContainer.Q<Tabs>("DataTabs");
-            m_Tabs.Add(new TabItem { name = "StyleTab", label = "Sample Output" });
-            m_Tabs.Add(new TabItem { name = "StyleTab", label = "Training Set" });
-            m_Tabs.RegisterValueChangedCallback(OnTabValueChange);
             var tabContent = m_TabContainer.Q<VisualElement>("TabContent");
             tabContent.Add(m_TabData[0].view.GetView());
             tabContent.Add(m_TabData[1].view.GetView());
-
             UpdateView();
         }
 

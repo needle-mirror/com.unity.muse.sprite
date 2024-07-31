@@ -122,38 +122,8 @@ namespace Unity.Muse.StyleTrainer
                             m_Content.Add(m_PromptRow);
                     }
                 }
-                for(int i = 0; i < m_StyleData.checkPoints.Count; i++)
-                {
-                    var ve = BindVersion(m_StyleData.checkPoints[i], i);
-                    m_Content.Add(ve);
-                }
             }
             UpdateFavouriteCheckpoint();
-        }
-
-        SampleOutputVersionRow BindVersion(CheckPointData checkPoint, int index)
-        {
-            RowStateBase rowState = null;
-            for (int i = 0; i < m_RowState.Count; ++i)
-            {
-                if (m_RowState[i].guid == checkPoint.guid)
-                {
-                    rowState = m_RowState[i];
-                    break;
-                }
-            }
-            var ve = SampleOutputVersionRow.CreateFromUxml(checkPoint, m_RowHeight, rowState);
-            ve.AddToClassList("sampleoutputv2-listview-item");
-            ve.OnFavouriteToggleCallback += OnFavoriteToggleChanged;
-            ve.itemIndex = index;
-            ve.CanModify(m_CanModify);
-            m_Rows.Add(ve);
-            return ve;
-        }
-
-        void OnFavoriteToggleChanged(bool toggle, int index)
-        {
-            OnFavoriteToggleChangedCallback?.Invoke(toggle, m_StyleData.checkPoints[index]);
         }
 
         SampleOutputPromptRow BindPrompt()

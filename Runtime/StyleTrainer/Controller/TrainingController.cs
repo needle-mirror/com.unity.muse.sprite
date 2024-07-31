@@ -108,7 +108,7 @@ namespace Unity.Muse.StyleTrainer
 
                 var trainingTask = new TrainingTask(m_StyleData, m_ContextGUID, m_EventBus);
                 trainingTask.Execute();
-                m_EventBus.SendEvent(new RequestChangeTabEvent { tabIndex = StyleModelInfoEditor.k_SampleOutputTab });
+                m_EventBus.SendEvent(new RequestChangeTabEvent { tabIndex = StyleModelInfoEditor.sampleOutputTab });
             });
         }
 

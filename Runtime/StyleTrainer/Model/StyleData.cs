@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using StyleTrainer.Backend;
 using Unity.Muse.Sprite.Common.Backend;
 using Unity.Muse.StyleTrainer.Debug;
@@ -48,6 +49,7 @@ namespace Unity.Muse.StyleTrainer
 #pragma warning restore 414
 
         public string projectID => m_ProjectID;
+        public const int maxTrainingSetImages = 15;
 
         /// <summary>
         /// Returns true if the style is a built-in fallback style.
@@ -95,7 +97,7 @@ namespace Unity.Muse.StyleTrainer
             : base(state)
         {
             title = StringConstants.newVersion;
-            description = StringConstants.newVersion;
+            description = string.Empty;
             this.guid = guid;
             parentID = Utilities.emptyGUID;
             m_ProjectID = projectId;
@@ -115,7 +117,6 @@ namespace Unity.Muse.StyleTrainer
         public static StyleData CreateNewStyle(string projectID)
         {
             var styleData = new StyleData(EState.New, Utilities.emptyGUID,  projectID);
-            styleData.description = "Set a description here to help you remember what this style is for.";
             styleData.title = "New Style";
             styleData.guid = string.Empty;
             styleData.m_Thumbnail = new ImageArtifact(EState.New);
@@ -151,7 +152,7 @@ namespace Unity.Muse.StyleTrainer
             get
             {
                 if(string.IsNullOrEmpty(m_Name))
-                    return GetFavouriteOrLatestCheckPoint()?.name ?? "Style has no versions. Something is wrong";
+                    return GetFavouriteOrLatestCheckPoint()?.name ?? "Style has no name. Something is wrong";
                 return m_Name;
             }
         }
@@ -190,7 +191,7 @@ namespace Unity.Muse.StyleTrainer
             get
             {
                 if(string.IsNullOrEmpty(m_Name))
-                    return GetSelectedCheckPoint()?.name ?? "Style has no versions. Something is wrong";
+                    return GetSelectedCheckPoint()?.name ?? "Style has no name. Something is wrong";
                 return m_Name;
             }
             set
@@ -211,7 +212,7 @@ namespace Unity.Muse.StyleTrainer
             get
             {
                if(string.IsNullOrEmpty(m_Description))
-                   return GetSelectedCheckPoint()?.description ?? "Style has no versions. Something is wrong";
+                   return GetSelectedCheckPoint()?.description ?? "";
                return m_Description;
             }
             set
@@ -375,7 +376,8 @@ namespace Unity.Muse.StyleTrainer
             }
             else
             {
-                StyleTrainerDebug.LogWarning($"GetStyleResponse {guid} failed {arg2.success} {arg2.error}. Init to initial state");
+                if (!disposing)
+                    StyleTrainerDebug.LogWarning($"GetStyleResponse {guid} failed success={arg2.success} error={arg2.error}. Init to initial state");
                 StyleLoadSuccessNoCheckPoint("New Style", "Set a description here to help you remember what this style is for.", null);
             }
         }
@@ -503,9 +505,27 @@ namespace Unity.Muse.StyleTrainer
             }
         }
 
+        public void RemoveTrainingData(IEnumerable<int> indices)
+        {
+            var descendingIndices = indices.OrderByDescending(x => x).ToArray();
+
+            foreach (var i in descendingIndices)
+            {
+                if (m_TrainingSetData.Count > 0 && m_TrainingSetData[0].Count > i)
+                {
+                    var e = m_TrainingSetData[0][i];
+                    e.Delete();
+                    e.OnDispose();
+                    m_TrainingSetData[0].RemoveAt(i);
+                    DataChanged(this);
+                }
+            }
+        }
+
         public void RemoveSampleOutputPrompt(int i)
         {
             m_SampleOutputPrompts.RemoveAt(i);
+            DataChanged(this);
         }
 
         public void RemoveCheckPointAt(int index)
@@ -549,6 +569,7 @@ namespace Unity.Muse.StyleTrainer
             if (m_SampleOutputPrompts.Count > i)
             {
                 m_SampleOutputPrompts[i] = s.Substring(0, Math.Min(s.Length, maxPromptLength));
+                DataChanged(this);
                 return m_SampleOutputPrompts[i];
             }
 

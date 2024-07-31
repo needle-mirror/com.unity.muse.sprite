@@ -3,10 +3,9 @@
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xmlns:engine="UnityEngine.UIElements"
         xmlns:appui="Unity.Muse.AppUI.UI"
-        xmlns:styleTrainer="Unity.Muse.StyleTrainer"
+        xmlns:styleTrainer="Unity.Muse.StyleTrainer" xmlns:ui="UnityEngine.UIElements"
         xsi:noNamespaceSchemaLocation="../../../../../../../UIElementsSchema/UIElements.xsd"
->
-    <Style src="project:/Packages/com.unity.muse.common/PackageResources/Styles/UnityMuseTheme.tss"/>
+        xsi:schemaLocation="../../../../../../../UIElementsSchema/UnityEngine.UIElements.xsd">
     <Style src="../uss/StyleTrainerStyle.uss"/>
     <Style src="project:/Packages/com.unity.muse.common/Runtime/UI/PackageResources/uss/Account.uss"/>
     <appui:Panel name="muse-root" class="muse-root" scale="small">
@@ -25,10 +24,11 @@
             </engine:VisualElement>
             <engine:VisualElement name = "StyleTrainerContent" class="styletrainer-mainui__content">
                 <engine:VisualElement name = "StyleTrainerTopMenu" class="styletrainer-mainui__topmenu">
-                    <engine:VisualElement name = "AccountDropDownContainer" class="styletrainer-mainui__accoutdropdown_container"/>
+                    <appui:Button name="library-button" class="styletrainer-mainui__topmenu__library-button" title="Library"/>
+                    <appui:Text name="style-name" class="styletrainer-mainui__topmenu__style-name" text="My Style"/>
                 </engine:VisualElement>
-                <appui:SplitView name="StyleTrainerUISplitView" class="styletrainer-mainui__splitview">
-                </appui:SplitView>
+                <ui:TwoPaneSplitView name="StyleTrainerUISplitView" class="styletrainer-mainui__splitview">
+                </ui:TwoPaneSplitView>
             </engine:VisualElement>
             <engine:VisualElement name="LoadingScreen" class="styletrainer-mainui__loadingscreen">
                 <appui:CircularProgress name="LoadingIcon" class="styletrainer-mainui__loadingicon" quiet="true"/>

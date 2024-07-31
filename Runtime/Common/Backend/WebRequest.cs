@@ -13,6 +13,8 @@ namespace Unity.Muse.Sprite.Common.Backend
         Dictionary<string, string> m_Header = new();
 
         public string info => m_WebRequest.url;
+        public float downloadProgress => m_WebRequest?.downloadProgress ?? -1;
+        public ulong downloadBytes => m_WebRequest?.downloadedBytes ?? ulong.MaxValue;
 
         public WebRequest(string url, string method)
         {

@@ -21,7 +21,7 @@ namespace Unity.Muse.Sprite.UIMode
         string m_Prompt;
         bool m_HasMask;
 
-        public void Activate(MainUI mainUI)
+        public void Activate(MainUI mainUI, string modeKey1)
         {
             m_MainUI = mainUI;
             m_Model = m_MainUI.model;
@@ -105,8 +105,8 @@ namespace Unity.Muse.Sprite.UIMode
                 {
                     var newOp = op switch
                     {
-                        SpriteGeneratorSettingsOperator => m_Model.SelectedArtifact.GetOperator<SpriteGeneratorSettingsOperator>().Clone() ?? op,
-                        SessionOperator => m_Model.SelectedArtifact.GetOperator<SessionOperator>().Clone() ?? op,
+                        SpriteGeneratorSettingsOperator => m_Model.SelectedArtifact?.GetOperator<SpriteGeneratorSettingsOperator>().Clone() ?? op,
+                        SessionOperator => m_Model.SelectedArtifact?.GetOperator<SessionOperator>().Clone() ?? op,
                         _ => op
                     };
 

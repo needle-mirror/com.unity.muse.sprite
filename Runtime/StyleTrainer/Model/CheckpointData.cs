@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using StyleTrainer.Backend;
 using Unity.Muse.Sprite.Common.Backend;
 using Unity.Muse.StyleTrainer.Debug;
@@ -21,7 +22,6 @@ namespace Unity.Muse.StyleTrainer
         string m_Description = StringConstants.newVersion;
         public string parent_id = Utilities.emptyGUID;
 
-
         [FormerlySerializedAs("trainingSetData")]
         [SerializeField]
         TrainingSetData m_TrainingSetData;
@@ -29,6 +29,8 @@ namespace Unity.Muse.StyleTrainer
         [FormerlySerializedAs("validationImagesData")]
         [SerializeField]
         List<SampleOutputData> m_ValidationImagesData = new();
+        [SerializeField]
+        string m_FavoriteSampleOutputDataGuid;
 
         [SerializeField]
         int m_TrainingSteps;
@@ -67,6 +69,25 @@ namespace Unity.Muse.StyleTrainer
         public string versionName { get; set; }
 
         public IReadOnlyList<SampleOutputData> validationImageData => m_ValidationImagesData;
+
+        public string favoriteSampleOutputDataGuid
+        {
+            get => m_FavoriteSampleOutputDataGuid;
+            set => m_FavoriteSampleOutputDataGuid = value;
+        }
+
+        public SampleOutputData GetFavoriteSampleOutputData()
+        {
+            if(string.IsNullOrEmpty(favoriteSampleOutputDataGuid))
+            {
+                favoriteSampleOutputDataGuid = validationImageData[0].guid;
+            }
+
+            var favorite = validationImageData?.FirstOrDefault(x => x.guid == favoriteSampleOutputDataGuid);
+
+            return favorite;
+        }
+
         public TrainingSetData trainingSetData => m_TrainingSetData;
 
         public int trainingSteps

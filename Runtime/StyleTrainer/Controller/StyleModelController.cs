@@ -1,6 +1,7 @@
 using System;
 using StyleTrainer.Backend;
 using Unity.Muse.AppUI.UI;
+using Unity.Muse.Common;
 using Unity.Muse.Sprite.Common.Events;
 using Unity.Muse.Sprite.Common.Backend;
 using Unity.Muse.StyleTrainer.Debug;
@@ -44,6 +45,7 @@ namespace Unity.Muse.StyleTrainer
             eventBus.RegisterEvent<DeleteTrainingSetEvent>(OnDeleteTrainingSetEvent);
             eventBus.RegisterEvent<StyleModelListSelectionChangedEvent>(OnStyleModelListSelectionChangedEvent);
             eventBus.RegisterEvent<SetFavouriteCheckPointEvent>(OnSetFavouriteCheckPoint);
+            eventBus.RegisterEvent<FavoritePreviewSampleOutputEvent>(OnFavoriteSampleChanged);
             eventBus.RegisterEvent<StyleVisibilityButtonClickedEvent>(OnStyleVisibilityChanged);
             eventBus.RegisterEvent<CheckPointSelectionChangeEvent>(ControlPointSelectionChanged);
             eventBus.RegisterEvent<DuplicateButtonClickEvent>(OnDuplicateClicked);
@@ -229,6 +231,28 @@ namespace Unity.Muse.StyleTrainer
             SendModifiedEvent();
         }
 
+        void OnFavoriteSampleChanged(FavoritePreviewSampleOutputEvent arg0)
+        {
+            var favoriteFound = false;
+
+            foreach (var image in arg0.checkPointData.validationImageData)
+            {
+                if (image?.guid == arg0?.favoriteSampleOutputData?.guid)
+                {
+                    favoriteFound = true;
+                    arg0.checkPointData.favoriteSampleOutputDataGuid = image.guid;
+                    break;
+                }
+            }
+
+            if (!favoriteFound)
+            {
+                arg0.checkPointData.favoriteSampleOutputDataGuid = arg0.checkPointData.validationImageData[0].guid;
+            }
+
+            SendModifiedEvent();
+        }
+
         void OnSetFavouriteCheckPointSuccess(SetCheckPointFavouriteRestCall arg1, SetCheckPointFavouriteResponse arg2)
         {
             StyleTrainerDebug.Log($"OnSetFavouriteCheckPointSuccess {arg2.guid}");
@@ -248,7 +272,7 @@ namespace Unity.Muse.StyleTrainer
 
         void OnDeleteTrainingSetEvent(DeleteTrainingSetEvent arg0)
         {
-            m_CurrentSelectedStyle.RemoveTrainingData(arg0.indices[0]);
+            m_CurrentSelectedStyle.RemoveTrainingData(arg0.indices);
             UpdateUIActionButtonState(arg0.styleData);
             eventBus.SendEvent(new TrainingSetDataSourceChangedEvent
             {
@@ -307,13 +331,15 @@ namespace Unity.Muse.StyleTrainer
                 var ia = new ImageArtifact(EState.New);
                 var tex = arg0.textures[i];
 
-                var capWidth = Math.Min(tex.width, StyleTrainerConfig.config.maxTrainingImageSize.x);
-                capWidth = Math.Max(StyleTrainerConfig.config.minTrainingImageSize.x, capWidth);
-                var capHeight = Math.Min(tex.height, StyleTrainerConfig.config.maxTrainingImageSize.y);
-                capHeight = Math.Max(StyleTrainerConfig.config.minTrainingImageSize.y, capHeight);
+                var minSizeLimit = new Vector2Int(StyleTrainerConfig.config.minTrainingImageSize.x, StyleTrainerConfig.config.minTrainingImageSize.y);
+                var maxSizeLimit = new Vector2Int(StyleTrainerConfig.config.maxTrainingImageSize.x, StyleTrainerConfig.config.maxTrainingImageSize.y);
+
+                var textureSize = GetImageSizeWithLimit(tex, minSizeLimit.x, minSizeLimit.y, maxSizeLimit.x, maxSizeLimit.y);
+                var capWidth = textureSize.x;
+                var capHeight = textureSize.y;
+
                 if (imageSizeWarning == false && (tex.width != capWidth || tex.height != capHeight)) imageSizeWarning = true;
 
-                // todo: rescale with aspect ratio
                 tex = BackendUtilities.CreateTemporaryDuplicate(tex, capWidth, capHeight, TextureFormat.RGB24);
                 ia.SetTexture(tex.EncodeToPNG());
                 Object.DestroyImmediate(tex);
@@ -339,6 +365,57 @@ namespace Unity.Muse.StyleTrainer
             SendModifiedEvent();
         }
 
+        internal static Vector2Int GetImageSizeWithLimit(Texture2D texture, int minWidth, int minHeight, int maxWidth, int maxHeight)
+        {
+            if (texture.width <= maxWidth && texture.height <= maxHeight
+                && texture.width >= minWidth && texture.height >= minHeight)
+            {
+                return new Vector2Int(texture.width, texture.height);
+            }
+
+            var aspectRatio = (float)texture.width / texture.height;
+
+            int newTextureWidth;
+            int newTextureHeight;
+
+            if (texture.width < minWidth
+                || texture.height < minHeight)
+            {
+                newTextureWidth = minWidth;
+                newTextureHeight = minHeight;
+
+                if (aspectRatio < 1) //Height is bigger
+                {
+                    newTextureHeight = (int)((float)texture.height / texture.width * newTextureWidth);
+                }
+                else //Width is bigger
+                {
+                    newTextureWidth = (int)((float)texture.width / texture.height * newTextureHeight);
+                }
+            }
+            else
+            {
+                newTextureWidth = maxWidth;
+                newTextureHeight = maxHeight;
+
+                if (aspectRatio < 1) //Height is bigger
+                {
+                    newTextureWidth = (int)((float)texture.width / texture.height * newTextureWidth);
+                }
+                else //Width is bigger
+                {
+                    newTextureHeight = (int)((float)texture.height / texture.width * newTextureHeight);
+                }
+            }
+
+            newTextureWidth = Math.Min(newTextureWidth, maxWidth);
+            newTextureWidth = Math.Max(minWidth, newTextureWidth);
+            newTextureHeight = Math.Min(newTextureHeight, maxHeight);
+            newTextureHeight = Math.Max(minHeight, newTextureHeight);
+
+            return new Vector2Int(newTextureWidth, newTextureHeight);
+        }
+
         void OnAddSampleOutputEvent(AddSampleOutputEvent arg0)
         {
             arg0.styleData.AddSampleOutput(new SampleOutputData(EState.New, ""));
@@ -349,7 +426,7 @@ namespace Unity.Muse.StyleTrainer
             }, true);
             eventBus.SendEvent(new RequestChangeTabEvent
             {
-                tabIndex = StyleModelInfoEditor.k_SampleOutputTab,
+                tabIndex = StyleModelInfoEditor.sampleOutputTab,
                 highlightIndices = new [] { arg0.styleData.sampleOutputPrompts.Count - 1}
             }, true);
             UpdateUIActionButtonState(arg0.styleData);

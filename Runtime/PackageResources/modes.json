@@ -7,6 +7,10 @@
       "title": "Sprite Generator",
       "version": "1.0",
       "enabled": true,
+      "group": "Sprite",
+      "group_order": 0,
+      "icon_path": "Packages/com.unity.muse.common/PackageResources/Logos/UnityIcon.png",
+      "icon_label": "Unity",
       "operators": [
         {
           "type": "GenerateOperator",

@@ -2,9 +2,9 @@
 uid: get-started
 ---
 
-# Get started with Muse Sprite Generator
+# Get started with Muse Sprite
 
-The Muse Sprite Generator is a tool that uses machine learning to generate [sprites](https://docs.unity3d.com/Manual/Sprites.html) based on the prompt you enter. You can set the number of sprites to generate. You can also apply the generated sprites directly to objects in your **Scene** view.
+Muse Sprite is a tool that uses machine learning to generate [sprites](https://docs.unity3d.com/Manual/Sprites.html) based on the prompt you enter. You can set the number of sprites to generate. You can also apply the generated sprites directly to objects in your **Scene** view.
 
 ## Launch the tool
 
@@ -29,7 +29,7 @@ To apply the generated sprite directly to your project, drag it from the **Gener
 
 ## Additional resources
 
-* [Muse Texture Generator](https://docs.unity3d.com/Packages/com.unity.muse.texture@latest)
+* [Muse Texture](https://docs.unity3d.com/Packages/com.unity.muse.texture@latest)
 * [Work with sprites](https://docs.unity3d.com/Manual/Sprites.html)
 * [Unity AI FAQ](https://unity.com/ai/faq)
 * [Muse feature setup](https://unity.com/products/muse/onboarding)

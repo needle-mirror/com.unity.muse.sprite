@@ -11,7 +11,7 @@ namespace Unity.Muse.StyleTrainer
         public int trainingSteps = 2000;
         public int minTrainingSetSize = 3;
         public int maxTrainingSetSize = 10;
-        public int minSampleSetSize = 1;
+        public int minSampleSetSize = 3;
         public int maxSampleSetSize = 5;
         public Vector2Int minTrainingImageSize = new(128, 128);
         public Vector2Int maxTrainingImageSize = new(512, 512);
@@ -24,7 +24,7 @@ namespace Unity.Muse.StyleTrainer
         StyleTrainerArtifactCache m_ArtifactCache;
         public string artifactCachePath =>
 #if UNITY_EDITOR
-            "Library/Muse/StyleTrainer/StyleTrainerCache.db";
+            $"{ApplicationExtensions.museDbPath}/StyleTrainerCache.db";
 #else
             $"{Application.persistentDataPath}/StyleTrainerCache.db";
 #endif

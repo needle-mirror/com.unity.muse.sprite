@@ -10,12 +10,17 @@
     <styleTrainer:StyleModelInfo class="styletrainer-stylemodelinfo" name="StyleModelInfo">
         <ui:VisualElement name="StyleModelInfoContent" class="styletrainer-stylemodelinfo__content">
             <ui:VisualElement name="StyleModelInfoDetails" class="styletrainer-stylemodelinfo__details">
-                <ui:VisualElement name="StyleModelInfoDetailsNameAndCheckpoint"
+
+                <ui:VisualElement class="styletrainer-stylemodelinfo__details__image-container">
+                    <styleTrainer:PreviewImage name="styletrainer-preview-image" class="styletrainer-stylemodelinfo__details__image-preview" />
+                </ui:VisualElement>
+                <ui:VisualElement class="styletrainer-stylemodelinfo__details__name-and-description-container">
+                     <ui:VisualElement name="StyleModelInfoDetailsNameAndCheckpoint"
                                        class="styletrainer-stylemodelinfo__details__nameandcheckpoint">
                     <ui:VisualElement
                             class="styletrainer-stylemodelinfo__details__field styletrainer-stylemodelinfo__details__nameandcheckpoint__name">
                         <ui:VisualElement class="styletrainer-stylemodelinfo__icon_nametextfield">
-                            <appui:Text text="Name"
+                            <appui:Text text="Style Name"
                                         class="styletrainer-stylemodelinfo__details__field__label styletrainer__elipsis-no-wrap"
                                         size="S"/>
                             <ui:VisualElement
@@ -34,28 +39,33 @@
                         <appui:TextField name="StyleModelInfoDetailsName"
                                          class="styletrainer-stylemodelinfo__details__nameandcheckpoint__name_textfield"
                                          size="S"/>
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+
+                    <ui:VisualElement
+                        class="styletrainer-stylemodelinfo__details__field styletrainer-stylemodelinfo__details__description">
+                        <ui:VisualElement class="styletrainer-stylemodelinfo__description-container">
+                            <appui:Text text="Description" class="styletrainer-stylemodelinfo__details__field__label" size="S"/>
+                            <appui:Text name="DescriptionTextCount" text="0/256" class="styletrainer-stylemodelinfo__text_count"
+                                        size="S"/>
+                        </ui:VisualElement>
+                            <appui:TextArea name="StyleModelInfoDetailsDescription"
+                                            class="styletrainer-stylemodelinfo__details__description_textarea" size="S"/>
                     </ui:VisualElement>
                 </ui:VisualElement>
-                <ui:VisualElement
-                        class="styletrainer-stylemodelinfo__details__field styletrainer-stylemodelinfo__details__description">
-                    <appui:Text text="Description" class="styletrainer-stylemodelinfo__details__field__label" size="S"/>
-                    <appui:TextArea name="StyleModelInfoDetailsDescription"
-                                    class="styletrainer-stylemodelinfo__details__description_textarea" size="S"/>
-                    <appui:Text name="DescriptionTextCount" text="0/256" class="styletrainer-stylemodelinfo__text_count"
-                                size="S"/>
-                </ui:VisualElement>
 
-                <ui:VisualElement name="StyleModelInfoDetailsButtonContainer"
-                                       class="styletrainer-stylemodelinfo__details__buttoncontainer styletrainer__elipsis-no-wrap">
-                    <appui:Button title="Duplicate Style" name="StyleModelInfoDetailsDuplicateStyle"
-                                        size="L"
-                                        class="styletrainer-stylemodelinfo__details__buttoncontainer__duplicatestyle"
-                                        />
-                    <appui:Button title="Generate Style"  name="StyleModelInfoDetailsGenerateStyle"
-                                        variant="Accent" size="L"
-                                        class="styletrainer-stylemodelinfo__details__buttoncontainer__generatestyle"
-                                        />
-                </ui:VisualElement>
+
+                <!-- <ui:VisualElement name="StyleModelInfoDetailsButtonContainer" -->
+                <!--                        class="styletrainer-stylemodelinfo__details__buttoncontainer styletrainer__elipsis-no-wrap"> -->
+                <!--     <appui:Button title="Duplicate Style" name="StyleModelInfoDetailsDuplicateStyle" -->
+                <!--                         size="L" -->
+                <!--                         class="styletrainer-stylemodelinfo__details__buttoncontainer__duplicatestyle" -->
+                <!--                         /> -->
+                <!--     <appui:Button title="Generate Style"  name="StyleModelInfoDetailsGenerateStyle" -->
+                <!--                         variant="Accent" size="L" -->
+                <!--                         class="styletrainer-stylemodelinfo__details__buttoncontainer__generatestyle" -->
+                <!--                         /> -->
+                <!-- </ui:VisualElement> -->
             </ui:VisualElement>
         </ui:VisualElement>
     </styleTrainer:StyleModelInfo>

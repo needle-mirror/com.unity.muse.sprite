@@ -18,6 +18,10 @@
     "precompiledReferences": [],
     "autoReferenced": false,
     "defineConstraints": [],
-    "versionDefines": [],
+    "versionDefines": [{
+        "name": "Unity",
+        "expression": "2023.2.0a22",
+        "define": "ENABLE_UNITYENGINE_ANALITICS"
+    }],
     "noEngineReferences": false
 }

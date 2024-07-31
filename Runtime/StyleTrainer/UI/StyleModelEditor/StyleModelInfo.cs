@@ -3,7 +3,6 @@ using Unity.Muse.AppUI.UI;
 using Unity.Muse.Sprite.Common.Events;
 using Unity.Muse.StyleTrainer.Events.SampleOutputModelEvents;
 using Unity.Muse.StyleTrainer.Events.StyleModelEditorUIEvents;
-using Unity.Muse.StyleTrainer.Events.StyleModelEvents;
 using Unity.Muse.StyleTrainer.Events.StyleModelListUIEvents;
 using Unity.Muse.StyleTrainer.Events.StyleTrainerMainUIEvents;
 using Unity.Muse.StyleTrainer.Events.TrainingControllerEvents;
@@ -23,8 +22,7 @@ namespace Unity.Muse.StyleTrainer
         Text m_DescriptionTextCount;
         TextField m_Name;
         TextArea m_Description;
-        AppUI.UI.Button m_DuplicateButton;
-        AppUI.UI.Button m_GenerateButton;
+        PreviewImage m_PreviewImage;
         EventBus m_EventBus;
         StyleData m_StyleData;
         CircularProgress m_TrainingIcon;
@@ -45,50 +43,65 @@ namespace Unity.Muse.StyleTrainer
             m_Name.RegisterValueChangedCallback(OnNameChanged);
             m_Name.RegisterValueChangingCallback(OnNameChanging);
             m_Description = this.Q<TextArea>("StyleModelInfoDetailsDescription");
+            m_Description.placeholder = StringConstants.styleDescriptionPlaceholder;
             m_Description.RegisterValueChangedCallback(OnDescriptionChanged);
             m_Description.RegisterValueChangingCallback(OnDescriptionChanging);
-            m_Description.RegisterCallback((KeyDownEvent evt) =>
-            {
-                if ((evt.keyCode == KeyCode.Tab || (evt.keyCode == KeyCode.None && evt.character == '\t')) && !evt.shiftKey)
-                {
-                    evt.StopImmediatePropagation();
-#if !UNITY_2023_2_OR_NEWER
-                    evt.PreventDefault();
-#endif
-                    if (evt.character != '\t')
-                        m_Description.focusController.FocusNextInDirectionEx(m_Description, VisualElementFocusChangeDirection.right);
-                }
-            }, TrickleDown.TrickleDown);
 
             m_DescriptionTextCount = this.Q<Text>("DescriptionTextCount");
 
             m_TrainingIcon = this.Q<CircularProgress>("TrainingIcon");
             m_ErrorIcon = this.Q<Icon>("ErrorIcon");
             m_StatusLabel = this.Q<Text>("StatusLabel");
-
-            m_DuplicateButton = this.Q<AppUI.UI.Button>("StyleModelInfoDetailsDuplicateStyle");
-            m_DuplicateButton.clicked += OnDuplicateButtonClicked;
-
-            m_GenerateButton = this.Q<AppUI.UI.Button>("StyleModelInfoDetailsGenerateStyle");
-            m_GenerateButton.clicked += OnGenerateButtonClicked;
+            m_PreviewImage = this.Q<PreviewImage>("styletrainer-preview-image");
+            SetPreviewImage(null);
         }
 
         void OnNameChanging(ChangingEvent<string> evt)
         {
-            if (evt.newValue.Length > StyleData.maxNameLength) m_Name.SetValueWithoutNotify(evt.previousValue);
+            if (evt.newValue.Length > StyleData.maxNameLength)
+            {
+                m_Name.SetValueWithoutNotify(evt.previousValue);
+            }
+
+            m_EventBus.SendEvent(new ChangeStyleNameEvent{newStyleName = evt.newValue});
+        }
+
+        void OnNameChanged(ChangeEvent<string> evt)
+        {
+            if (!string.IsNullOrWhiteSpace(evt.newValue))
+            {
+                m_StyleData.title = evt.newValue;
+            }
+            else
+            {
+                m_Name.SetValueWithoutNotify(m_StyleData.title);
+            }
+
+            m_EventBus.SendEvent(new ChangeStyleNameEvent{newStyleName = m_StyleData.title});
         }
 
         void OnDescriptionChanging(ChangingEvent<string> evt)
         {
-            if (evt.newValue.Length > StyleData.maxDescriptionLength) m_Description.SetValueWithoutNotify(evt.previousValue);
+            if (evt.newValue.Length > StyleData.maxDescriptionLength)
+            {
+                m_Description.SetValueWithoutNotify(evt.previousValue);
+            }
 
             m_DescriptionTextCount.text = $"{m_Description.value.Length}/{StyleData.maxDescriptionLength}";
+            m_StyleData.description = evt.newValue;
+            m_Description.tooltip = m_Description.value;
+        }
+
+        void OnDescriptionChanged(ChangeEvent<string> evt)
+        {
+            m_StyleData.description = evt.newValue;
+            m_Description.tooltip = m_Description.value;
         }
 
         void UpdateInfoUI()
         {
-            UpdateButtonState();
-            UpdateStatusIcon();
+            SetPreviewImage(null);
+            UpdateStatusTextAndIcon();
             m_Name.SetEnabled(m_StyleData?.state == EState.New && !Utilities.ValidStringGUID(m_StyleData.guid));
             m_Description.SetEnabled(m_StyleData?.state == EState.New && !Utilities.ValidStringGUID(m_StyleData.guid));
             m_Name.SetValueWithoutNotify(m_StyleData?.title);
@@ -98,74 +111,38 @@ namespace Unity.Muse.StyleTrainer
             m_Description.style.height = k_OriginalDescriptionTextAreaHeight;
         }
 
-        void UpdateStatusIcon()
+        void UpdateStatusTextAndIcon()
         {
             m_TrainingIcon.style.display = DisplayStyle.None;
             m_ErrorIcon.style.display = DisplayStyle.None;
-            if (m_StyleData.state == EState.Error)
-            {
-                m_StatusLabel.text = StringConstants.styleError;
-                m_StatusLabel.style.display = DisplayStyle.Flex;
-            }
-            else
-            {
-                switch (m_StyleData.state)
-                {
-                    case EState.Loaded:
-                        m_StatusLabel.style.display = DisplayStyle.None;
-                        break;
-                    case EState.Error:
-                        m_StatusLabel.style.display = DisplayStyle.Flex;
-                        m_StatusLabel.text = StringConstants.styleTrainedError;
-                        m_ErrorIcon.style.display = DisplayStyle.Flex;
-                        break;
-                    case EState.Training:
-                    case EState.Loading:
-                        m_StatusLabel.style.display = DisplayStyle.Flex;
-                        m_StatusLabel.text = StringConstants.styleTraining;
-                        m_TrainingIcon.style.display = DisplayStyle.Flex;
-                        break;
-                    case EState.New:
-                    case EState.Initial:
-                        m_StatusLabel.style.display = DisplayStyle.None;
-                        m_StatusLabel.text = StringConstants.styleNotTrained;
-                        break;
-                }
-            }
 
-        }
-
-        void UpdateButtonState()
-        {
-            if (m_StyleData != null)
+            switch (m_StyleData.state)
             {
-                m_GenerateButton.SetEnabled(m_StyleData.state == EState.New);
-                m_DuplicateButton.SetEnabled(m_StyleData.state != EState.New);
-                m_GenerateButton.style.display = m_StyleData.state == EState.New ? DisplayStyle.Flex : DisplayStyle.None;
-                m_DuplicateButton.style.display = m_StyleData.state != EState.New ? DisplayStyle.Flex : DisplayStyle.None;
-            }
-            else
-            {
-                m_GenerateButton.style.display = DisplayStyle.None;
-                m_DuplicateButton.style.display = DisplayStyle.None;
+                case EState.Loaded:
+                    m_StatusLabel.style.display = DisplayStyle.None;
+                    break;
+                case EState.Error:
+                    m_StatusLabel.style.display = DisplayStyle.Flex;
+                    m_StatusLabel.text = StringConstants.styleError;
+                    m_ErrorIcon.style.display = DisplayStyle.Flex;
+                    break;
+                case EState.Training:
+                case EState.Loading:
+                    m_StatusLabel.style.display = DisplayStyle.Flex;
+                    m_StatusLabel.text = StringConstants.styleTraining;
+                    m_TrainingIcon.style.display = DisplayStyle.Flex;
+                    break;
+                case EState.New:
+                case EState.Initial:
+                    m_StatusLabel.style.display = DisplayStyle.None;
+                    m_StatusLabel.text = StringConstants.styleNotTrained;
+                    break;
             }
         }
 
-        void OnNameChanged(ChangeEvent<string> evt)
+        void SetPreviewImage(ImageArtifact imageArtifact)
         {
-            if(!string.IsNullOrWhiteSpace(evt.newValue))
-                m_StyleData.title = evt.newValue;
-            else
-                m_Name.SetValueWithoutNotify(m_StyleData.title);
-        }
-
-        void OnDescriptionChanged(ChangeEvent<string> evt)
-        {
-            if(!string.IsNullOrWhiteSpace(evt.newValue))
-                m_StyleData.description = evt.newValue;
-            else
-                m_Description.SetValueWithoutNotify(m_StyleData.description);
-            m_Description.tooltip = m_Description.value;
+            m_PreviewImage.SetArtifact(imageArtifact);
         }
 
         void DetachFromPanel(DetachFromPanelEvent evt)
@@ -173,19 +150,9 @@ namespace Unity.Muse.StyleTrainer
             RegisterCallback<AttachToPanelEvent>(AttachToPanel);
             UnregisterCallback<DetachFromPanelEvent>(DetachFromPanel);
             m_Name.UnregisterValueChangedCallback(OnNameChanged);
+            m_Name.UnregisterValueChangingCallback(OnNameChanging);
             m_Description.UnregisterValueChangedCallback(OnDescriptionChanged);
-            m_DuplicateButton.clicked -= OnDuplicateButtonClicked;
-            m_GenerateButton.clicked -= OnGenerateButtonClicked;
-        }
-
-        void OnGenerateButtonClicked()
-        {
-            m_EventBus.SendEvent(new GenerateButtonClickEvent());
-        }
-
-        void OnDuplicateButtonClicked()
-        {
-            m_EventBus.SendEvent(new DuplicateButtonClickEvent());
+            m_Description.UnregisterValueChangingCallback(OnDescriptionChanging);
         }
 
 #if ENABLE_UXML_TRAITS
@@ -196,9 +163,16 @@ namespace Unity.Muse.StyleTrainer
         {
             m_EventBus = eventBus;
             m_EventBus.RegisterEvent<StyleModelListSelectionChangedEvent>(OnStyleModelListSelectionChanged);
-            m_EventBus.RegisterEvent<GenerateButtonStateUpdateEvent>(OnGenerateButtonStateUpdate);
-            m_EventBus.RegisterEvent<DuplicateButtonStateUpdateEvent>(OnDuplicateButtonStateUpdate);
             m_EventBus.RegisterEvent<StyleTrainingEvent>(OnStyleTrainingEvent);
+            m_EventBus.RegisterEvent<FavoritePreviewSampleOutputEvent>(OnFavoriteSampleChanged);
+        }
+
+        void OnFavoriteSampleChanged(FavoritePreviewSampleOutputEvent arg0)
+        {
+            if (m_StyleData?.state == EState.Loaded)
+            {
+                SetPreviewImage(arg0?.favoriteSampleOutputData?.imageArtifact);
+            }
         }
 
         void OnStyleTrainingEvent(StyleTrainingEvent arg0)
@@ -209,18 +183,9 @@ namespace Unity.Muse.StyleTrainer
             }
         }
 
-        void OnDuplicateButtonStateUpdate(DuplicateButtonStateUpdateEvent arg0)
-        {
-            UpdateButtonState();
-        }
-
-        void OnGenerateButtonStateUpdate(GenerateButtonStateUpdateEvent arg0)
-        {
-            UpdateButtonState();
-        }
-
         void OnStyleModelListSelectionChanged(StyleModelListSelectionChangedEvent arg0)
         {
+            SetPreviewImage(null);
             if (arg0.styleData is not null && m_StyleData != arg0.styleData)
             {
                 if (m_StyleData != null)
@@ -233,7 +198,7 @@ namespace Unity.Muse.StyleTrainer
 
         void OnStyleStateChanged(StyleData obj)
         {
-            if (obj.state == EState.Initial)
+            if (obj.state is EState.Initial or EState.Loaded)
                 LoadStyle();
         }
 
@@ -242,7 +207,7 @@ namespace Unity.Muse.StyleTrainer
             m_EventBus.SendEvent(new ShowLoadingScreenEvent
             {
                 description = "Loading Style...",
-                show = true
+                show = false
             });
             m_StyleData.GetArtifact(OnGetArtifactDone, true);
         }

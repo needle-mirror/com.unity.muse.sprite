@@ -1,5 +1,6 @@
 using System;
 using Unity.Muse.Common;
+using Unity.Muse.Common.Utils;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -22,13 +23,22 @@ namespace Unity.Muse.StyleTrainer
         public void SetArtifact(ImageArtifact artifact)
         {
             m_ImageArtifact = artifact;
+            if (m_ImageArtifact == null)
+            {
+                OnLoaded(null, ImageDisplay.BackgroundImage);
+                return;
+            }
+
             OnImageArtifactDataChanged(artifact);
-            if (!Utilities.ValidStringGUID(m_ImageArtifact.guid))
+            if (m_ImageArtifact != null && !Utilities.ValidStringGUID(m_ImageArtifact.guid))
                 m_ImageArtifact.OnGUIDChanged += OnImageArtifactDataChanged;
         }
 
         public void ShowLoading()
         {
+            if(m_ImageArtifact == null)
+                return;
+
             OnLoading();
         }
 
@@ -37,10 +47,16 @@ namespace Unity.Muse.StyleTrainer
             OnImageArtifactDataChanged(m_ImageArtifact);
         }
 
-        void OnImageArtifactDataChanged(ImageArtifact obj)
+        void OnImageArtifactDataChanged(ImageArtifact imageArtifact)
         {
+            if (imageArtifact == null)
+            {
+                OnLoaded(null, ImageDisplay.BackgroundImage);
+                return;
+            }
+
             OnLoading();
-            var result = m_ImageArtifact.GetLoaded();
+            var result = imageArtifact.GetLoaded();
             if (result.cached)
             {
                 OnDoneCallback(result.texture);
@@ -50,7 +66,7 @@ namespace Unity.Muse.StyleTrainer
                 if(s_ImageCount < k_MaxRequest)
                 {
                     ++s_ImageCount;
-                    m_ImageArtifact.GetArtifact(OnDoneCallback, true);
+                    imageArtifact.GetArtifact(OnDoneCallback, true);
                 }
                 else
                 {
@@ -61,6 +77,9 @@ namespace Unity.Muse.StyleTrainer
 
         void DelayLoad()
         {
+            if (m_ImageArtifact == null)
+                return;
+
             if (m_Tries > k_MaxTries && s_ImageCount >= k_MaxRequest)
             {
                 s_ImageCount = 0;
@@ -81,7 +100,7 @@ namespace Unity.Muse.StyleTrainer
 
         void OnDoneCallback(Texture2D obj)
         {
-            OnLoaded(obj);
+            OnLoaded(obj, ImageDisplay.BackgroundImage);
         }
 
 #if ENABLE_UXML_TRAITS

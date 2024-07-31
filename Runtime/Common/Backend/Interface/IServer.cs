@@ -29,6 +29,9 @@ namespace Unity.Muse.Sprite.Common.Backend
         string uploadDataType { get; }
         string info { get; }
 
+        float downloadProgress { get; }
+        ulong downloadBytes { get; }
+
         IWebRequest Recreate()
         {
             return null;

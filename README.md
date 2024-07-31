@@ -1,8 +1,8 @@
-# About Muse Sprite Generator
+# About Muse Sprite
 
-The Muse Sprite Generator is a tool that uses machine learning to generate sprites based on the prompt you enter. You can set the number of sprites to generate. You can also apply the generated sprites directly to objects in your Scene view.
+With Muse Sprite, you can instantly create and easily edit AI-generated 2D assets from text prompts. These generations are powered by Unity’s own proprietary and responsibly built AI model.
 
-# Installing Muse Sprite Generator
+# Installing Muse Sprite
 
 To install this package, follow the instructions in the [Package Manager documentation](https://docs.unity3d.com/Packages/com.unity.package-manager-ui@latest/index.html).
 

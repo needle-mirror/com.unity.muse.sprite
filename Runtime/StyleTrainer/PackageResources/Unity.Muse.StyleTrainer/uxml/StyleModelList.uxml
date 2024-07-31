@@ -8,25 +8,25 @@
 >
     <Style src="../uss/StyleModelList.uss"/>
     <styleTrainer:StyleModelList class="styletrainer-stylemodellist" name="StyleModelList">
+        <ui:VisualElement name="notification-area"/>
 
-        <ui:VisualElement name="styletrainer-stylemodellist__context-menu-anchor"
-                          class="styletrainer-stylemodellist__context-menu-anchor" picking-mode="Ignore"/>
+        <appui:ExVisualElement name="StyleModelTitleContainer" class="styletrainer-stylemodellist__title-container">
+            <ui:VisualElement name="styletrainer-stylemodellist__context-menu-anchor"
+                              class="styletrainer-stylemodellist__context-menu-anchor" picking-mode="Ignore"/>
 
-        <ui:VisualElement class="styletrainer-stylemodellist__titlebar">
-            <appui:Text class="styletrainer-stylemodellist__title" text="Styles" primary="true"/>
-        </ui:VisualElement>
+            <ui:VisualElement class="styletrainer-stylemodellist__titlebar">
+                <appui:Button name="styletrainer-stylemodellist__add-button" class="styletrainer-stylemodellist__titlebar__new-button"  tooltip="Add new style for training" quiet="true" title="New" leading-icon="plus" />
+                <appui:Text class="styletrainer-stylemodellist__title" text="Styles" primary="true"/>
+            </ui:VisualElement>
 
-        <!--appui:SearchBar name="StyleModelSearchBar" class="styletrainer-stylemodellist__searchbar" size="S"/-->
-        <ui:ListView name="StyleModelListView" class="styletrainer-stylemodellist__listview" fixed-item-height="100"/>
-
-        <appui:FloatingActionButton 
-                name="AddStyleButton" 
-                class="styletrainer-stylemodellist__actionbutton"
-                size="L"
-                accent="true"
-                tooltip="Add new style for training" preferred-tooltip-placement="End">
-            <appui:Icon icon-name="plus" size="L" />
-        </appui:FloatingActionButton>
+            <appui:SearchBar name="StyleModelSearchBar" class="styletrainer-stylemodellist__searchbar" trailing-icon-name="x" size="S"/>
+        </appui:ExVisualElement>
+        <appui:ExVisualElement name="AddStyleContainer" class="styletrainer-stylemodellist-add-style__container">
+            <appui:ExVisualElement class="styletrainer-stylemodellist-add-style__button-container">
+                <appui:Button name="AddStyleButtonCollapsed" class="styletrainer-stylemodellist-add-style__button" leading-icon="plus"/>
+            </appui:ExVisualElement>
+        </appui:ExVisualElement>
+        <ui:ListView name="StyleModelListView" class="styletrainer-stylemodellist__listview" fixed-item-height="48"/>
 
     </styleTrainer:StyleModelList>
 </ui:UXML>

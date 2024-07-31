@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Unity.Muse.Common;
 using Unity.Muse.Sprite.Backend;
 using Unity.Muse.Sprite.Common.Backend;
+using Unity.Muse.Sprite.Data;
 using UnityEngine;
 using UnityEngine.Scripting;
 using UnityEngine.UIElements;
@@ -21,6 +22,9 @@ namespace Unity.Muse.Sprite.Operators
             Refined,
             IsMaskClear
         }
+
+        Model m_Model;
+        OperatorOverridePublishers m_Publishers;
 
         public SpriteRefiningMaskOperator()
         {
@@ -72,12 +76,65 @@ namespace Unity.Muse.Sprite.Operators
             if (!model.CurrentOperators.Contains(this))
                 return; // Only register to paint event for the current operator and not the selected artifact's operator
 
+            m_Model = model;
             if (Enabled())
+            {
                 model.OnMaskPaintDone += OnMaskPaintDone;
+            }
+            RegisterToOverrideEvents();
+        }
+
+        void UnregisterFromOverrideEvents()
+        {
+            if (m_Publishers != null)
+            {
+                m_Publishers.UnregisterFromPublisher<OperatorMaskImageOverride>(OnMaskImageOverride);
+                m_Publishers.OnModified -= OnPublishersModified;
+            }
+        }
+
+        public void RegisterToOverrideEvents()
+        {
+            var dataPublisher = m_Model.GetData<OperatorOverridePublishers>();
+            UnregisterFromOverrideEvents();
+
+            m_Publishers = dataPublisher;
+            var havePublisher = m_Publishers != null;
+            bool hasOverride = PublisherHasOverrides();
+            if (havePublisher)
+            {
+                m_Publishers.OnModified += OnPublishersModified;
+                if (hasOverride)
+                {
+                    m_Publishers.RegisterToPublisher<OperatorMaskImageOverride>(OnMaskImageOverride);
+                    OnMaskImageOverride(m_Publishers.RequestCurrentPublisherData<OperatorMaskImageOverride>());
+                }
+            }
+        }
+
+        void OnMaskImageOverride(OperatorMaskImageOverride arg0)
+        {
+            if (Enabled())
+            {
+                var haveData = arg0.bytes != null && arg0.bytes.Length != 0;
+                refined = haveData;
+                SetMask(haveData ? Convert.ToBase64String(arg0.bytes) : string.Empty);
+            }
+        }
+
+        void OnPublishersModified()
+        {
+            RegisterToOverrideEvents();
+        }
+
+        bool PublisherHasOverrides()
+        {
+            return m_Publishers?.HavePublisher<OperatorMaskImageOverride>() == true;
         }
 
         public void UnregisterFromEvents(Model model)
         {
+            UnregisterFromOverrideEvents();
             if (Enabled())
                 model.OnMaskPaintDone -= OnMaskPaintDone;
         }

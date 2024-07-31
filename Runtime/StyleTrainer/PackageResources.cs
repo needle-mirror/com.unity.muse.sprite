@@ -31,7 +31,7 @@ namespace Unity.Muse.StyleTrainer
         [ResourcePath]
         internal const string sampleOutputVersionRowTemplate =
             "Packages/com.unity.muse.sprite/Runtime/StyleTrainer/PackageResources/Unity.Muse.StyleTrainer/uxml/SampleOutputVersionRow.uxml";
-        
+
         [ResourcePath]
         internal const string sampleOutputVersionRowStyleSheet =
             "Packages/com.unity.muse.sprite/Runtime/StyleTrainer/PackageResources/Unity.Muse.StyleTrainer/uss/SampleOutputVersionRow.uss";
@@ -39,6 +39,20 @@ namespace Unity.Muse.StyleTrainer
         [ResourcePath]
         internal const string sampleOutputViewStyleSheet =
             "Packages/com.unity.muse.sprite/Runtime/StyleTrainer/PackageResources/Unity.Muse.StyleTrainer/uss/SampleOutputView.uss";
+
+        [ResourcePath]
+        internal const string sampleOutputTrainedViewStyleSheet =
+            "Packages/com.unity.muse.sprite/Runtime/StyleTrainer/PackageResources/Unity.Muse.StyleTrainer/uss/SampleOutputTrainedView.uss";
+
+        [ResourcePath]
+        internal const string sampleOutputPromptExampleStyleSheet =
+            "Packages/com.unity.muse.sprite/Runtime/StyleTrainer/PackageResources/Unity.Muse.StyleTrainer/uss/SampleOutputPromptExample.uss";
+
+        internal const string trainingRoundsContentStyleSheet =
+            "Packages/com.unity.muse.sprite/Runtime/StyleTrainer/PackageResources/Unity.Muse.StyleTrainer/uss/TrainingRoundsContent.uss";
+
+        internal const string trainingRoundsViewStyleSheet =
+            "Packages/com.unity.muse.sprite/Runtime/StyleTrainer/PackageResources/Unity.Muse.StyleTrainer/uss/TrainingRoundsView.uss";
 
         [ResourcePath]
         internal const string styleModelInfoEditorTemplate =
@@ -59,7 +73,7 @@ namespace Unity.Muse.StyleTrainer
         [ResourcePath]
         internal const string styleModelListStyleSheet =
             "Packages/com.unity.muse.sprite/Runtime/StyleTrainer/PackageResources/Unity.Muse.StyleTrainer/uss/StyleModelList.uss";
-        
+
         [ResourcePath]
         internal const string styleModelListItemTemplate =
             "Packages/com.unity.muse.sprite/Runtime/StyleTrainer/PackageResources/Unity.Muse.StyleTrainer/uxml/StyleModelListItem.uxml";
@@ -71,7 +85,7 @@ namespace Unity.Muse.StyleTrainer
         [ResourcePath]
         internal const string mainUITemplate =
             "Packages/com.unity.muse.sprite/Runtime/StyleTrainer/PackageResources/Unity.Muse.StyleTrainer/uxml/StyleTrainerMainUI.uxml";
-        
+
         [ResourcePath]
         internal const string mainUIStyleSheet =
             "Packages/com.unity.muse.sprite/Runtime/StyleTrainer/PackageResources/Unity.Muse.StyleTrainer/uss/StyleTrainerMainUI.uss";
@@ -81,12 +95,16 @@ namespace Unity.Muse.StyleTrainer
             "Packages/com.unity.muse.sprite/Runtime/StyleTrainer/PackageResources/Unity.Muse.StyleTrainer/uss/Icons.uss";
 
         [ResourcePath]
-        internal const string trainingItemGridItemTemplate =
-            "Packages/com.unity.muse.sprite/Runtime/StyleTrainer/PackageResources/Unity.Muse.StyleTrainer/uxml/TrainingItemGridItem.uxml";
+        internal const string trainingItemGridItemAddButtonTemplate =
+            "Packages/com.unity.muse.sprite/Runtime/StyleTrainer/PackageResources/Unity.Muse.StyleTrainer/uxml/TrainingItemGridItemAddButton.uxml";
 
         [ResourcePath]
         internal const string trainingItemGridItemStyleSheet =
             "Packages/com.unity.muse.sprite/Runtime/StyleTrainer/PackageResources/Unity.Muse.StyleTrainer/uss/TrainingItemGridItem.uss";
+
+        [ResourcePath]
+        internal const string trainingItemGridItemAddButtonStyleSheet =
+            "Packages/com.unity.muse.sprite/Runtime/StyleTrainer/PackageResources/Unity.Muse.StyleTrainer/uss/TrainingItemGridItemAddButton.uss";
 
         [ResourcePath]
         internal const string trainingSetViewTemplate =
