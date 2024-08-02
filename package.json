@@ -1,27 +1,27 @@
 {
   "name": "com.unity.muse.sprite",
   "displayName": "Muse Sprite",
-  "version": "1.1.0-pre.5",
+  "version": "1.1.0-pre.6",
   "unity": "2022.3",
   "description": "With Muse Sprite, you can instantly create and easily edit AI-generated 2D assets from text prompts. These generations are powered by Unity’s own proprietary and responsibly built AI model.",
   "dependencies": {
     "com.unity.modules.uielements": "1.0.0",
-    "com.unity.muse.common": "2.0.0"
+    "com.unity.muse.common": "2.0.1"
   },
   "relatedPackages": {
-    "com.unity.muse.sprite.tests": "1.1.0-pre.5",
-    "com.unity.muse.common.tests": "2.0.0"
+    "com.unity.muse.sprite.tests": "1.1.0-pre.6",
+    "com.unity.muse.common.tests": "2.0.1"
   },
   "_upm": {
-    "changelog": "### Added\n\n- Add multi-selection of Training Images for the Style Trainer.\n\n### Changed\n\n- Rename \"Muse Sprite Tool\" to \"Muse Sprite\".\n- Change Style Trainer UI.\n\n### Fixed\n\n- Fix search bar focus being lost when typing.\n\n### Added\n- New internal generation APIs"
+    "changelog": ""
   },
   "upmCi": {
-    "footprint": "810fa1996e5c5fac0ae4581e6625f730613e2c05"
+    "footprint": "4757c50dbec7183a6daa97732b7497345670b4d9"
   },
   "documentationUrl": "https://docs.unity3d.com/Packages/com.unity.muse.sprite@1.1/manual/index.html",
   "repository": {
     "url": "https://github.cds.internal.unity3d.com/unity/UnityMuseAITools.git",
     "type": "git",
-    "revision": "20dbaf8b20ab72ecacba130ad2bfc2ebe13278a7"
+    "revision": "bc965a3013cdd81c1043e2c16f9834283463c51a"
   }
 }
