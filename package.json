@@ -1,27 +1,27 @@
 {
   "name": "com.unity.muse.sprite",
   "displayName": "Muse Sprite",
-  "version": "1.1.0-pre.6",
+  "version": "1.1.0",
   "unity": "2022.3",
   "description": "With Muse Sprite, you can instantly create and easily edit AI-generated 2D assets from text prompts. These generations are powered by Unity’s own proprietary and responsibly built AI model.",
   "dependencies": {
     "com.unity.modules.uielements": "1.0.0",
-    "com.unity.muse.common": "2.0.1"
+    "com.unity.muse.common": "2.0.2"
   },
   "relatedPackages": {
-    "com.unity.muse.sprite.tests": "1.1.0-pre.6",
-    "com.unity.muse.common.tests": "2.0.1"
+    "com.unity.muse.sprite.tests": "1.1.0",
+    "com.unity.muse.common.tests": "2.0.2"
   },
   "_upm": {
     "changelog": ""
   },
   "upmCi": {
-    "footprint": "4757c50dbec7183a6daa97732b7497345670b4d9"
+    "footprint": "8b4a0ed46d3ac08d0ec145732d68e1954308547d"
   },
   "documentationUrl": "https://docs.unity3d.com/Packages/com.unity.muse.sprite@1.1/manual/index.html",
   "repository": {
     "url": "https://github.cds.internal.unity3d.com/unity/UnityMuseAITools.git",
     "type": "git",
-    "revision": "bc965a3013cdd81c1043e2c16f9834283463c51a"
+    "revision": "e0c5e88178cc17be7bcf57b845426baf7dd2f1b6"
   }
 }
